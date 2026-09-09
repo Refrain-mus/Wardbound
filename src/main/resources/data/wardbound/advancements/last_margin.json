@@ -1,0 +1,37 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:last_margin"
+    },
+    "title": {
+      "translate": "wardbound.adv.last_margin"
+    },
+    "description": {
+      "translate": "wardbound.adv.last_margin.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "wardbound:last_margin"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "wardbound:root"
+}

@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:witness_ledger"
+    },
+    "title": {
+      "translate": "wardbound.adv.category.house"
+    },
+    "description": {
+      "translate": "wardbound.adv.category.house.desc"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false,
+    "background": "minecraft:textures/block/dark_oak_planks.png"
+  },
+  "criteria": {
+    "begin": {
+      "trigger": "minecraft:tick"
+    }
+  },
+  "requirements": [
+    [
+      "begin"
+    ]
+  ]
+}

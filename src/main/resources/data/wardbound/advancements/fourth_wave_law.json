@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:witness_ledger"
+    },
+    "title": {
+      "translate": "wardbound.adv.fourth_wave_law"
+    },
+    "description": {
+      "translate": "wardbound.adv.fourth_wave_law.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:unlock_epics"
+}

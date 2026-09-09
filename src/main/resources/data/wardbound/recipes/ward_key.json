@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "group": "wardbound_charms",
+  "pattern": [
+    " NN",
+    " I ",
+    "II "
+  ],
+  "key": {
+    "N": { "tag": "forge:nuggets/iron" },
+    "I": { "tag": "forge:ingots/iron" }
+  },
+  "result": {
+    "item": "wardbound:ward_key",
+    "count": 1
+  }
+}

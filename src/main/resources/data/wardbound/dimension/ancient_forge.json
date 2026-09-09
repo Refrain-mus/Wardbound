@@ -1,0 +1,18 @@
+{
+  "type": "wardbound:ancient_forge",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:the_void",
+      "features": false,
+      "lakes": false,
+      "layers": [
+        {
+          "height": 1,
+          "block": "minecraft:bedrock"
+        }
+      ],
+      "structure_overrides": []
+    }
+  }
+}

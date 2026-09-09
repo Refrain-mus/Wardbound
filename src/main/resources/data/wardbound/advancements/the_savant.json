@@ -1,0 +1,37 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:the_savant"
+    },
+    "title": {
+      "translate": "wardbound.adv.eye"
+    },
+    "description": {
+      "translate": "wardbound.adv.eye.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "wardbound:the_savant"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "wardbound:unlock_savant"
+}

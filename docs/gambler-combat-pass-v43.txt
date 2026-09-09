@@ -1,0 +1,26 @@
+Pale Gambler combat polish pass
+
+Dialogue
+- Ordinary hand dialogue is rate-limited and only selected hands speak.
+- Phase changes, intro, forced choice and defeat remain important lines.
+
+Boss bar
+- Immediate boss-event progress update on damage.
+- Explicit dark missing-health well.
+- Visible HP percentage in the custom bar.
+
+New attack patterns
+- House Teeth: physical EvokerFangs lanes plus vertical eldritch eruptions.
+- Starfall: marked impact zones followed by vertical columns/explosion bursts.
+- Card Wall: moving walls with readable safe gaps.
+- Spiral: rotating multi-spoke cuts with 3D eruption accents.
+
+Audio / ambience
+- Attack-dependent sound palette.
+- Occasional low-volume idle vocal/eldritch sounds.
+- Rare non-destructive ambient explosion events around the table.
+
+Model
+- Entire forearm/hand cube sets moved coherently outward; previous partial shift was corrected.
+- Deal pose opens arms further instead of folding them into the torso.
+- GeckoLib procedural head tracking uses EntityModelData yaw/pitch; face/eyes follow with the head.

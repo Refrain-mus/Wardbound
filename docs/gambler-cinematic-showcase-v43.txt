@@ -1,0 +1,30 @@
+Wardbound v43 - Gambler Cinematic Showcase
+
+Presentation stack:
+- GeckoLib: unique boss choreography for every attack family.
+- PlayerAnimator: player awe, marked, brace, stagger, forced-choice, ritual, oath and release reactions.
+- Lodestone: persistent boss aura, hand-charge VFX, card seals, relic auras, attack impact fields and victory collapse.
+
+New / expanded presentation:
+- 12 distinct Pale Gambler attack animations: Fan, Rings, Marks, Sweep, Cage, Royal, Floor Cards, Forced Choice, House Teeth, Starfall, Card Wall, Spiral.
+- Persistent phase-aware Lodestone aura around the boss between attacks.
+- Attack-family color language and hand-charge card fan / halo effects.
+- Gaze-trail wisps during Marks, Forced Choice and Royal hands.
+- Major-screen ritual overlays for table opening, phase breaks, Royal and victory.
+- New PlayerAnimator reactions: gambler_marked, gambler_brace, gambler_awe, gambler_release.
+- Invitation item entities keep a premium ambient Lodestone orbit while manifested in-world.
+- Housebreaker's Ace emits a subtle held-item relic aura.
+- Floor Card attack now has per-card Lodestone seals during windup and a distinct per-card strike activation.
+- Victory uses a collapse/shatter VFX before reward presentation.
+
+Networking:
+- Wardbound protocol 50.
+- Gambler cinematic packet now carries 23 visual-only cue types (0..22).
+- Gameplay hit detection and damage remain server-authoritative.
+
+Validation:
+- 105 JSON resources parsed successfully.
+- 12/12 Gambler attack animation resources linked.
+- 9/9 referenced PlayerAnimator animations present.
+- 23/23 cinematic packet effects referenced by client handling.
+- V39_LOGIC_AUDIT=PASS.

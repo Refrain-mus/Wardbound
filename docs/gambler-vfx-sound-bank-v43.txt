@@ -1,0 +1,49 @@
+WARD BOUND v43 — PALE GAMBLER AUTHORED VFX + CUSTOM SOUND BANK
+
+TEXTURE VFX
+Path: assets/wardbound/textures/vfx/gambler/
+
+sigil_gold.png      — intro, invitation, table opening, ceremonial charge
+sigil_blood.png     — phase breaks, House Teeth, Royal / Last Hand
+sigil_teal.png      — Housebreaker oath, safe/floor-card resolution, victory release
+card_seal_gold.png  — ordinary floor card / charge card face
+card_seal_blood.png — hostile / cut card face and wall cards
+card_seal_teal.png  — floor-card strike / activation state
+impact_star.png     — hit and Starfall billboard burst
+rift_star.png       — phase break / Starfall ground fracture
+halo.png            — rings, spiral and celestial halo layer
+wisp.png            — authored texture wisp mixed with Lodestone particles
+collapse_shard.png  — boss death shatter pieces
+floor_card_atlas.png — four 64x96 occult card faces kept as a reusable atlas
+
+GamblerTextureFx.java renders these as full-bright textured world quads while
+GamblerCinematicFx keeps the Lodestone particle layer around them. The two
+systems are deliberately layered: textures define readable authored shapes;
+Lodestone supplies motion, trails, depth and atmosphere.
+
+CUSTOM SOUND BANK
+Path: assets/wardbound/sounds/gambler/
+
+Cinematic:
+  boss_intro, phase_break, royal_cast, death_collapse
+  invitation_reveal, table_open, ace_oath, choice_bind
+
+Attack casts/impacts:
+  fan_cast, fan_impact
+  ring_cast, ring_impact
+  card_flip, card_slam
+  teeth_rise
+  starfall_cast, starfall_impact
+  wall_rip
+  spiral_cast
+
+Boss presence:
+  voice_1, voice_2, voice_3
+  hurt_1, hurt_2, hurt_3
+  ambience_1, ambience_2, ambience_3
+  ambient_detonation
+
+All 29 events are registered through WardSounds and sounds.json. The fight now
+uses the custom bank for intro, phase transitions, hand casts, impacts, ambient
+vocal texture, occasional detonations, boss hurt reactions, Invitation,
+Housebreaker's Ace and death collapse instead of leaning on vanilla sounds.

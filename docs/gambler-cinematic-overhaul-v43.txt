@@ -1,0 +1,28 @@
+Wardbound v43 - Pale Gambler Cinematic Overhaul
+
+Required presentation libraries:
+- Player Animator / playeranimator: 1.0.2-rc1+1.20
+- Lodestone: 1.20.1-1.6.4.1 (Curse Maven file 6213794)
+
+PlayerAnimator cues:
+- invitation_ritual: Invitation reveal / invocation preview
+- table_open: successful Last Table opening
+- forced_choice: Gambler forced-choice bind
+- gambler_stagger: successful Gambler hit reaction
+- ace_oath: Housebreaker's Ace law signing
+
+Lodestone world VFX cues:
+- Invitation manifestation and table opening sigils
+- persistent telegraph wisps layered over MasterCues geometry
+- phase-break ritual flare
+- fan impact
+- ring impact
+- floor-card activation
+- House Teeth eruption
+- Starfall pillars
+- Card Wall
+- Spiral
+- Royal / Last Hand impact
+- Housebreaker's Ace oath
+
+Gameplay authority remains server-side. Cinematic packet effect 49 carries only visual/animation cues.

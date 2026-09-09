@@ -1,0 +1,108 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    // Required by GeckoLib: its animation/render hooks are applied as Mixins.
+    id 'org.spongepowered.mixin' version '0.7.+'
+}
+
+version = '1.0'
+group = 'dev.marrowseal.wardbound'
+
+base {
+    archivesName = 'wardbound'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+    copyIdeResources = true
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', ''
+            property 'forge.logging.console.level', 'info'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            mods { wardbound { source sourceSets.main } }
+        }
+        server {
+            workingDirectory project.file('run-server')
+            property 'forge.logging.markers', ''
+            property 'forge.logging.console.level', 'info'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            args '--nogui'
+            mods { wardbound { source sourceSets.main } }
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+
+    // GeckoLib's own maven. Scoped with `content` so it is only ever consulted
+    // for GeckoLib's own group and its small math dependency, never asked to
+    // resolve anything else Gradle is looking for.
+    maven {
+        name = 'GeckoLib'
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content {
+            includeGroupByRegex('software\\.bernie.*')
+            includeGroup('com.eliotlash.mclib')
+        }
+    }
+
+
+    // Lodestone 1.20.1 Forge artifact is distributed through Curse Maven.
+    maven {
+        name = 'CurseMaven'
+        url = 'https://cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.20'
+
+    // GeckoLib: current version for Forge 1.20.1 (see gradle.properties for
+    // the pinned version number and how to check for a newer one).
+    implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}")
+    implementation('com.eliotlash.mclib:mclib:20')
+
+
+    // Lodestone drives Wardbound's authored Master VFX. Boss animation and AI remain
+    // GeckoLib/server-state driven; no player-animation library is required.
+    implementation fg.deobf("curse.maven:lodestone-616457:${lodestone_file_id}")
+
+    // Required: raises vanilla attribute caps (notably generic.max_health) so Wardbound
+    // bosses can expose their real 8k/14k+ health to Minecraft and other mods.
+    implementation fg.deobf("curse.maven:attributefix-280510:7612291")
+
+    // Apothic Attributes 1.20.1 keeps the historical mod id/API namespace `attributeslib`.
+    // Placebo is its required runtime dependency. These are required because the new
+    // Wardbound card wave directly reads and modifies Apothic combat/utility attributes.
+    implementation fg.deobf("curse.maven:placebo-283644:5414631")
+    implementation fg.deobf("curse.maven:apothic-attributes-898963:5634071")
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title'     : 'wardbound',
+            'Specification-Vendor'    : 'Marrowseal',
+            'Specification-Version'   : '1',
+            'Implementation-Title'    : project.name,
+            'Implementation-Version'  : project.version,
+            'Implementation-Vendor'   : 'Marrowseal'
+        ])
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

@@ -1,0 +1,41 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# Forge run directories
+run/
+run-server/
+logs/
+crash-reports/
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+.vscode/
+bin/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Local/private configuration
+.env
+.env.*
+*.local
+secrets.*
+credentials.*
+
+# Generated packages / temporary files
+*.log
+*.tmp
+*.bak
+*.orig

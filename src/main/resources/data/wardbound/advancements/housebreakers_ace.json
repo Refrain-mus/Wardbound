@@ -1,0 +1,37 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:housebreakers_ace"
+    },
+    "title": {
+      "translate": "wardbound.adv.housebreakers_ace"
+    },
+    "description": {
+      "translate": "wardbound.adv.housebreakers_ace.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "wardbound:housebreakers_ace"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "wardbound:root_house"
+}

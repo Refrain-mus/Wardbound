@@ -1,0 +1,76 @@
+WARDBOUND — ALL RIGHTS RESERVED LICENSE
+Version 1.0
+
+Copyright (c) 2026 Wardbound. All Rights Reserved.
+
+Wardbound, including its source code, compiled binaries, game assets, textures,
+models, animations, visual effects, sounds, music, lore, characters, names,
+designs, documentation, and other original project materials (collectively,
+"Wardbound"), is protected by copyright and other applicable intellectual
+property laws.
+
+This repository is SOURCE-AVAILABLE, not open-source. No open-source license is
+granted.
+
+1. PERMITTED USE
+
+You may, without separate written permission:
+
+- View, inspect, and study the publicly available Wardbound source code.
+- Compile and run Wardbound for your own personal, non-commercial use.
+- Create private local modifications for your own personal use, provided those
+  modified builds are not published, distributed, or shared.
+- Submit issues, patches, or pull requests to the official Wardbound repository.
+- Link to the official Wardbound repository or official distribution pages.
+- Include the official, unmodified Wardbound release in a modpack when the mod
+  is obtained through an official Wardbound distribution page or through the
+  distribution platform's normal dependency/download mechanism.
+
+2. PROHIBITED WITHOUT PRIOR WRITTEN PERMISSION
+
+You may not, without explicit prior written permission from the Wardbound
+copyright holder:
+
+- Re-upload, mirror, republish, or redistribute Wardbound source code or
+  compiled binaries as a standalone download.
+- Publish or distribute modified Wardbound builds, public forks, ports,
+  unofficial continuation releases, or derivative versions.
+- Copy, extract, reuse, or redistribute Wardbound textures, models, animations,
+  visual effects, sounds, music, lore, characters, names, or other original
+  assets in another project.
+- Copy or incorporate substantial portions of Wardbound source code into
+  another mod, game, library, product, or service.
+- Sell, sublicense, rent, paywall, or otherwise commercially exploit Wardbound
+  or a derivative of Wardbound.
+- Remove, obscure, or misrepresent copyright, authorship, attribution, or
+  licensing notices.
+- Represent an unofficial build, fork, port, or derivative work as an official
+  Wardbound release.
+
+3. CONTRIBUTIONS
+
+By intentionally submitting a patch or pull request to the official Wardbound
+repository, you grant the Wardbound project a perpetual, worldwide,
+non-exclusive, royalty-free license to use, reproduce, modify, distribute, and
+incorporate that contribution into Wardbound and its official releases. This
+does not grant you rights to other Wardbound material.
+
+4. THIRD-PARTY MATERIAL
+
+Wardbound's dependencies and any third-party material remain subject to their
+respective licenses and terms. This license applies only to rights controlled
+by the Wardbound copyright holder and does not override third-party rights.
+
+5. NO WARRANTY
+
+WARDBOUND IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED
+BY LAW, THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY ARISING FROM THE USE OF WARDBOUND.
+
+6. RESERVATION OF RIGHTS
+
+Any right not expressly granted in this license is reserved. Permission for a
+use not listed above must be obtained from the Wardbound copyright holder in
+writing before that use occurs.

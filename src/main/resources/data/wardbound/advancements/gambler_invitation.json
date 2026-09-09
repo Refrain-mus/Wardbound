@@ -1,0 +1,37 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:gambler_invitation"
+    },
+    "title": {
+      "translate": "wardbound.adv.gambler_invitation"
+    },
+    "description": {
+      "translate": "wardbound.adv.gambler_invitation.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "wardbound:gambler_invitation"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "wardbound:dealer_pale_gambler"
+}

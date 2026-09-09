@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:cthulhu_idol"
+    },
+    "title": {
+      "translate": "wardbound.adv.unlock_cthulhus_game"
+    },
+    "description": {
+      "translate": "wardbound.adv.unlock_cthulhus_game.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:root_disciplines"
+}

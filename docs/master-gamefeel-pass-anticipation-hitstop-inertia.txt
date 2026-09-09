@@ -1,0 +1,38 @@
+WARD BOUND - MASTER GAME-FEEL PASS
+Scope intentionally limited to three systems requested for this session.
+
+1) ANTICIPATION -> RELEASE -> RECOIL
+- Added MasterAnimationBeatPacket: server gameplay release is the source of truth.
+- ANTICIPATE is sent when an attack begins.
+- RELEASE is sent on the actual gameplay strike/hazard tick, not an approximate cosmetic timer.
+- CLEAR ends held anticipation when the attack/recovery state ends.
+- Pale Gambler: predatory lean is held until exactly 11 ticks before first gameplay release.
+  All 25 combat hand animations now carry their first authored release pose at 0.55 seconds (11 ticks).
+- Ashen Curator: first release body keyframes aligned to shelf/ring/page/incineration strike timing;
+  runtime release recoil still follows the server-authored hazard activation beat.
+- Mourning Notary: declaration/stamp/toll/judgment and large Article II clips have release body/bell
+  keyframes aligned to their actual first ruling tick; later waves use the server release beat.
+
+2) MICRO HIT-STOP / IMPACT FREEZE FEEL
+- Added MasterMotionFeel client layer.
+- RELEASE visually holds the primary body pose for ~52ms, fades hold over the next ~30ms,
+  then applies a recoil/settle impulse. The game simulation is never paused.
+- Same release beat drives accessibility-aware MasterCameraShake and a Lodestone spherical impact volume.
+- Boss-specific feel:
+  Gambler = sharper lateral/body snap.
+  Curator = heavier rear-arch recoil.
+  Notary = formal body recoil with strong bell/chain follow-through.
+
+3) PROCEDURAL SECONDARY ANIMATION
+- Damped angular inertia is derived from the actual GeckoLib-evaluated body motion each render frame.
+- Gambler: hands and four physical cards overshoot/lag independently.
+- Curator: hem, cape, stoles, book halves and folios receive different inertia weights.
+- Notary: robe, train, signatures, writs, chains, tribunal arch and judgment bell receive different inertia weights.
+- Secondary pieces now respond to animation acceleration instead of moving as a rigid slab.
+
+Validation
+- 113 JSON resources parsed successfully.
+- All referenced procedural bones exist in their GEO models.
+- All 25 Gambler combat animations contain the 0.55s first-release arm/hand keyframe.
+- Curator and Notary representative release keyframes verified at authored gameplay timings.
+- Modified Java sources passed brace balance and syntax-oriented javac scan; full dependency compile is unavailable in this offline container.

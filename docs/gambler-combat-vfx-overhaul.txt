@@ -1,0 +1,27 @@
+PALE GAMBLER — COMBAT / VFX / PRESENTATION OVERHAUL
+
+Combat
+- Added Dealer Cross, Chip Storm and Split Pot as full server-authoritative attack patterns.
+- Phase pools and low-vitality attack weighting include the new patterns.
+- Floor Cards now has defensive deterministic recovery and cannot silently resolve as an empty layout.
+- Forced Choice draws two distinct cards from a three-card pool.
+
+Arms / animation
+- Re-authored combat arm X rotations so long forearms swing toward the visual front of the model.
+- Renderer applies a front-plane guard to both shoulder and hand pivots while an attack is active.
+
+Telegraphs / VFX
+- Gambler attack paths no longer spawn vanilla world particles.
+- MasterCuesPacket remains the authoritative geometry source (512-cue safety limit).
+- Exact danger/safe geometry is painted with texture-backed strips/rings plus Lodestone living particles.
+- Full cue geometry is rendered rather than sampled, preserving complete Floor Card faces and rails.
+- Added authored textures for Dealer Cross, Chip Storm, Split Pot, Forced Choice, hostile floor felt and danger/safe telegraphs.
+- Gambler invitation/arena preview was also moved off vanilla particles to Lodestone + texture VFX.
+
+Audio
+- Added attack-role routing so only genuine sweeping attacks lean on whooshes.
+- Added heavy-hit, cross, chip, pot and dialogue-stinger sound events/assets.
+- External CC0 candidates and licensing notes are in docs/gambler-audio-source-notes.txt.
+
+Bargain / Master motifs
+- Added texture-backed Lodestone motifs for Debt, Wager, Scar, Remedy, Contract, Ritual, Covenant, Epic, Unique, Curse, Death, Refresh and the Crooked/Veiled/Exacting Master signatures.

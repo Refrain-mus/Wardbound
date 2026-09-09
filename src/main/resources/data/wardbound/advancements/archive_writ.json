@@ -1,0 +1,37 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:archive_writ"
+    },
+    "title": {
+      "translate": "wardbound.adv.archive_writ"
+    },
+    "description": {
+      "translate": "wardbound.adv.archive_writ.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "wardbound:archive_writ"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "wardbound:dealer_ashen_curator"
+}

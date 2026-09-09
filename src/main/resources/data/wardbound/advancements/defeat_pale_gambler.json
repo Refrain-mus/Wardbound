@@ -1,0 +1,33 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:housebreakers_ace"
+    },
+    "title": {
+      "translate": "wardbound.adv.defeat_pale_gambler"
+    },
+    "description": {
+      "translate": "wardbound.adv.defeat_pale_gambler.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "kill": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": {
+          "type": "wardbound:pale_gambler"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "kill"
+    ]
+  ],
+  "parent": "wardbound:root_secrets"
+}

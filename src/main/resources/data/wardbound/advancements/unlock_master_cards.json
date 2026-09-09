@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:sealwrights_key"
+    },
+    "title": {
+      "translate": "wardbound.adv.unlock_master_cards"
+    },
+    "description": {
+      "translate": "wardbound.adv.unlock_master_cards.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:unlock_field_cards"
+}

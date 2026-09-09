@@ -1,0 +1,1260 @@
+{
+  "height_blocks": 2,
+  "model_units_per_block": 16,
+  "authoring_scale": 1.0047095761381475,
+  "bones": 226,
+  "cubes": 246,
+  "sockets": {
+    "floor_cast_socket": {
+      "parent": "root",
+      "pivot": [
+        0.0,
+        0.050235,
+        0.0
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Ground-plane ritual origin, unaffected by torso articulation"
+    },
+    "stage_ring_socket": {
+      "parent": "root",
+      "pivot": [
+        0.0,
+        0.080377,
+        0.0
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Stage circle / expanding rings"
+    },
+    "foot_left_socket": {
+      "parent": "foot_left",
+      "pivot": [
+        1.657771,
+        0.120565,
+        -0.301413
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Footfall / impact / step dust"
+    },
+    "finger_left_index_socket": {
+      "parent": "finger_left_index_03",
+      "pivot": [
+        4.199686,
+        7.294192,
+        -0.401884
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Fingertip sparks / precise musical articulation"
+    },
+    "finger_left_middle_socket": {
+      "parent": "finger_left_middle_03",
+      "pivot": [
+        4.621664,
+        7.09325,
+        -0.401884
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Fingertip sparks / precise musical articulation"
+    },
+    "finger_left_ring_socket": {
+      "parent": "finger_left_ring_03",
+      "pivot": [
+        5.043642,
+        7.243956,
+        -0.401884
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Fingertip sparks / precise musical articulation"
+    },
+    "finger_left_little_socket": {
+      "parent": "finger_left_little_03",
+      "pivot": [
+        5.455573,
+        7.595604,
+        -0.401884
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Fingertip sparks / precise musical articulation"
+    },
+    "hand_left_socket": {
+      "parent": "hand_left",
+      "pivot": [
+        4.822606,
+        9.243328,
+        -0.904239
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Palm casting / arc origin / note emission"
+    },
+    "conducting_arc_left_socket": {
+      "parent": "hand_left",
+      "pivot": [
+        4.822606,
+        8.841444,
+        -1.105181
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Conducting motion trail"
+    },
+    "wrist_left_socket": {
+      "parent": "hand_left",
+      "pivot": [
+        4.822606,
+        10.348509,
+        -0.602826
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Wrist orbit"
+    },
+    "foot_right_socket": {
+      "parent": "foot_right",
+      "pivot": [
+        -1.657771,
+        0.120565,
+        -0.301413
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Footfall / impact / step dust"
+    },
+    "finger_right_index_socket": {
+      "parent": "finger_right_index_03",
+      "pivot": [
+        -5.445526,
+        7.294192,
+        -0.401884
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Fingertip sparks / precise musical articulation"
+    },
+    "finger_right_middle_socket": {
+      "parent": "finger_right_middle_03",
+      "pivot": [
+        -5.023548,
+        7.09325,
+        -0.401884
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Fingertip sparks / precise musical articulation"
+    },
+    "finger_right_ring_socket": {
+      "parent": "finger_right_ring_03",
+      "pivot": [
+        -4.60157,
+        7.243956,
+        -0.401884
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Fingertip sparks / precise musical articulation"
+    },
+    "finger_right_little_socket": {
+      "parent": "finger_right_little_03",
+      "pivot": [
+        -4.189639,
+        7.595604,
+        -0.401884
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Fingertip sparks / precise musical articulation"
+    },
+    "hand_right_socket": {
+      "parent": "hand_right",
+      "pivot": [
+        -4.822606,
+        9.243328,
+        -0.904239
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Palm casting / arc origin / note emission"
+    },
+    "conducting_arc_right_socket": {
+      "parent": "hand_right",
+      "pivot": [
+        -4.822606,
+        8.841444,
+        -1.105181
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Conducting motion trail"
+    },
+    "wrist_right_socket": {
+      "parent": "hand_right",
+      "pivot": [
+        -4.822606,
+        10.348509,
+        -0.602826
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Wrist orbit"
+    },
+    "baton_tip_socket": {
+      "parent": "baton_tip",
+      "pivot": [
+        -4.822606,
+        2.10989,
+        -1.507064
+      ],
+      "forward_axis": [
+        0,
+        -1,
+        0
+      ],
+      "purpose": "Primary conductor trail / projectile origin"
+    },
+    "baton_grip_socket": {
+      "parent": "baton",
+      "pivot": [
+        -4.822606,
+        9.846154,
+        -1.507064
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Grip aura"
+    },
+    "chest_socket": {
+      "parent": "upper_torso",
+      "pivot": [
+        0.0,
+        20.094192,
+        -2.813187
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Chest seal / phase flare"
+    },
+    "head_socket": {
+      "parent": "head",
+      "pivot": [
+        0.0,
+        29.136578,
+        -2.813187
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Mask aura / eye flare"
+    },
+    "back_socket": {
+      "parent": "upper_torso",
+      "pivot": [
+        0.0,
+        20.094192,
+        2.612245
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Back sigil / spectral score"
+    },
+    "halo_socket": {
+      "parent": "head",
+      "pivot": [
+        0.0,
+        29.136578,
+        3.516484
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Optional halo behind head"
+    },
+    "sigil_socket": {
+      "parent": "upper_torso",
+      "pivot": [
+        0.0,
+        19.089482,
+        -4.018838
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Forward musical seal"
+    },
+    "note_left_socket": {
+      "parent": "hand_left",
+      "pivot": [
+        4.822606,
+        8.138148,
+        -1.00471
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Left note emitter"
+    },
+    "note_right_socket": {
+      "parent": "hand_right",
+      "pivot": [
+        -4.822606,
+        8.138148,
+        -1.00471
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Right note emitter"
+    },
+    "sound_wave_socket": {
+      "parent": "upper_torso",
+      "pivot": [
+        0.0,
+        19.089482,
+        -3.315542
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Forward sound-wave origin"
+    },
+    "aura_socket": {
+      "parent": "pelvis",
+      "pivot": [
+        0.0,
+        16.075353,
+        0.0
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Body aura"
+    },
+    "impact_socket": {
+      "parent": "hand_right",
+      "pivot": [
+        -4.822606,
+        8.037677,
+        -1.00471
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Strike impact"
+    },
+    "piano_left_socket": {
+      "parent": "hand_left",
+      "pivot": [
+        4.822606,
+        8.037677,
+        -1.105181
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Optional keyboard fingertip anchor"
+    },
+    "piano_right_socket": {
+      "parent": "hand_right",
+      "pivot": [
+        -4.822606,
+        8.037677,
+        -1.105181
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Optional keyboard fingertip anchor"
+    },
+    "eye_left_socket": {
+      "parent": "eye_left",
+      "pivot": [
+        1.034851,
+        28.051491,
+        -2.66248
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Eye seal and glint"
+    },
+    "ribbon_left_socket": {
+      "parent": "spectral_ribbon_left_03",
+      "pivot": [
+        2.953846,
+        15.522763,
+        2.361068
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Spectral score fragments"
+    },
+    "eye_right_socket": {
+      "parent": "eye_right",
+      "pivot": [
+        -1.034851,
+        28.051491,
+        -2.66248
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Eye seal and glint"
+    },
+    "ribbon_right_socket": {
+      "parent": "spectral_ribbon_right_03",
+      "pivot": [
+        -2.953846,
+        15.522763,
+        2.361068
+      ],
+      "forward_axis": [
+        0,
+        0,
+        -1
+      ],
+      "purpose": "Spectral score fragments"
+    },
+    "orchestra_00_socket": {
+      "parent": "root",
+      "pivot": [
+        24.11303,
+        0.100471,
+        0.0
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Radial stage notation"
+    },
+    "orchestra_01_socket": {
+      "parent": "root",
+      "pivot": [
+        17.050487,
+        0.100471,
+        17.050487
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Radial stage notation"
+    },
+    "orchestra_02_socket": {
+      "parent": "root",
+      "pivot": [
+        0.0,
+        0.100471,
+        24.11303
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Radial stage notation"
+    },
+    "orchestra_03_socket": {
+      "parent": "root",
+      "pivot": [
+        -17.050487,
+        0.100471,
+        17.050487
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Radial stage notation"
+    },
+    "orchestra_04_socket": {
+      "parent": "root",
+      "pivot": [
+        -24.11303,
+        0.100471,
+        0.0
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Radial stage notation"
+    },
+    "orchestra_05_socket": {
+      "parent": "root",
+      "pivot": [
+        -17.050487,
+        0.100471,
+        -17.050487
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Radial stage notation"
+    },
+    "orchestra_06_socket": {
+      "parent": "root",
+      "pivot": [
+        -0.0,
+        0.100471,
+        -24.11303
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Radial stage notation"
+    },
+    "orchestra_07_socket": {
+      "parent": "root",
+      "pivot": [
+        17.050487,
+        0.100471,
+        -17.050487
+      ],
+      "forward_axis": [
+        0,
+        1,
+        0
+      ],
+      "purpose": "Radial stage notation"
+    }
+  },
+  "secondary_bones": [
+    "lapel_left_00_secondary",
+    "lapel_left_01_secondary",
+    "lapel_left_02_secondary",
+    "collar_left_secondary",
+    "shoulder_cloth_left_secondary",
+    "sleeve_flap_left_secondary",
+    "coat_tail_left_00_secondary",
+    "coat_tail_left_01_secondary",
+    "coat_tail_left_02_secondary",
+    "coat_tail_left_03_secondary",
+    "coat_side_panel_left_00_secondary",
+    "coat_side_panel_left_01_secondary",
+    "coat_side_panel_left_02_secondary",
+    "lapel_right_00_secondary",
+    "lapel_right_01_secondary",
+    "lapel_right_02_secondary",
+    "collar_right_secondary",
+    "shoulder_cloth_right_secondary",
+    "sleeve_flap_right_secondary",
+    "coat_tail_right_00_secondary",
+    "coat_tail_right_01_secondary",
+    "coat_tail_right_02_secondary",
+    "coat_tail_right_03_secondary",
+    "coat_side_panel_right_00_secondary",
+    "coat_side_panel_right_01_secondary",
+    "coat_side_panel_right_02_secondary",
+    "cravat_00_secondary",
+    "cravat_01_secondary",
+    "cravat_02_secondary",
+    "chest_chain_00_secondary",
+    "chest_chain_01_secondary",
+    "chest_chain_02_secondary",
+    "chest_chain_03_secondary",
+    "chest_chain_04_secondary",
+    "temple_ornament_left_secondary",
+    "temple_ornament_right_secondary",
+    "score_ribbon_00_secondary",
+    "score_ribbon_01_secondary",
+    "baton_ribbon_00_secondary",
+    "baton_ribbon_01_secondary",
+    "spectral_ribbon_left_00_secondary",
+    "spectral_ribbon_left_01_secondary",
+    "spectral_ribbon_left_02_secondary",
+    "spectral_ribbon_left_03_secondary",
+    "spectral_ribbon_right_00_secondary",
+    "spectral_ribbon_right_01_secondary",
+    "spectral_ribbon_right_02_secondary",
+    "spectral_ribbon_right_03_secondary"
+  ],
+  "articulated_chains": [
+    [
+      "thigh_left",
+      "lower_leg_left"
+    ],
+    [
+      "lower_leg_left",
+      "foot_left"
+    ],
+    [
+      "upper_arm_left",
+      "forearm_left"
+    ],
+    [
+      "forearm_left",
+      "hand_left"
+    ],
+    [
+      "thigh_right",
+      "lower_leg_right"
+    ],
+    [
+      "lower_leg_right",
+      "foot_right"
+    ],
+    [
+      "upper_arm_right",
+      "forearm_right"
+    ],
+    [
+      "forearm_right",
+      "hand_right"
+    ]
+  ],
+  "animations": {
+    "idle_composed": {
+      "duration_seconds": 6,
+      "loop": true,
+      "vfx_events": []
+    },
+    "idle_observing": {
+      "duration_seconds": 8,
+      "loop": true,
+      "vfx_events": []
+    },
+    "idle_rage": {
+      "duration_seconds": 3.6,
+      "loop": true,
+      "vfx_events": []
+    },
+    "intro": {
+      "duration_seconds": 7.2,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 0.4,
+          "socket": "floor_cast_socket",
+          "effect": "ritual_ring"
+        },
+        {
+          "time_seconds": 4.6,
+          "socket": "chest_socket",
+          "effect": "seal_glint"
+        }
+      ]
+    },
+    "glide_step": {
+      "duration_seconds": 1.8,
+      "loop": true,
+      "vfx_events": []
+    },
+    "pivot_turn": {
+      "duration_seconds": 2.0,
+      "loop": false,
+      "vfx_events": []
+    },
+    "stagger": {
+      "duration_seconds": 1.7,
+      "loop": false,
+      "vfx_events": []
+    },
+    "phase_transition": {
+      "duration_seconds": 6.4,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 3.3,
+          "socket": "back_socket",
+          "effect": "spectral_score"
+        },
+        {
+          "time_seconds": 3.5,
+          "socket": "halo_socket",
+          "effect": "halo"
+        },
+        {
+          "time_seconds": 4.2,
+          "socket": "floor_cast_socket",
+          "effect": "phase_ring"
+        }
+      ]
+    },
+    "conduct_start": {
+      "duration_seconds": 2.4,
+      "loop": false,
+      "vfx_events": []
+    },
+    "conduct_loop": {
+      "duration_seconds": 3.2,
+      "loop": true,
+      "vfx_events": [
+        {
+          "time_seconds": 0.9,
+          "socket": "baton_tip_socket",
+          "effect": "downbeat"
+        },
+        {
+          "time_seconds": 1.6,
+          "socket": "conducting_arc_left_socket",
+          "effect": "conducting_arc"
+        },
+        {
+          "time_seconds": 2.35,
+          "socket": "baton_tip_socket",
+          "effect": "conducting_arc"
+        }
+      ]
+    },
+    "conduct_strike": {
+      "duration_seconds": 2.8,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.28,
+          "socket": "baton_tip_socket",
+          "effect": "cutting_arc"
+        }
+      ]
+    },
+    "left_hand_cast": {
+      "duration_seconds": 3.1,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.5,
+          "socket": "hand_left_socket",
+          "effect": "hand_cast"
+        }
+      ]
+    },
+    "right_hand_cast": {
+      "duration_seconds": 3.1,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.5,
+          "socket": "hand_right_socket",
+          "effect": "hand_cast"
+        }
+      ]
+    },
+    "dual_hand_cast": {
+      "duration_seconds": 4.2,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 2.18,
+          "socket": "hand_left_socket",
+          "effect": "dual_cast"
+        },
+        {
+          "time_seconds": 2.18,
+          "socket": "hand_right_socket",
+          "effect": "dual_cast"
+        }
+      ]
+    },
+    "command_gesture": {
+      "duration_seconds": 3.8,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.75,
+          "socket": "finger_left_index_socket",
+          "effect": "command_marker"
+        }
+      ]
+    },
+    "summoning_gesture": {
+      "duration_seconds": 5.6,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 2.6,
+          "socket": "floor_cast_socket",
+          "effect": "summon_circle"
+        },
+        {
+          "time_seconds": 3.9,
+          "socket": "back_socket",
+          "effect": "spectral_score"
+        }
+      ]
+    },
+    "shockwave_release": {
+      "duration_seconds": 4.0,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 2.0,
+          "socket": "floor_cast_socket",
+          "effect": "shockwave"
+        }
+      ]
+    },
+    "note_barrage": {
+      "duration_seconds": 5.0,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.15,
+          "socket": "baton_tip_socket",
+          "effect": "note_bolt"
+        },
+        {
+          "time_seconds": 2.15,
+          "socket": "baton_tip_socket",
+          "effect": "note_bolt"
+        },
+        {
+          "time_seconds": 3.15,
+          "socket": "baton_tip_socket",
+          "effect": "note_bolt"
+        },
+        {
+          "time_seconds": 4.15,
+          "socket": "baton_tip_socket",
+          "effect": "note_bolt"
+        }
+      ]
+    },
+    "wave_attack": {
+      "duration_seconds": 3.8,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.94,
+          "socket": "sound_wave_socket",
+          "effect": "wave_front"
+        }
+      ]
+    },
+    "slam_attack": {
+      "duration_seconds": 4.5,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 2.3,
+          "socket": "floor_cast_socket",
+          "effect": "slam_impact"
+        }
+      ]
+    },
+    "dash_lunge": {
+      "duration_seconds": 2.2,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 0.94,
+          "socket": "foot_right_socket",
+          "effect": "dash_release"
+        },
+        {
+          "time_seconds": 1.05,
+          "socket": "baton_tip_socket",
+          "effect": "lunge_arc"
+        }
+      ]
+    },
+    "grand_crescendo": {
+      "duration_seconds": 9.0,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 3.96,
+          "socket": "halo_socket",
+          "effect": "crescendo_halo"
+        },
+        {
+          "time_seconds": 5.49,
+          "socket": "back_socket",
+          "effect": "grand_score"
+        },
+        {
+          "time_seconds": 7.56,
+          "socket": "stage_ring_socket",
+          "effect": "grand_release"
+        }
+      ]
+    },
+    "recovery_cast": {
+      "duration_seconds": 1.6,
+      "loop": false,
+      "vfx_events": []
+    },
+    "recovery_heavy": {
+      "duration_seconds": 2.4,
+      "loop": false,
+      "vfx_events": []
+    },
+    "recovery_step": {
+      "duration_seconds": 1.3,
+      "loop": false,
+      "vfx_events": []
+    },
+    "piano_start": {
+      "duration_seconds": 3.0,
+      "loop": false,
+      "vfx_events": []
+    },
+    "piano_loop": {
+      "duration_seconds": 4.0,
+      "loop": true,
+      "vfx_events": []
+    },
+    "piano_end": {
+      "duration_seconds": 2.5,
+      "loop": false,
+      "vfx_events": []
+    },
+    "formal_bow": {
+      "duration_seconds": 3.8,
+      "loop": false,
+      "vfx_events": []
+    },
+    "silence_gesture": {
+      "duration_seconds": 4.1,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.6,
+          "socket": "head_socket",
+          "effect": "silence_seal"
+        }
+      ]
+    },
+    "death_start": {
+      "duration_seconds": 4.0,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 2.6,
+          "socket": "chest_socket",
+          "effect": "seal_break"
+        }
+      ]
+    },
+    "death_fall": {
+      "duration_seconds": 4.6,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 3.59,
+          "socket": "floor_cast_socket",
+          "effect": "fall_dust"
+        }
+      ]
+    },
+    "death_end": {
+      "duration_seconds": 3.0,
+      "loop": false,
+      "vfx_events": []
+    },
+    "baton_flourish": {
+      "duration_seconds": 3.6,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.55,
+          "socket": "baton_tip_socket",
+          "effect": "cutting_arc"
+        }
+      ]
+    },
+    "accusation": {
+      "duration_seconds": 3.7,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.45,
+          "socket": "finger_left_index_socket",
+          "effect": "note_bolt"
+        }
+      ]
+    },
+    "counter_guard": {
+      "duration_seconds": 2.8,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.9,
+          "socket": "chest_socket",
+          "effect": "seal_glint"
+        }
+      ]
+    },
+    "counter_riposte": {
+      "duration_seconds": 2.6,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.3,
+          "socket": "baton_tip_socket",
+          "effect": "cutting_arc"
+        }
+      ]
+    },
+    "staccato_combo": {
+      "duration_seconds": 4.2,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.05,
+          "socket": "baton_tip_socket",
+          "effect": "note_bolt"
+        },
+        {
+          "time_seconds": 1.93,
+          "socket": "baton_tip_socket",
+          "effect": "note_bolt"
+        },
+        {
+          "time_seconds": 2.9,
+          "socket": "baton_tip_socket",
+          "effect": "note_bolt"
+        }
+      ]
+    },
+    "legato_sweep": {
+      "duration_seconds": 5.2,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 2.4,
+          "socket": "hand_left_socket",
+          "effect": "wave_front"
+        },
+        {
+          "time_seconds": 3.8,
+          "socket": "hand_right_socket",
+          "effect": "wave_front"
+        }
+      ]
+    },
+    "orchestra_summon": {
+      "duration_seconds": 7,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 4.34,
+          "socket": "orchestra_00_socket",
+          "effect": "ritual_ring"
+        },
+        {
+          "time_seconds": 4.34,
+          "socket": "orchestra_01_socket",
+          "effect": "ritual_ring"
+        },
+        {
+          "time_seconds": 4.34,
+          "socket": "orchestra_02_socket",
+          "effect": "ritual_ring"
+        },
+        {
+          "time_seconds": 4.34,
+          "socket": "orchestra_03_socket",
+          "effect": "ritual_ring"
+        },
+        {
+          "time_seconds": 4.34,
+          "socket": "orchestra_04_socket",
+          "effect": "ritual_ring"
+        },
+        {
+          "time_seconds": 4.34,
+          "socket": "orchestra_05_socket",
+          "effect": "ritual_ring"
+        },
+        {
+          "time_seconds": 4.34,
+          "socket": "orchestra_06_socket",
+          "effect": "ritual_ring"
+        },
+        {
+          "time_seconds": 4.34,
+          "socket": "orchestra_07_socket",
+          "effect": "ritual_ring"
+        }
+      ]
+    },
+    "silence_field": {
+      "duration_seconds": 5.6,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 3.8,
+          "socket": "stage_ring_socket",
+          "effect": "phase_ring"
+        }
+      ]
+    },
+    "levitation_start": {
+      "duration_seconds": 3,
+      "loop": false,
+      "vfx_events": []
+    },
+    "levitation_loop": {
+      "duration_seconds": 4,
+      "loop": true,
+      "vfx_events": [
+        {
+          "time_seconds": 2,
+          "socket": "halo_socket",
+          "effect": "halo"
+        }
+      ]
+    },
+    "levitation_end": {
+      "duration_seconds": 3,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.8,
+          "socket": "floor_cast_socket",
+          "effect": "fall_dust"
+        }
+      ]
+    },
+    "curtain_call": {
+      "duration_seconds": 5,
+      "loop": false,
+      "vfx_events": [
+        {
+          "time_seconds": 1.25,
+          "socket": "back_socket",
+          "effect": "spectral_score"
+        }
+      ]
+    }
+  },
+  "automatic_transitions": {
+    "intro": "idle_composed",
+    "conduct_start": "conduct_loop",
+    "conduct_strike": "recovery_cast",
+    "left_hand_cast": "recovery_cast",
+    "right_hand_cast": "recovery_cast",
+    "dual_hand_cast": "recovery_cast",
+    "command_gesture": "recovery_cast",
+    "summoning_gesture": "recovery_heavy",
+    "shockwave_release": "recovery_heavy",
+    "note_barrage": "recovery_cast",
+    "wave_attack": "recovery_cast",
+    "slam_attack": "recovery_heavy",
+    "dash_lunge": "recovery_step",
+    "grand_crescendo": "recovery_heavy",
+    "piano_start": "piano_loop",
+    "piano_end": "idle_composed",
+    "death_start": "death_fall",
+    "death_fall": "death_end",
+    "levitation_start": "levitation_loop",
+    "levitation_end": "idle_composed",
+    "baton_flourish": "recovery_cast",
+    "accusation": "recovery_cast",
+    "counter_riposte": "recovery_cast",
+    "staccato_combo": "recovery_cast",
+    "legato_sweep": "recovery_cast",
+    "orchestra_summon": "recovery_heavy",
+    "silence_field": "recovery_heavy"
+  },
+  "default_after_clip": "idle_composed",
+  "performance_notes": {
+    "piano": "Visual animation only; hide baton during piano_*; piano model and bench are not included.",
+    "glide_step": "In-place cycle. Entity navigation is owned by future encounter code.",
+    "floor_cast": "Root-relative: project to world floor for gameplay effects."
+  }
+}

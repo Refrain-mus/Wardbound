@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:recovery_compass"
+    },
+    "title": {
+      "translate": "wardbound.adv.hybrid_cleared"
+    },
+    "description": {
+      "translate": "wardbound.adv.hybrid_cleared.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:mastery_iii"
+}

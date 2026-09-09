@@ -1,0 +1,53 @@
+WARD BOUND - MASTER EPIC 3D VFX PASS
+
+PALE GAMBLER
+- Volumetric Lodestone density increased on Hand Charge, Boss Intro, Royal, House Edge,
+  Double Down, Dead Man's Draw, False Tell, Suit Call, Royal Flush, Last Deal, All In,
+  Final Tell, Starfall, Card Wall, Spiral and House Teeth.
+- Added tilted 3D torus fields, spherical particle shells, casino vortices and directional cone blasts.
+- Added true world-space 3D card planes. These cards are NOT camera billboards: yaw/pitch/roll
+  animate independently and they render front/back while orbiting the boss.
+- Ambient boss presentation now periodically creates a real rotating card crown and 3D particle volume.
+
+ASHEN CURATOR
+- Curator custom sound bank remains the primary layer, but attacks now gain distinct Minecraft
+  sound accents instead of reading as repeated wooshes.
+- Shelf cast: page snap + low sweep weight.
+- Ring cast: blaze ignition + respawn-anchor resonance.
+- Errata: enchantment/sculk filing cue.
+- Incineration: firecharge + blaze + anchor weight.
+- Open Binding: enchantment + amethyst release.
+- Manifestation / redaction / preserve / fracture / hurt / death / ambient / whispers / victory
+  all receive individual accent treatment.
+- Lodestone presentation strengthened with ash torus volumes, spherical ash shells,
+  page vortices and forward book-fire cones.
+
+MOURNING NOTARY
+- Flat decree-line presentation replaced by vertical tribunal seal-walls / arches.
+- New Phase II patterns:
+  * TRIBUNAL ARCH - multiple closing witness gates.
+  * VERDICT CASCADE - three waves of descending stamp columns; each wave re-targets.
+  * FUNERAL RESONANCE - three volumetric bell shells at different radii.
+  * FINAL APPEAL - gate + stamp + bell shell + supplemental movement law in one article.
+- New independent non-looping GeckoLib animations:
+  * tribunal_arch
+  * verdict_cascade
+  * funeral_resonance
+  * final_appeal
+- New authored VFX textures:
+  * tribunal_arch.png
+  * verdict_column.png
+  * bell_resonance.png
+  * seal_shard.png
+  * witness_crown.png
+- Lodestone effects now build actual vertical columns, arches, spherical resonance shells and
+  orbiting funeral motes rather than relying on flat floor geometry.
+- Added attack-state vanilla sound accents for bell, stamp, judgment, impact, vulnerability and collapse.
+
+VALIDATION
+- All JSON resources parsed successfully.
+- All PNG assets verified successfully.
+- All Mourning Notary animation target bones exist in the GeckoLib geo model.
+- javac syntax-style scan returned no syntax-like diagnostics in changed Java sources.
+- Full Gradle compile was not possible in the isolated environment because its Gradle distribution
+  was not available locally and the environment cannot reach services.gradle.org.

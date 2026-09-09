@@ -1,0 +1,18 @@
+Ashen Curator visual/combat-presentation overhaul
+
+Preserved base:
+- The merge is based on Wardbound-Gambler-Cue1536-Ashen-Curator-Visual-Merge.
+- Pale Gambler combat/cue/persistent-card files were not changed.
+
+Ashen Curator additions:
+- Authored texture-backed attack VFX for Ash Shelves, Cinder Folios, Errata, Final Index,
+  preserve/break seals, Incineration, Open Binding, manifestation, transition and collapse.
+- Lodestone hazard warning/impact motes driven by server-authored hazard geometry.
+- New cinematic GUI callouts for every major encounter state.
+- New custom 256x64 Curator boss-bar atlas and richer state/seal presentation.
+- GeckoLib emissive layer using ashen_curator_glowmask.png.
+- GeckoLib Phase II redaction animation variants + dedicated incinerate animation.
+- PlayerAnimator preserve/break reactions.
+- Curator music range expanded to cover arena corners and stop-latch recovery fixed.
+- Attack sound routing differentiated using the existing custom Curator sound bank.
+- No vanilla ParticleTypes/sendParticles remain in Curator-specific presentation code.

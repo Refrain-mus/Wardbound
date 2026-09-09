@@ -1,0 +1,80 @@
+WARDBOUND — EXPANDED PROGRESSION CARD FAMILIES
+
+IDs 180–229 are revision-capable world-play Wagers. Stable signatures last 4 minutes,
+Revision I lasts 7 minutes, Revision II lasts 10 minutes, and Palimpsest copies are permanent.
+The cards remain conditional so collecting many of them does not collapse into one flat stat stack.
+
+BALLISTICS (180–189)
+Pinhole Doctrine — long-range projectile bonus
+Point-Blank Receipt — close-range projectile bonus
+High Arc Clause — projectile bonus from high ground
+Upward Interest — projectile bonus into high ground
+The First Volley — projectile bonus against near-full targets
+The Last Bolt — projectile bonus against low-health targets
+The Solitary Mark — projectile bonus against isolated targets
+Running Sight — projectile bonus while sprinting
+The Still Hand — projectile bonus while nearly stationary
+Pierced Crowd — projectile bonus scaling with hostiles around the target
+
+EDGEWORK (190–199)
+The Red Knuckle — melee bonus below half health
+The Opening Cut — melee bonus against near-full targets
+Executioner's Margin — melee bonus against low-health targets
+The Lone Duel — melee bonus in isolated fights
+The Pressed Blade — melee bonus under crowd pressure
+High Ground Clause — melee bonus from high ground
+The Low Road — melee bonus into high ground
+The Running Hand — melee bonus while sprinting
+The Still Point — melee bonus while nearly stationary
+The Second Wound — melee bonus against wounded mid-health targets
+
+BULWARK (200–209)
+Ash Plate — mitigation above 70% health
+The Last Plate — mitigation below 35% health
+The Arrow Ledger — projectile mitigation
+The Close Seal — direct-creature mitigation
+Crowd Shelter — mitigation under crowd pressure
+The Solitary Ward — mitigation in isolated fights
+Falling Ink — fall mitigation
+The Fire Margin — fire mitigation
+The Blast Receipt — explosion mitigation
+A Name Without Recoil — knockback resistance
+
+PILGRIMAGE (210–219)
+The Long Stride — base movement speed
+Sprint Clause — conditional sprint speed
+The Empty Road — speed when unthreatened
+The Hunted Road — speed while surrounded
+Open-Sky Footnote — open-sky speed + fall protection
+The Deep Road — deep-underground speed + Night Vision
+Feathered Debt — automatic Slow Falling on long drops
+The Climber's Margin — Jump Boost
+The Longer Hand — block reach
+The Duelist's Reach — entity reach
+
+INDUSTRY (220–229)
+Stone Dividend — occasional extra pickaxe-mined drop
+The Timber Share — occasional extra log drop
+The Mason's Tithe — occasional tool durability repair
+Fortune Margin — Luck
+The Swift Tool — Haste while holding a digging tool
+Harvest Memory — mature-crop yield bonus
+Grave Dividend — hostile kills heal
+The Scavenger's Name — hostile kills grant Absorption
+Candlework — underground low-light Night Vision
+The Quiet Ledger — out-of-combat recovery
+
+MASTER LINEAGE
+Each card has a hidden thematic affinity to the Ashen Curator, Mourning Notary, or Pale Gambler.
+Signing, revising, and especially Palimpsesting affinity cards builds persistent Master resonance.
+Cards offered by their matching Master also count more strongly. CardMaster.prefers() now recognizes
+these affinities, so dealer relation/story and future boss encounters can use the same choices.
+
+CardLineage.bossReadiness(data, player, master) is the explicit future-boss hook.
+Witness Ledger's Master Threads detail exposes the accumulated resonance without making it a hard quest counter.
+
+DEAL COMPOSITION
+Ordinary hands deliberately cap expanded progression cards to one slot in two/three-card hands
+and two slots in four-card hands, with no duplicate family inside the same hand. This prevents the
+50 new cards from drowning the existing deck. Dealer-authored loose hands do not use that cap;
+Master affinity is allowed to make those hands feel more specialized.

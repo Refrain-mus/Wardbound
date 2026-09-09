@@ -1,0 +1,15 @@
+{
+  "parent": "wardbound:first_card",
+  "display": {
+    "icon": { "item": "minecraft:enchanted_book" },
+    "title": { "text": "The Body Has Columns", "color": "dark_purple" },
+    "description": { "text": "Sign a Wardbound law written directly into an Apothic Attribute." },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "wardbound": { "trigger": "minecraft:impossible" }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:eldritch_shard"
+    },
+    "title": {
+      "translate": "wardbound.adv.unlock_eldritch"
+    },
+    "description": {
+      "translate": "wardbound.adv.unlock_eldritch.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:root_secrets"
+}

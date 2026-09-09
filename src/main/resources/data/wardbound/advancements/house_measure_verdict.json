@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:target"
+    },
+    "title": {
+      "translate": "wardbound.adv.house_measure_verdict"
+    },
+    "description": {
+      "translate": "wardbound.adv.house_measure_verdict.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:unlock_house_measure"
+}

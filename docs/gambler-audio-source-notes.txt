@@ -1,0 +1,43 @@
+PALE GAMBLER — AUDIO SOURCE NOTES
+
+This pass separates cast, card/table contact, heavy impact, and speech-stinger roles so the fight does not read as one continuous whoosh bank.
+
+Current integrated assets in assets/wardbound/sounds/gambler/ are self-contained Wardbound derivatives/reprocesses of the project's existing audio bank, including:
+- heavy_hit_1.ogg / heavy_hit_2.ogg / heavy_hit_3.ogg
+- speech_1.ogg / speech_2.ogg / speech_3.ogg
+- cross_cast.ogg / cross_impact.ogg
+- chip_cast.ogg / chip_impact.ogg
+- pot_cast.ogg / pot_impact.ogg
+
+CC0 packs researched as safe future source material / replacement layers:
+
+1) BMacZero — Playing Card Sounds — CC0
+   https://opengameart.org/content/playing-card-sounds
+   Useful files: shuffle, contact1/contact2, cut.
+
+2) Kenney — Impact Sounds — CC0
+   https://kenney.nl/assets/impact-sounds
+   130 impact/foley files suitable for table, body and heavy-hit layers.
+
+3) psychhead_ — Horror Hit Soundpack 1 — CC0
+   https://opengameart.org/content/horror-hit-soundpack-1
+   55 horror impact WAVs suitable for phase breaks and lethal attacks.
+
+4) qubodup — Ghost Monster Voice Moaning & Growling — CC0
+   https://opengameart.org/content/ghost-monster-voice-moaning-growling
+   Useful as non-verbal occult vocal texture beneath Gambler dialogue stingers.
+
+5) Sorth — Ghost Voice Pack — CC0
+   https://opengameart.org/content/ghost-voice-pack
+   Contains voice lines, hurt noises and evil laughter; uploader confirms the recorded voice is their own in the source comments.
+
+Those researched external packs are not redistributed in this repository; only source/licensing references are recorded here. The sound-event architecture is already split into the roles above so CC0 replacements can be dropped in without touching combat code.
+
+Additional vetted CC0 source packs:
+6) Kenney — 54 Casino sound effects (cards, dice, chips) — CC0
+   https://opengameart.org/node/12742
+   Particularly suitable for card placement, chip attacks and table contact.
+
+7) BMacZero — Mechanical Sounds — CC0
+   https://opengameart.org/content/mechanical-sounds
+   Clanks, ratchets and mechanical contacts suitable for Dealer Cross / table mechanisms.

@@ -1,0 +1,25 @@
+HOUSEBREAKER'S ACE — END-ENDGAME REWARD REWORK
+
+The old disposable clauses (+1 life next ward / +35% loot next ward with -1 life) were intentionally removed as the primary reward.
+The Pale Gambler is an end-endgame Master; the Ace now steals permanent rules from the House.
+
+LAW I — THE HOUSE OWES YOU
+Permanent on every ordinary ward:
+- +1 starting life
+- +4 seconds to every minigame
+- first meaningful error in each minigame is pardoned
+- +25% ward loot
+
+LAW II — THE WORLD IS ANOTHER TABLE
+Permanent world law:
+- +15% outgoing damage to hostiles
+- 12% incoming damage reduction (does not blunt invulnerability-bypassing kill/void damage)
+- +10% movement speed
+- +4 max hearts
+- +1.5 block reach
+- +1 entity reach
+- +2 Luck
+- Wardbound Master-tagged bosses take an additional +25% damage
+
+Each law can be signed exactly once. First signature leaves the Ace intact; second consumes it.
+The master-boss damage clause uses data/wardbound/tags/entity_types/master_bosses.json so future Masters can opt into the same reward cleanly.

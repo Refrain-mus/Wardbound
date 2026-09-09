@@ -1,0 +1,2343 @@
+{
+  "height_blocks": 20,
+  "model_units_per_block": 16,
+  "scale_from_authoring": 1.444855592510258,
+  "bones": 589,
+  "cubes": 1571,
+  "tentacles": [
+    {
+      "name": "tentacle_center_left_01",
+      "bones": [
+        "tentacle_center_left_01_root",
+        "tentacle_center_left_01_mid_01",
+        "tentacle_center_left_01_mid_02",
+        "tentacle_center_left_01_mid_03",
+        "tentacle_center_left_01_mid_04",
+        "tentacle_center_left_01_mid_05",
+        "tentacle_center_left_01_mid_06",
+        "tentacle_center_left_01_mid_07",
+        "tentacle_center_left_01_mid_08",
+        "tentacle_center_left_01_mid_09",
+        "tentacle_center_left_01_mid_10",
+        "tentacle_center_left_01_tip"
+      ],
+      "side": 1,
+      "group": 0,
+      "index": 0,
+      "major": true,
+      "rest_joints": [
+        [
+          10.11399,
+          162.51074,
+          -72.24278
+        ],
+        [
+          10.83642,
+          148.42882,
+          -72.83668
+        ],
+        [
+          11.55884,
+          134.34689,
+          -74.04885
+        ],
+        [
+          12.28127,
+          120.26497,
+          -75.95054
+        ],
+        [
+          13.0037,
+          106.18305,
+          -78.60292
+        ],
+        [
+          13.72613,
+          92.10112,
+          -82.05295
+        ],
+        [
+          14.44856,
+          78.0192,
+          -86.33012
+        ],
+        [
+          15.17098,
+          63.93727,
+          -91.44451
+        ],
+        [
+          15.72693,
+          49.96634,
+          -97.38605
+        ],
+        [
+          13.78299,
+          37.662,
+          -104.12522
+        ],
+        [
+          8.58738,
+          27.52543,
+          -111.61509
+        ],
+        [
+          0.1401,
+          19.55664,
+          -119.79448
+        ],
+        [
+          -11.55884,
+          13.75563,
+          -128.59215
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_center_left_02",
+      "bones": [
+        "tentacle_center_left_02_root",
+        "tentacle_center_left_02_mid_01",
+        "tentacle_center_left_02_mid_02",
+        "tentacle_center_left_02_mid_03",
+        "tentacle_center_left_02_mid_04",
+        "tentacle_center_left_02_mid_05",
+        "tentacle_center_left_02_mid_06",
+        "tentacle_center_left_02_mid_07",
+        "tentacle_center_left_02_mid_08",
+        "tentacle_center_left_02_mid_09",
+        "tentacle_center_left_02_mid_10",
+        "tentacle_center_left_02_tip"
+      ],
+      "side": 1,
+      "group": 0,
+      "index": 1,
+      "major": true,
+      "rest_joints": [
+        [
+          20.22798,
+          162.51074,
+          -65.0185
+        ],
+        [
+          21.31162,
+          147.43187,
+          -65.6124
+        ],
+        [
+          22.39526,
+          132.35299,
+          -66.82457
+        ],
+        [
+          23.4789,
+          117.27412,
+          -68.72626
+        ],
+        [
+          24.56255,
+          102.19524,
+          -71.37865
+        ],
+        [
+          25.64619,
+          87.11637,
+          -74.82867
+        ],
+        [
+          26.72983,
+          72.0375,
+          -79.10584
+        ],
+        [
+          27.81347,
+          56.95862,
+          -84.22023
+        ],
+        [
+          28.73063,
+          41.99074,
+          -90.16177
+        ],
+        [
+          27.1479,
+          28.68944,
+          -96.90094
+        ],
+        [
+          22.31351,
+          17.55593,
+          -104.39082
+        ],
+        [
+          14.22744,
+          8.59019,
+          -112.57021
+        ],
+        [
+          2.88971,
+          1.79223,
+          -121.36787
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_center_right_01",
+      "bones": [
+        "tentacle_center_right_01_root",
+        "tentacle_center_right_01_mid_01",
+        "tentacle_center_right_01_mid_02",
+        "tentacle_center_right_01_mid_03",
+        "tentacle_center_right_01_mid_04",
+        "tentacle_center_right_01_mid_05",
+        "tentacle_center_right_01_mid_06",
+        "tentacle_center_right_01_mid_07",
+        "tentacle_center_right_01_mid_08",
+        "tentacle_center_right_01_mid_09",
+        "tentacle_center_right_01_mid_10",
+        "tentacle_center_right_01_tip"
+      ],
+      "side": -1,
+      "group": 0,
+      "index": 0,
+      "major": true,
+      "rest_joints": [
+        [
+          -10.11399,
+          162.51074,
+          -72.24278
+        ],
+        [
+          -10.83642,
+          149.38122,
+          -72.83668
+        ],
+        [
+          -11.55884,
+          136.25169,
+          -74.04885
+        ],
+        [
+          -12.28127,
+          123.12217,
+          -75.95054
+        ],
+        [
+          -13.0037,
+          109.99265,
+          -78.60292
+        ],
+        [
+          -13.72613,
+          96.86312,
+          -82.05295
+        ],
+        [
+          -14.44856,
+          83.7336,
+          -86.33012
+        ],
+        [
+          -15.17098,
+          70.60408,
+          -91.44451
+        ],
+        [
+          -15.72693,
+          57.58555,
+          -97.38605
+        ],
+        [
+          -13.78299,
+          46.2336,
+          -104.12522
+        ],
+        [
+          -8.58738,
+          37.04944,
+          -111.61509
+        ],
+        [
+          -0.1401,
+          30.03305,
+          -119.79448
+        ],
+        [
+          11.55884,
+          25.18444,
+          -128.59215
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_center_right_02",
+      "bones": [
+        "tentacle_center_right_02_root",
+        "tentacle_center_right_02_mid_01",
+        "tentacle_center_right_02_mid_02",
+        "tentacle_center_right_02_mid_03",
+        "tentacle_center_right_02_mid_04",
+        "tentacle_center_right_02_mid_05",
+        "tentacle_center_right_02_mid_06",
+        "tentacle_center_right_02_mid_07",
+        "tentacle_center_right_02_mid_08",
+        "tentacle_center_right_02_mid_09",
+        "tentacle_center_right_02_mid_10",
+        "tentacle_center_right_02_tip"
+      ],
+      "side": -1,
+      "group": 0,
+      "index": 1,
+      "major": true,
+      "rest_joints": [
+        [
+          -20.22798,
+          162.51074,
+          -65.0185
+        ],
+        [
+          -21.31162,
+          148.45169,
+          -65.6124
+        ],
+        [
+          -22.39526,
+          134.39265,
+          -66.82457
+        ],
+        [
+          -23.4789,
+          120.3336,
+          -68.72626
+        ],
+        [
+          -24.56255,
+          106.27455,
+          -71.37865
+        ],
+        [
+          -25.64619,
+          92.21551,
+          -74.82867
+        ],
+        [
+          -26.72983,
+          78.15646,
+          -79.10584
+        ],
+        [
+          -27.81347,
+          64.09741,
+          -84.22023
+        ],
+        [
+          -28.73063,
+          50.14936,
+          -90.16177
+        ],
+        [
+          -27.1479,
+          37.86789,
+          -96.90094
+        ],
+        [
+          -22.31351,
+          27.7542,
+          -104.39082
+        ],
+        [
+          -14.22744,
+          19.80829,
+          -112.57021
+        ],
+        [
+          -2.88971,
+          14.03016,
+          -121.36787
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_inner_left_01",
+      "bones": [
+        "tentacle_inner_left_01_root",
+        "tentacle_inner_left_01_mid_01",
+        "tentacle_inner_left_01_mid_02",
+        "tentacle_inner_left_01_mid_03",
+        "tentacle_inner_left_01_mid_04",
+        "tentacle_inner_left_01_mid_05",
+        "tentacle_inner_left_01_mid_06",
+        "tentacle_inner_left_01_mid_07",
+        "tentacle_inner_left_01_mid_08",
+        "tentacle_inner_left_01_mid_09",
+        "tentacle_inner_left_01_mid_10",
+        "tentacle_inner_left_01_tip"
+      ],
+      "side": 1,
+      "group": 1,
+      "index": 2,
+      "major": true,
+      "rest_joints": [
+        [
+          30.34197,
+          168.29016,
+          -57.79422
+        ],
+        [
+          32.87046,
+          154.83133,
+          -58.38812
+        ],
+        [
+          35.39896,
+          141.3725,
+          -59.60029
+        ],
+        [
+          37.92746,
+          127.91367,
+          -61.50198
+        ],
+        [
+          40.45596,
+          114.45484,
+          -64.15437
+        ],
+        [
+          42.98445,
+          100.99601,
+          -67.60439
+        ],
+        [
+          45.51295,
+          87.53718,
+          -71.88157
+        ],
+        [
+          48.04145,
+          74.07835,
+          -76.99595
+        ],
+        [
+          50.40346,
+          60.73051,
+          -82.93749
+        ],
+        [
+          50.26559,
+          49.04926,
+          -89.67667
+        ],
+        [
+          46.87605,
+          39.53579,
+          -97.16654
+        ],
+        [
+          40.23484,
+          32.1901,
+          -105.34593
+        ],
+        [
+          30.34197,
+          27.01218,
+          -114.14359
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_inner_left_02",
+      "bones": [
+        "tentacle_inner_left_02_root",
+        "tentacle_inner_left_02_mid_01",
+        "tentacle_inner_left_02_mid_02",
+        "tentacle_inner_left_02_mid_03",
+        "tentacle_inner_left_02_mid_04",
+        "tentacle_inner_left_02_mid_05",
+        "tentacle_inner_left_02_mid_06",
+        "tentacle_inner_left_02_mid_07",
+        "tentacle_inner_left_02_mid_08",
+        "tentacle_inner_left_02_mid_09",
+        "tentacle_inner_left_02_mid_10",
+        "tentacle_inner_left_02_tip"
+      ],
+      "side": 1,
+      "group": 1,
+      "index": 3,
+      "major": true,
+      "rest_joints": [
+        [
+          40.45596,
+          168.29016,
+          -50.56995
+        ],
+        [
+          43.34567,
+          153.83438,
+          -51.16384
+        ],
+        [
+          46.23538,
+          139.3786,
+          -52.37602
+        ],
+        [
+          49.12509,
+          124.92282,
+          -54.2777
+        ],
+        [
+          52.0148,
+          110.46704,
+          -56.93009
+        ],
+        [
+          54.90451,
+          96.01126,
+          -60.38011
+        ],
+        [
+          57.79422,
+          81.55548,
+          -64.65729
+        ],
+        [
+          60.68393,
+          67.0997,
+          -69.77168
+        ],
+        [
+          63.40716,
+          52.75491,
+          -75.71321
+        ],
+        [
+          63.6305,
+          40.07671,
+          -82.45239
+        ],
+        [
+          60.60218,
+          29.56629,
+          -89.94226
+        ],
+        [
+          54.32219,
+          21.22364,
+          -98.12165
+        ],
+        [
+          44.79052,
+          15.04878,
+          -106.91931
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_inner_right_01",
+      "bones": [
+        "tentacle_inner_right_01_root",
+        "tentacle_inner_right_01_mid_01",
+        "tentacle_inner_right_01_mid_02",
+        "tentacle_inner_right_01_mid_03",
+        "tentacle_inner_right_01_mid_04",
+        "tentacle_inner_right_01_mid_05",
+        "tentacle_inner_right_01_mid_06",
+        "tentacle_inner_right_01_mid_07",
+        "tentacle_inner_right_01_mid_08",
+        "tentacle_inner_right_01_mid_09",
+        "tentacle_inner_right_01_mid_10",
+        "tentacle_inner_right_01_tip"
+      ],
+      "side": -1,
+      "group": 1,
+      "index": 2,
+      "major": true,
+      "rest_joints": [
+        [
+          -30.34197,
+          168.29016,
+          -57.79422
+        ],
+        [
+          -32.87046,
+          155.74159,
+          -58.38812
+        ],
+        [
+          -35.39896,
+          143.19302,
+          -59.60029
+        ],
+        [
+          -37.92746,
+          130.64445,
+          -61.50198
+        ],
+        [
+          -40.45596,
+          118.09588,
+          -64.15437
+        ],
+        [
+          -42.98445,
+          105.54731,
+          -67.60439
+        ],
+        [
+          -45.51295,
+          92.99874,
+          -71.88157
+        ],
+        [
+          -48.04145,
+          80.45017,
+          -76.99595
+        ],
+        [
+          -50.40346,
+          68.01259,
+          -82.93749
+        ],
+        [
+          -50.26559,
+          57.24159,
+          -89.67667
+        ],
+        [
+          -46.87605,
+          48.63838,
+          -97.16654
+        ],
+        [
+          -40.23484,
+          42.20295,
+          -105.34593
+        ],
+        [
+          -30.34197,
+          37.93529,
+          -114.14359
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_inner_right_02",
+      "bones": [
+        "tentacle_inner_right_02_root",
+        "tentacle_inner_right_02_mid_01",
+        "tentacle_inner_right_02_mid_02",
+        "tentacle_inner_right_02_mid_03",
+        "tentacle_inner_right_02_mid_04",
+        "tentacle_inner_right_02_mid_05",
+        "tentacle_inner_right_02_mid_06",
+        "tentacle_inner_right_02_mid_07",
+        "tentacle_inner_right_02_mid_08",
+        "tentacle_inner_right_02_mid_09",
+        "tentacle_inner_right_02_mid_10",
+        "tentacle_inner_right_02_tip"
+      ],
+      "side": -1,
+      "group": 1,
+      "index": 3,
+      "major": true,
+      "rest_joints": [
+        [
+          -40.45596,
+          168.29016,
+          -50.56995
+        ],
+        [
+          -43.34567,
+          154.81207,
+          -51.16384
+        ],
+        [
+          -46.23538,
+          141.33397,
+          -52.37602
+        ],
+        [
+          -49.12509,
+          127.85588,
+          -54.2777
+        ],
+        [
+          -52.0148,
+          114.37778,
+          -56.93009
+        ],
+        [
+          -54.90451,
+          100.89969,
+          -60.38011
+        ],
+        [
+          -57.79422,
+          87.4216,
+          -64.65729
+        ],
+        [
+          -60.68393,
+          73.9435,
+          -69.77168
+        ],
+        [
+          -63.40716,
+          60.5764,
+          -75.71321
+        ],
+        [
+          -63.6305,
+          48.87588,
+          -82.45239
+        ],
+        [
+          -60.60218,
+          39.34314,
+          -89.94226
+        ],
+        [
+          -54.32219,
+          31.97819,
+          -98.12165
+        ],
+        [
+          -44.79052,
+          26.78101,
+          -106.91931
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_side_left_01",
+      "bones": [
+        "tentacle_side_left_01_root",
+        "tentacle_side_left_01_mid_01",
+        "tentacle_side_left_01_mid_02",
+        "tentacle_side_left_01_mid_03",
+        "tentacle_side_left_01_mid_04",
+        "tentacle_side_left_01_mid_05",
+        "tentacle_side_left_01_mid_06",
+        "tentacle_side_left_01_mid_07",
+        "tentacle_side_left_01_mid_08",
+        "tentacle_side_left_01_mid_09",
+        "tentacle_side_left_01_mid_10",
+        "tentacle_side_left_01_tip"
+      ],
+      "side": 1,
+      "group": 2,
+      "index": 4,
+      "major": true,
+      "rest_joints": [
+        [
+          50.56995,
+          174.06959,
+          -43.34567
+        ],
+        [
+          54.90451,
+          161.23385,
+          -43.93957
+        ],
+        [
+          59.23908,
+          148.39811,
+          -45.15174
+        ],
+        [
+          63.57365,
+          135.56238,
+          -47.05343
+        ],
+        [
+          67.90821,
+          122.72664,
+          -49.70581
+        ],
+        [
+          72.24278,
+          109.89091,
+          -53.15584
+        ],
+        [
+          76.57735,
+          97.05517,
+          -57.43301
+        ],
+        [
+          80.91191,
+          84.21943,
+          -62.5474
+        ],
+        [
+          85.07999,
+          71.49469,
+          -68.48893
+        ],
+        [
+          86.74819,
+          60.43653,
+          -75.22811
+        ],
+        [
+          85.16472,
+          51.54615,
+          -82.71798
+        ],
+        [
+          80.32959,
+          44.82355,
+          -90.89737
+        ],
+        [
+          72.24278,
+          40.26873,
+          -99.69504
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_side_left_02",
+      "bones": [
+        "tentacle_side_left_02_root",
+        "tentacle_side_left_02_mid_01",
+        "tentacle_side_left_02_mid_02",
+        "tentacle_side_left_02_mid_03",
+        "tentacle_side_left_02_mid_04",
+        "tentacle_side_left_02_mid_05",
+        "tentacle_side_left_02_mid_06",
+        "tentacle_side_left_02_mid_07",
+        "tentacle_side_left_02_mid_08",
+        "tentacle_side_left_02_mid_09",
+        "tentacle_side_left_02_mid_10",
+        "tentacle_side_left_02_tip"
+      ],
+      "side": 1,
+      "group": 2,
+      "index": 5,
+      "major": true,
+      "rest_joints": [
+        [
+          60.68393,
+          174.06959,
+          -36.12139
+        ],
+        [
+          65.37972,
+          160.2369,
+          -36.71529
+        ],
+        [
+          70.0755,
+          146.40421,
+          -37.92746
+        ],
+        [
+          74.77128,
+          132.57153,
+          -39.82915
+        ],
+        [
+          79.46706,
+          118.73884,
+          -42.48153
+        ],
+        [
+          84.16284,
+          104.90615,
+          -45.93156
+        ],
+        [
+          88.85862,
+          91.07347,
+          -50.20873
+        ],
+        [
+          93.5544,
+          77.24078,
+          -55.32312
+        ],
+        [
+          98.08369,
+          63.51909,
+          -61.26466
+        ],
+        [
+          100.11311,
+          51.46398,
+          -68.00383
+        ],
+        [
+          98.89085,
+          41.57665,
+          -75.4937
+        ],
+        [
+          94.41693,
+          33.8571,
+          -83.67309
+        ],
+        [
+          86.69134,
+          28.30533,
+          -92.47076
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_side_right_01",
+      "bones": [
+        "tentacle_side_right_01_root",
+        "tentacle_side_right_01_mid_01",
+        "tentacle_side_right_01_mid_02",
+        "tentacle_side_right_01_mid_03",
+        "tentacle_side_right_01_mid_04",
+        "tentacle_side_right_01_mid_05",
+        "tentacle_side_right_01_mid_06",
+        "tentacle_side_right_01_mid_07",
+        "tentacle_side_right_01_mid_08",
+        "tentacle_side_right_01_mid_09",
+        "tentacle_side_right_01_mid_10",
+        "tentacle_side_right_01_tip"
+      ],
+      "side": -1,
+      "group": 2,
+      "index": 4,
+      "major": true,
+      "rest_joints": [
+        [
+          -50.56995,
+          174.06959,
+          -43.34567
+        ],
+        [
+          -54.90451,
+          162.10197,
+          -43.93957
+        ],
+        [
+          -59.23908,
+          150.13435,
+          -45.15174
+        ],
+        [
+          -63.57365,
+          138.16673,
+          -47.05343
+        ],
+        [
+          -67.90821,
+          126.19911,
+          -49.70581
+        ],
+        [
+          -72.24278,
+          114.23149,
+          -53.15584
+        ],
+        [
+          -76.57735,
+          102.26387,
+          -57.43301
+        ],
+        [
+          -80.91191,
+          90.29626,
+          -62.5474
+        ],
+        [
+          -85.07999,
+          78.43963,
+          -68.48893
+        ],
+        [
+          -86.74819,
+          68.24959,
+          -75.22811
+        ],
+        [
+          -85.16472,
+          60.22733,
+          -82.71798
+        ],
+        [
+          -80.32959,
+          54.37284,
+          -90.89737
+        ],
+        [
+          -72.24278,
+          50.68614,
+          -99.69504
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_side_right_02",
+      "bones": [
+        "tentacle_side_right_02_root",
+        "tentacle_side_right_02_mid_01",
+        "tentacle_side_right_02_mid_02",
+        "tentacle_side_right_02_mid_03",
+        "tentacle_side_right_02_mid_04",
+        "tentacle_side_right_02_mid_05",
+        "tentacle_side_right_02_mid_06",
+        "tentacle_side_right_02_mid_07",
+        "tentacle_side_right_02_mid_08",
+        "tentacle_side_right_02_mid_09",
+        "tentacle_side_right_02_mid_10",
+        "tentacle_side_right_02_tip"
+      ],
+      "side": -1,
+      "group": 2,
+      "index": 5,
+      "major": true,
+      "rest_joints": [
+        [
+          -60.68393,
+          174.06959,
+          -36.12139
+        ],
+        [
+          -65.37972,
+          161.17244,
+          -36.71529
+        ],
+        [
+          -70.0755,
+          148.2753,
+          -37.92746
+        ],
+        [
+          -74.77128,
+          135.37816,
+          -39.82915
+        ],
+        [
+          -79.46706,
+          122.48102,
+          -42.48153
+        ],
+        [
+          -84.16284,
+          109.58387,
+          -45.93156
+        ],
+        [
+          -88.85862,
+          96.68673,
+          -50.20873
+        ],
+        [
+          -93.5544,
+          83.78959,
+          -55.32312
+        ],
+        [
+          -98.08369,
+          71.00344,
+          -61.26466
+        ],
+        [
+          -100.11311,
+          59.88387,
+          -68.00383
+        ],
+        [
+          -98.89085,
+          50.93209,
+          -75.4937
+        ],
+        [
+          -94.41693,
+          44.14808,
+          -83.67309
+        ],
+        [
+          -86.69134,
+          39.53186,
+          -92.47076
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_outer_left_01",
+      "bones": [
+        "tentacle_outer_left_01_root",
+        "tentacle_outer_left_01_mid_01",
+        "tentacle_outer_left_01_mid_02",
+        "tentacle_outer_left_01_mid_03",
+        "tentacle_outer_left_01_mid_04",
+        "tentacle_outer_left_01_mid_05",
+        "tentacle_outer_left_01_mid_06",
+        "tentacle_outer_left_01_mid_07",
+        "tentacle_outer_left_01_mid_08",
+        "tentacle_outer_left_01_mid_09",
+        "tentacle_outer_left_01_mid_10",
+        "tentacle_outer_left_01_tip"
+      ],
+      "side": 1,
+      "group": 3,
+      "index": 6,
+      "major": true,
+      "rest_joints": [
+        [
+          70.79792,
+          179.84901,
+          -28.89711
+        ],
+        [
+          76.93856,
+          167.63637,
+          -29.49101
+        ],
+        [
+          83.0792,
+          155.42372,
+          -30.70318
+        ],
+        [
+          89.21983,
+          143.21108,
+          -32.60487
+        ],
+        [
+          95.36047,
+          130.99844,
+          -35.25726
+        ],
+        [
+          101.50111,
+          118.7858,
+          -38.70728
+        ],
+        [
+          107.64174,
+          106.57316,
+          -42.98445
+        ],
+        [
+          113.78238,
+          94.36051,
+          -48.09884
+        ],
+        [
+          119.75653,
+          82.25886,
+          -54.04038
+        ],
+        [
+          123.2308,
+          71.8238,
+          -60.77955
+        ],
+        [
+          123.4534,
+          63.55652,
+          -68.26943
+        ],
+        [
+          120.42433,
+          57.45701,
+          -76.44882
+        ],
+        [
+          114.14359,
+          53.52528,
+          -85.24648
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_outer_left_02",
+      "bones": [
+        "tentacle_outer_left_02_root",
+        "tentacle_outer_left_02_mid_01",
+        "tentacle_outer_left_02_mid_02",
+        "tentacle_outer_left_02_mid_03",
+        "tentacle_outer_left_02_mid_04",
+        "tentacle_outer_left_02_mid_05",
+        "tentacle_outer_left_02_mid_06",
+        "tentacle_outer_left_02_mid_07",
+        "tentacle_outer_left_02_mid_08",
+        "tentacle_outer_left_02_mid_09",
+        "tentacle_outer_left_02_mid_10",
+        "tentacle_outer_left_02_tip"
+      ],
+      "side": 1,
+      "group": 3,
+      "index": 7,
+      "major": true,
+      "rest_joints": [
+        [
+          80.91191,
+          179.84901,
+          -21.67283
+        ],
+        [
+          87.41376,
+          166.63942,
+          -22.26673
+        ],
+        [
+          93.91561,
+          153.42982,
+          -23.4789
+        ],
+        [
+          100.41746,
+          140.22023,
+          -25.38059
+        ],
+        [
+          106.91931,
+          127.01064,
+          -28.03298
+        ],
+        [
+          113.42116,
+          113.80105,
+          -31.483
+        ],
+        [
+          119.92301,
+          100.59145,
+          -35.76018
+        ],
+        [
+          126.42486,
+          87.38186,
+          -40.87456
+        ],
+        [
+          132.76023,
+          74.28326,
+          -46.8161
+        ],
+        [
+          136.59571,
+          62.85125,
+          -53.55528
+        ],
+        [
+          137.17953,
+          53.58701,
+          -61.04515
+        ],
+        [
+          134.51167,
+          46.49056,
+          -69.22454
+        ],
+        [
+          128.59215,
+          41.56188,
+          -78.0222
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_outer_right_01",
+      "bones": [
+        "tentacle_outer_right_01_root",
+        "tentacle_outer_right_01_mid_01",
+        "tentacle_outer_right_01_mid_02",
+        "tentacle_outer_right_01_mid_03",
+        "tentacle_outer_right_01_mid_04",
+        "tentacle_outer_right_01_mid_05",
+        "tentacle_outer_right_01_mid_06",
+        "tentacle_outer_right_01_mid_07",
+        "tentacle_outer_right_01_mid_08",
+        "tentacle_outer_right_01_mid_09",
+        "tentacle_outer_right_01_mid_10",
+        "tentacle_outer_right_01_tip"
+      ],
+      "side": -1,
+      "group": 3,
+      "index": 6,
+      "major": true,
+      "rest_joints": [
+        [
+          -70.79792,
+          179.84901,
+          -28.89711
+        ],
+        [
+          -76.93856,
+          168.46234,
+          -29.49101
+        ],
+        [
+          -83.0792,
+          157.07568,
+          -30.70318
+        ],
+        [
+          -89.21983,
+          145.68901,
+          -32.60487
+        ],
+        [
+          -95.36047,
+          134.30234,
+          -35.25726
+        ],
+        [
+          -101.50111,
+          122.91568,
+          -38.70728
+        ],
+        [
+          -107.64174,
+          111.52901,
+          -42.98445
+        ],
+        [
+          -113.78238,
+          100.14234,
+          -48.09884
+        ],
+        [
+          -119.75653,
+          88.86667,
+          -54.04038
+        ],
+        [
+          -123.2308,
+          79.25758,
+          -60.77955
+        ],
+        [
+          -123.4534,
+          71.81627,
+          -68.26943
+        ],
+        [
+          -120.42433,
+          66.54274,
+          -76.44882
+        ],
+        [
+          -114.14359,
+          63.43699,
+          -85.24648
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_outer_right_02",
+      "bones": [
+        "tentacle_outer_right_02_root",
+        "tentacle_outer_right_02_mid_01",
+        "tentacle_outer_right_02_mid_02",
+        "tentacle_outer_right_02_mid_03",
+        "tentacle_outer_right_02_mid_04",
+        "tentacle_outer_right_02_mid_05",
+        "tentacle_outer_right_02_mid_06",
+        "tentacle_outer_right_02_mid_07",
+        "tentacle_outer_right_02_mid_08",
+        "tentacle_outer_right_02_mid_09",
+        "tentacle_outer_right_02_mid_10",
+        "tentacle_outer_right_02_tip"
+      ],
+      "side": -1,
+      "group": 3,
+      "index": 7,
+      "major": true,
+      "rest_joints": [
+        [
+          -80.91191,
+          179.84901,
+          -21.67283
+        ],
+        [
+          -87.41376,
+          167.53282,
+          -22.26673
+        ],
+        [
+          -93.91561,
+          155.21663,
+          -23.4789
+        ],
+        [
+          -100.41746,
+          142.90044,
+          -25.38059
+        ],
+        [
+          -106.91931,
+          130.58425,
+          -28.03298
+        ],
+        [
+          -113.42116,
+          118.26806,
+          -31.483
+        ],
+        [
+          -119.92301,
+          105.95187,
+          -35.76018
+        ],
+        [
+          -126.42486,
+          93.63568,
+          -40.87456
+        ],
+        [
+          -132.76023,
+          81.43048,
+          -46.8161
+        ],
+        [
+          -136.59571,
+          70.89187,
+          -53.55528
+        ],
+        [
+          -137.17953,
+          62.52104,
+          -61.04515
+        ],
+        [
+          -134.51167,
+          56.31798,
+          -69.22454
+        ],
+        [
+          -128.59215,
+          52.28271,
+          -78.0222
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_fringe_left_01",
+      "bones": [
+        "tentacle_fringe_left_01_root",
+        "tentacle_fringe_left_01_mid_01",
+        "tentacle_fringe_left_01_mid_02",
+        "tentacle_fringe_left_01_mid_03",
+        "tentacle_fringe_left_01_mid_04",
+        "tentacle_fringe_left_01_mid_05",
+        "tentacle_fringe_left_01_mid_06",
+        "tentacle_fringe_left_01_tip"
+      ],
+      "side": 1,
+      "group": 4,
+      "index": 8,
+      "major": false,
+      "rest_joints": [
+        [
+          66.46336,
+          191.40785,
+          2.88971
+        ],
+        [
+          70.2561,
+          180.21022,
+          1.77165
+        ],
+        [
+          74.04885,
+          169.01259,
+          -0.81805
+        ],
+        [
+          77.8416,
+          157.81496,
+          -5.09346
+        ],
+        [
+          81.63434,
+          146.61733,
+          -11.19763
+        ],
+        [
+          85.42709,
+          135.4197,
+          -19.1808
+        ],
+        [
+          86.38698,
+          126.11064,
+          -28.99273
+        ],
+        [
+          80.0833,
+          121.64396,
+          -40.49038
+        ],
+        [
+          66.46336,
+          122.05478,
+          -53.45966
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_fringe_left_02",
+      "bones": [
+        "tentacle_fringe_left_02_root",
+        "tentacle_fringe_left_02_mid_01",
+        "tentacle_fringe_left_02_mid_02",
+        "tentacle_fringe_left_02_mid_03",
+        "tentacle_fringe_left_02_mid_04",
+        "tentacle_fringe_left_02_mid_05",
+        "tentacle_fringe_left_02_mid_06",
+        "tentacle_fringe_left_02_tip"
+      ],
+      "side": 1,
+      "group": 4,
+      "index": 9,
+      "major": false,
+      "rest_joints": [
+        [
+          76.57735,
+          197.18727,
+          11.55884
+        ],
+        [
+          80.37009,
+          183.64175,
+          10.44078
+        ],
+        [
+          84.16284,
+          170.09623,
+          7.85109
+        ],
+        [
+          87.95558,
+          156.55071,
+          3.57568
+        ],
+        [
+          91.74833,
+          143.00519,
+          -2.5285
+        ],
+        [
+          95.54108,
+          129.45967,
+          -10.51167
+        ],
+        [
+          96.50097,
+          117.80272,
+          -20.3236
+        ],
+        [
+          90.19728,
+          110.98815,
+          -31.82125
+        ],
+        [
+          76.57735,
+          109.05108,
+          -44.79052
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_fringe_right_01",
+      "bones": [
+        "tentacle_fringe_right_01_root",
+        "tentacle_fringe_right_01_mid_01",
+        "tentacle_fringe_right_01_mid_02",
+        "tentacle_fringe_right_01_mid_03",
+        "tentacle_fringe_right_01_mid_04",
+        "tentacle_fringe_right_01_mid_05",
+        "tentacle_fringe_right_01_mid_06",
+        "tentacle_fringe_right_01_tip"
+      ],
+      "side": -1,
+      "group": 4,
+      "index": 8,
+      "major": false,
+      "rest_joints": [
+        [
+          -66.46336,
+          191.40785,
+          2.88971
+        ],
+        [
+          -70.2561,
+          180.21022,
+          1.77165
+        ],
+        [
+          -74.04885,
+          169.01259,
+          -0.81805
+        ],
+        [
+          -77.8416,
+          157.81496,
+          -5.09346
+        ],
+        [
+          -81.63434,
+          146.61733,
+          -11.19763
+        ],
+        [
+          -85.42709,
+          135.4197,
+          -19.1808
+        ],
+        [
+          -86.38698,
+          126.11064,
+          -28.99273
+        ],
+        [
+          -80.0833,
+          121.64396,
+          -40.49038
+        ],
+        [
+          -66.46336,
+          122.05478,
+          -53.45966
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_fringe_right_02",
+      "bones": [
+        "tentacle_fringe_right_02_root",
+        "tentacle_fringe_right_02_mid_01",
+        "tentacle_fringe_right_02_mid_02",
+        "tentacle_fringe_right_02_mid_03",
+        "tentacle_fringe_right_02_mid_04",
+        "tentacle_fringe_right_02_mid_05",
+        "tentacle_fringe_right_02_mid_06",
+        "tentacle_fringe_right_02_tip"
+      ],
+      "side": -1,
+      "group": 4,
+      "index": 9,
+      "major": false,
+      "rest_joints": [
+        [
+          -76.57735,
+          197.18727,
+          11.55884
+        ],
+        [
+          -80.37009,
+          183.64175,
+          10.44078
+        ],
+        [
+          -84.16284,
+          170.09623,
+          7.85109
+        ],
+        [
+          -87.95558,
+          156.55071,
+          3.57568
+        ],
+        [
+          -91.74833,
+          143.00519,
+          -2.5285
+        ],
+        [
+          -95.54108,
+          129.45967,
+          -10.51167
+        ],
+        [
+          -96.50097,
+          117.80272,
+          -20.3236
+        ],
+        [
+          -90.19728,
+          110.98815,
+          -31.82125
+        ],
+        [
+          -76.57735,
+          109.05108,
+          -44.79052
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_temporal_left_01",
+      "bones": [
+        "tentacle_temporal_left_01_root",
+        "tentacle_temporal_left_01_mid_01",
+        "tentacle_temporal_left_01_mid_02",
+        "tentacle_temporal_left_01_mid_03",
+        "tentacle_temporal_left_01_mid_04",
+        "tentacle_temporal_left_01_mid_05",
+        "tentacle_temporal_left_01_mid_06",
+        "tentacle_temporal_left_01_tip"
+      ],
+      "side": 1,
+      "group": 5,
+      "index": 10,
+      "major": false,
+      "rest_joints": [
+        [
+          78.0222,
+          211.63583,
+          27.45226
+        ],
+        [
+          83.98223,
+          200.4382,
+          26.33419
+        ],
+        [
+          89.94226,
+          189.24057,
+          23.7445
+        ],
+        [
+          95.90229,
+          178.04294,
+          19.46909
+        ],
+        [
+          101.86232,
+          166.84531,
+          13.36491
+        ],
+        [
+          107.82235,
+          155.64768,
+          5.38175
+        ],
+        [
+          110.94952,
+          146.33861,
+          -4.43019
+        ],
+        [
+          106.81312,
+          141.87194,
+          -15.92783
+        ],
+        [
+          95.36047,
+          142.28276,
+          -28.89711
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_temporal_left_02",
+      "bones": [
+        "tentacle_temporal_left_02_root",
+        "tentacle_temporal_left_02_mid_01",
+        "tentacle_temporal_left_02_mid_02",
+        "tentacle_temporal_left_02_mid_03",
+        "tentacle_temporal_left_02_mid_04",
+        "tentacle_temporal_left_02_mid_05",
+        "tentacle_temporal_left_02_mid_06",
+        "tentacle_temporal_left_02_tip"
+      ],
+      "side": 1,
+      "group": 5,
+      "index": 11,
+      "major": false,
+      "rest_joints": [
+        [
+          88.13619,
+          217.41525,
+          36.12139
+        ],
+        [
+          94.09622,
+          203.86973,
+          35.00332
+        ],
+        [
+          100.05625,
+          190.32421,
+          32.41363
+        ],
+        [
+          106.01628,
+          176.77869,
+          28.13822
+        ],
+        [
+          111.97631,
+          163.23317,
+          22.03405
+        ],
+        [
+          117.93634,
+          149.68765,
+          14.05088
+        ],
+        [
+          121.06351,
+          138.03069,
+          4.23895
+        ],
+        [
+          116.92711,
+          131.21613,
+          -7.2587
+        ],
+        [
+          105.47446,
+          129.27906,
+          -20.22798
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_temporal_right_01",
+      "bones": [
+        "tentacle_temporal_right_01_root",
+        "tentacle_temporal_right_01_mid_01",
+        "tentacle_temporal_right_01_mid_02",
+        "tentacle_temporal_right_01_mid_03",
+        "tentacle_temporal_right_01_mid_04",
+        "tentacle_temporal_right_01_mid_05",
+        "tentacle_temporal_right_01_mid_06",
+        "tentacle_temporal_right_01_tip"
+      ],
+      "side": -1,
+      "group": 5,
+      "index": 10,
+      "major": false,
+      "rest_joints": [
+        [
+          -78.0222,
+          211.63583,
+          27.45226
+        ],
+        [
+          -83.98223,
+          200.4382,
+          26.33419
+        ],
+        [
+          -89.94226,
+          189.24057,
+          23.7445
+        ],
+        [
+          -95.90229,
+          178.04294,
+          19.46909
+        ],
+        [
+          -101.86232,
+          166.84531,
+          13.36491
+        ],
+        [
+          -107.82235,
+          155.64768,
+          5.38175
+        ],
+        [
+          -110.94952,
+          146.33861,
+          -4.43019
+        ],
+        [
+          -106.81312,
+          141.87194,
+          -15.92783
+        ],
+        [
+          -95.36047,
+          142.28276,
+          -28.89711
+        ]
+      ]
+    },
+    {
+      "name": "tentacle_temporal_right_02",
+      "bones": [
+        "tentacle_temporal_right_02_root",
+        "tentacle_temporal_right_02_mid_01",
+        "tentacle_temporal_right_02_mid_02",
+        "tentacle_temporal_right_02_mid_03",
+        "tentacle_temporal_right_02_mid_04",
+        "tentacle_temporal_right_02_mid_05",
+        "tentacle_temporal_right_02_mid_06",
+        "tentacle_temporal_right_02_tip"
+      ],
+      "side": -1,
+      "group": 5,
+      "index": 11,
+      "major": false,
+      "rest_joints": [
+        [
+          -88.13619,
+          217.41525,
+          36.12139
+        ],
+        [
+          -94.09622,
+          203.86973,
+          35.00332
+        ],
+        [
+          -100.05625,
+          190.32421,
+          32.41363
+        ],
+        [
+          -106.01628,
+          176.77869,
+          28.13822
+        ],
+        [
+          -111.97631,
+          163.23317,
+          22.03405
+        ],
+        [
+          -117.93634,
+          149.68765,
+          14.05088
+        ],
+        [
+          -121.06351,
+          138.03069,
+          4.23895
+        ],
+        [
+          -116.92711,
+          131.21613,
+          -7.2587
+        ],
+        [
+          -105.47446,
+          129.27906,
+          -20.22798
+        ]
+      ]
+    }
+  ],
+  "animations": {
+    "idle_awake": {
+      "duration_seconds": 9,
+      "loop": true,
+      "kind": "idle"
+    },
+    "idle_observing": {
+      "duration_seconds": 12,
+      "loop": true,
+      "kind": "idle"
+    },
+    "idle_rage": {
+      "duration_seconds": 5,
+      "loop": true,
+      "kind": "idle"
+    },
+    "idle_dormant": {
+      "duration_seconds": 14,
+      "loop": true,
+      "kind": "idle"
+    },
+    "manifestation": {
+      "duration_seconds": 11,
+      "loop": false,
+      "kind": "performance"
+    },
+    "phase_transition": {
+      "duration_seconds": 7,
+      "loop": false,
+      "kind": "performance"
+    },
+    "stagger": {
+      "duration_seconds": 2.1,
+      "loop": false,
+      "kind": "performance"
+    },
+    "eye_beam_charge": {
+      "duration_seconds": 4,
+      "loop": false,
+      "kind": "performance"
+    },
+    "eye_beam_fire": {
+      "duration_seconds": 3,
+      "loop": false,
+      "kind": "performance"
+    },
+    "dual_eye_burst": {
+      "duration_seconds": 4.2,
+      "loop": false,
+      "kind": "performance"
+    },
+    "tracking_gaze": {
+      "duration_seconds": 8,
+      "loop": false,
+      "kind": "performance"
+    },
+    "psychic_roar": {
+      "duration_seconds": 6,
+      "loop": false,
+      "kind": "performance"
+    },
+    "tentacle_lash": {
+      "duration_seconds": 4.6,
+      "loop": false,
+      "kind": "performance"
+    },
+    "tentacle_fan_attack": {
+      "duration_seconds": 5.6,
+      "loop": false,
+      "kind": "performance"
+    },
+    "eldritch_summon": {
+      "duration_seconds": 8,
+      "loop": false,
+      "kind": "performance"
+    },
+    "head_slam": {
+      "duration_seconds": 6,
+      "loop": false,
+      "kind": "performance"
+    },
+    "death_start": {
+      "duration_seconds": 5,
+      "loop": false,
+      "kind": "death"
+    },
+    "death_collapse": {
+      "duration_seconds": 7,
+      "loop": false,
+      "kind": "death"
+    },
+    "death_end": {
+      "duration_seconds": 5,
+      "loop": false,
+      "kind": "death"
+    },
+    "eye_beam_left": {
+      "duration_seconds": 4.5,
+      "loop": false,
+      "kind": "performance"
+    },
+    "eye_beam_right": {
+      "duration_seconds": 4.5,
+      "loop": false,
+      "kind": "performance"
+    },
+    "tentacle_grasp": {
+      "duration_seconds": 6,
+      "loop": false,
+      "kind": "performance"
+    },
+    "tentacle_recoil": {
+      "duration_seconds": 3.5,
+      "loop": false,
+      "kind": "performance"
+    },
+    "abyssal_pulse": {
+      "duration_seconds": 7,
+      "loop": false,
+      "kind": "performance"
+    }
+  },
+  "procedural_sockets": [
+    "eye_left_aim",
+    "eye_left_socket",
+    "eye_right_aim",
+    "eye_right_socket",
+    "mouth_socket",
+    "tentacle_center_left_01_socket",
+    "tentacle_center_left_02_socket",
+    "tentacle_center_right_01_socket",
+    "tentacle_center_right_02_socket",
+    "tentacle_inner_left_01_socket",
+    "tentacle_inner_left_02_socket",
+    "tentacle_inner_right_01_socket",
+    "tentacle_inner_right_02_socket",
+    "tentacle_side_left_01_socket",
+    "tentacle_side_left_02_socket",
+    "tentacle_side_right_01_socket",
+    "tentacle_side_right_02_socket",
+    "tentacle_outer_left_01_socket",
+    "tentacle_outer_left_02_socket",
+    "tentacle_outer_right_01_socket",
+    "tentacle_outer_right_02_socket",
+    "tentacle_fringe_left_01_socket",
+    "tentacle_fringe_left_02_socket",
+    "tentacle_fringe_right_01_socket",
+    "tentacle_fringe_right_02_socket",
+    "tentacle_temporal_left_01_socket",
+    "tentacle_temporal_left_02_socket",
+    "tentacle_temporal_right_01_socket",
+    "tentacle_temporal_right_02_socket"
+  ],
+  "procedural_bones": [
+    "cranial_breath",
+    "eye_left_aim",
+    "eye_right_aim",
+    "tentacle_center_left_01_root_sway",
+    "tentacle_center_left_01_mid_01_sway",
+    "tentacle_center_left_01_mid_02_sway",
+    "tentacle_center_left_01_mid_03_sway",
+    "tentacle_center_left_01_mid_04_sway",
+    "tentacle_center_left_01_mid_05_sway",
+    "tentacle_center_left_01_mid_06_sway",
+    "tentacle_center_left_01_mid_07_sway",
+    "tentacle_center_left_01_mid_08_sway",
+    "tentacle_center_left_01_mid_09_sway",
+    "tentacle_center_left_01_mid_10_sway",
+    "tentacle_center_left_01_tip_sway",
+    "tentacle_center_left_02_root_sway",
+    "tentacle_center_left_02_mid_01_sway",
+    "tentacle_center_left_02_mid_02_sway",
+    "tentacle_center_left_02_mid_03_sway",
+    "tentacle_center_left_02_mid_04_sway",
+    "tentacle_center_left_02_mid_05_sway",
+    "tentacle_center_left_02_mid_06_sway",
+    "tentacle_center_left_02_mid_07_sway",
+    "tentacle_center_left_02_mid_08_sway",
+    "tentacle_center_left_02_mid_09_sway",
+    "tentacle_center_left_02_mid_10_sway",
+    "tentacle_center_left_02_tip_sway",
+    "tentacle_center_right_01_root_sway",
+    "tentacle_center_right_01_mid_01_sway",
+    "tentacle_center_right_01_mid_02_sway",
+    "tentacle_center_right_01_mid_03_sway",
+    "tentacle_center_right_01_mid_04_sway",
+    "tentacle_center_right_01_mid_05_sway",
+    "tentacle_center_right_01_mid_06_sway",
+    "tentacle_center_right_01_mid_07_sway",
+    "tentacle_center_right_01_mid_08_sway",
+    "tentacle_center_right_01_mid_09_sway",
+    "tentacle_center_right_01_mid_10_sway",
+    "tentacle_center_right_01_tip_sway",
+    "tentacle_center_right_02_root_sway",
+    "tentacle_center_right_02_mid_01_sway",
+    "tentacle_center_right_02_mid_02_sway",
+    "tentacle_center_right_02_mid_03_sway",
+    "tentacle_center_right_02_mid_04_sway",
+    "tentacle_center_right_02_mid_05_sway",
+    "tentacle_center_right_02_mid_06_sway",
+    "tentacle_center_right_02_mid_07_sway",
+    "tentacle_center_right_02_mid_08_sway",
+    "tentacle_center_right_02_mid_09_sway",
+    "tentacle_center_right_02_mid_10_sway",
+    "tentacle_center_right_02_tip_sway",
+    "tentacle_inner_left_01_root_sway",
+    "tentacle_inner_left_01_mid_01_sway",
+    "tentacle_inner_left_01_mid_02_sway",
+    "tentacle_inner_left_01_mid_03_sway",
+    "tentacle_inner_left_01_mid_04_sway",
+    "tentacle_inner_left_01_mid_05_sway",
+    "tentacle_inner_left_01_mid_06_sway",
+    "tentacle_inner_left_01_mid_07_sway",
+    "tentacle_inner_left_01_mid_08_sway",
+    "tentacle_inner_left_01_mid_09_sway",
+    "tentacle_inner_left_01_mid_10_sway",
+    "tentacle_inner_left_01_tip_sway",
+    "tentacle_inner_left_02_root_sway",
+    "tentacle_inner_left_02_mid_01_sway",
+    "tentacle_inner_left_02_mid_02_sway",
+    "tentacle_inner_left_02_mid_03_sway",
+    "tentacle_inner_left_02_mid_04_sway",
+    "tentacle_inner_left_02_mid_05_sway",
+    "tentacle_inner_left_02_mid_06_sway",
+    "tentacle_inner_left_02_mid_07_sway",
+    "tentacle_inner_left_02_mid_08_sway",
+    "tentacle_inner_left_02_mid_09_sway",
+    "tentacle_inner_left_02_mid_10_sway",
+    "tentacle_inner_left_02_tip_sway",
+    "tentacle_inner_right_01_root_sway",
+    "tentacle_inner_right_01_mid_01_sway",
+    "tentacle_inner_right_01_mid_02_sway",
+    "tentacle_inner_right_01_mid_03_sway",
+    "tentacle_inner_right_01_mid_04_sway",
+    "tentacle_inner_right_01_mid_05_sway",
+    "tentacle_inner_right_01_mid_06_sway",
+    "tentacle_inner_right_01_mid_07_sway",
+    "tentacle_inner_right_01_mid_08_sway",
+    "tentacle_inner_right_01_mid_09_sway",
+    "tentacle_inner_right_01_mid_10_sway",
+    "tentacle_inner_right_01_tip_sway",
+    "tentacle_inner_right_02_root_sway",
+    "tentacle_inner_right_02_mid_01_sway",
+    "tentacle_inner_right_02_mid_02_sway",
+    "tentacle_inner_right_02_mid_03_sway",
+    "tentacle_inner_right_02_mid_04_sway",
+    "tentacle_inner_right_02_mid_05_sway",
+    "tentacle_inner_right_02_mid_06_sway",
+    "tentacle_inner_right_02_mid_07_sway",
+    "tentacle_inner_right_02_mid_08_sway",
+    "tentacle_inner_right_02_mid_09_sway",
+    "tentacle_inner_right_02_mid_10_sway",
+    "tentacle_inner_right_02_tip_sway",
+    "tentacle_side_left_01_root_sway",
+    "tentacle_side_left_01_mid_01_sway",
+    "tentacle_side_left_01_mid_02_sway",
+    "tentacle_side_left_01_mid_03_sway",
+    "tentacle_side_left_01_mid_04_sway",
+    "tentacle_side_left_01_mid_05_sway",
+    "tentacle_side_left_01_mid_06_sway",
+    "tentacle_side_left_01_mid_07_sway",
+    "tentacle_side_left_01_mid_08_sway",
+    "tentacle_side_left_01_mid_09_sway",
+    "tentacle_side_left_01_mid_10_sway",
+    "tentacle_side_left_01_tip_sway",
+    "tentacle_side_left_02_root_sway",
+    "tentacle_side_left_02_mid_01_sway",
+    "tentacle_side_left_02_mid_02_sway",
+    "tentacle_side_left_02_mid_03_sway",
+    "tentacle_side_left_02_mid_04_sway",
+    "tentacle_side_left_02_mid_05_sway",
+    "tentacle_side_left_02_mid_06_sway",
+    "tentacle_side_left_02_mid_07_sway",
+    "tentacle_side_left_02_mid_08_sway",
+    "tentacle_side_left_02_mid_09_sway",
+    "tentacle_side_left_02_mid_10_sway",
+    "tentacle_side_left_02_tip_sway",
+    "tentacle_side_right_01_root_sway",
+    "tentacle_side_right_01_mid_01_sway",
+    "tentacle_side_right_01_mid_02_sway",
+    "tentacle_side_right_01_mid_03_sway",
+    "tentacle_side_right_01_mid_04_sway",
+    "tentacle_side_right_01_mid_05_sway",
+    "tentacle_side_right_01_mid_06_sway",
+    "tentacle_side_right_01_mid_07_sway",
+    "tentacle_side_right_01_mid_08_sway",
+    "tentacle_side_right_01_mid_09_sway",
+    "tentacle_side_right_01_mid_10_sway",
+    "tentacle_side_right_01_tip_sway",
+    "tentacle_side_right_02_root_sway",
+    "tentacle_side_right_02_mid_01_sway",
+    "tentacle_side_right_02_mid_02_sway",
+    "tentacle_side_right_02_mid_03_sway",
+    "tentacle_side_right_02_mid_04_sway",
+    "tentacle_side_right_02_mid_05_sway",
+    "tentacle_side_right_02_mid_06_sway",
+    "tentacle_side_right_02_mid_07_sway",
+    "tentacle_side_right_02_mid_08_sway",
+    "tentacle_side_right_02_mid_09_sway",
+    "tentacle_side_right_02_mid_10_sway",
+    "tentacle_side_right_02_tip_sway",
+    "tentacle_outer_left_01_root_sway",
+    "tentacle_outer_left_01_mid_01_sway",
+    "tentacle_outer_left_01_mid_02_sway",
+    "tentacle_outer_left_01_mid_03_sway",
+    "tentacle_outer_left_01_mid_04_sway",
+    "tentacle_outer_left_01_mid_05_sway",
+    "tentacle_outer_left_01_mid_06_sway",
+    "tentacle_outer_left_01_mid_07_sway",
+    "tentacle_outer_left_01_mid_08_sway",
+    "tentacle_outer_left_01_mid_09_sway",
+    "tentacle_outer_left_01_mid_10_sway",
+    "tentacle_outer_left_01_tip_sway",
+    "tentacle_outer_left_02_root_sway",
+    "tentacle_outer_left_02_mid_01_sway",
+    "tentacle_outer_left_02_mid_02_sway",
+    "tentacle_outer_left_02_mid_03_sway",
+    "tentacle_outer_left_02_mid_04_sway",
+    "tentacle_outer_left_02_mid_05_sway",
+    "tentacle_outer_left_02_mid_06_sway",
+    "tentacle_outer_left_02_mid_07_sway",
+    "tentacle_outer_left_02_mid_08_sway",
+    "tentacle_outer_left_02_mid_09_sway",
+    "tentacle_outer_left_02_mid_10_sway",
+    "tentacle_outer_left_02_tip_sway",
+    "tentacle_outer_right_01_root_sway",
+    "tentacle_outer_right_01_mid_01_sway",
+    "tentacle_outer_right_01_mid_02_sway",
+    "tentacle_outer_right_01_mid_03_sway",
+    "tentacle_outer_right_01_mid_04_sway",
+    "tentacle_outer_right_01_mid_05_sway",
+    "tentacle_outer_right_01_mid_06_sway",
+    "tentacle_outer_right_01_mid_07_sway",
+    "tentacle_outer_right_01_mid_08_sway",
+    "tentacle_outer_right_01_mid_09_sway",
+    "tentacle_outer_right_01_mid_10_sway",
+    "tentacle_outer_right_01_tip_sway",
+    "tentacle_outer_right_02_root_sway",
+    "tentacle_outer_right_02_mid_01_sway",
+    "tentacle_outer_right_02_mid_02_sway",
+    "tentacle_outer_right_02_mid_03_sway",
+    "tentacle_outer_right_02_mid_04_sway",
+    "tentacle_outer_right_02_mid_05_sway",
+    "tentacle_outer_right_02_mid_06_sway",
+    "tentacle_outer_right_02_mid_07_sway",
+    "tentacle_outer_right_02_mid_08_sway",
+    "tentacle_outer_right_02_mid_09_sway",
+    "tentacle_outer_right_02_mid_10_sway",
+    "tentacle_outer_right_02_tip_sway",
+    "tentacle_fringe_left_01_root_sway",
+    "tentacle_fringe_left_01_mid_01_sway",
+    "tentacle_fringe_left_01_mid_02_sway",
+    "tentacle_fringe_left_01_mid_03_sway",
+    "tentacle_fringe_left_01_mid_04_sway",
+    "tentacle_fringe_left_01_mid_05_sway",
+    "tentacle_fringe_left_01_mid_06_sway",
+    "tentacle_fringe_left_01_tip_sway",
+    "tentacle_fringe_left_02_root_sway",
+    "tentacle_fringe_left_02_mid_01_sway",
+    "tentacle_fringe_left_02_mid_02_sway",
+    "tentacle_fringe_left_02_mid_03_sway",
+    "tentacle_fringe_left_02_mid_04_sway",
+    "tentacle_fringe_left_02_mid_05_sway",
+    "tentacle_fringe_left_02_mid_06_sway",
+    "tentacle_fringe_left_02_tip_sway",
+    "tentacle_fringe_right_01_root_sway",
+    "tentacle_fringe_right_01_mid_01_sway",
+    "tentacle_fringe_right_01_mid_02_sway",
+    "tentacle_fringe_right_01_mid_03_sway",
+    "tentacle_fringe_right_01_mid_04_sway",
+    "tentacle_fringe_right_01_mid_05_sway",
+    "tentacle_fringe_right_01_mid_06_sway",
+    "tentacle_fringe_right_01_tip_sway",
+    "tentacle_fringe_right_02_root_sway",
+    "tentacle_fringe_right_02_mid_01_sway",
+    "tentacle_fringe_right_02_mid_02_sway",
+    "tentacle_fringe_right_02_mid_03_sway",
+    "tentacle_fringe_right_02_mid_04_sway",
+    "tentacle_fringe_right_02_mid_05_sway",
+    "tentacle_fringe_right_02_mid_06_sway",
+    "tentacle_fringe_right_02_tip_sway",
+    "tentacle_temporal_left_01_root_sway",
+    "tentacle_temporal_left_01_mid_01_sway",
+    "tentacle_temporal_left_01_mid_02_sway",
+    "tentacle_temporal_left_01_mid_03_sway",
+    "tentacle_temporal_left_01_mid_04_sway",
+    "tentacle_temporal_left_01_mid_05_sway",
+    "tentacle_temporal_left_01_mid_06_sway",
+    "tentacle_temporal_left_01_tip_sway",
+    "tentacle_temporal_left_02_root_sway",
+    "tentacle_temporal_left_02_mid_01_sway",
+    "tentacle_temporal_left_02_mid_02_sway",
+    "tentacle_temporal_left_02_mid_03_sway",
+    "tentacle_temporal_left_02_mid_04_sway",
+    "tentacle_temporal_left_02_mid_05_sway",
+    "tentacle_temporal_left_02_mid_06_sway",
+    "tentacle_temporal_left_02_tip_sway",
+    "tentacle_temporal_right_01_root_sway",
+    "tentacle_temporal_right_01_mid_01_sway",
+    "tentacle_temporal_right_01_mid_02_sway",
+    "tentacle_temporal_right_01_mid_03_sway",
+    "tentacle_temporal_right_01_mid_04_sway",
+    "tentacle_temporal_right_01_mid_05_sway",
+    "tentacle_temporal_right_01_mid_06_sway",
+    "tentacle_temporal_right_01_tip_sway",
+    "tentacle_temporal_right_02_root_sway",
+    "tentacle_temporal_right_02_mid_01_sway",
+    "tentacle_temporal_right_02_mid_02_sway",
+    "tentacle_temporal_right_02_mid_03_sway",
+    "tentacle_temporal_right_02_mid_04_sway",
+    "tentacle_temporal_right_02_mid_05_sway",
+    "tentacle_temporal_right_02_mid_06_sway",
+    "tentacle_temporal_right_02_tip_sway"
+  ]
+}

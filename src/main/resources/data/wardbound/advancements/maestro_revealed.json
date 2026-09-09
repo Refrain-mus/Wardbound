@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:score_beyond_the_margin"
+    },
+    "title": {
+      "translate": "wardbound.adv.maestro_revealed"
+    },
+    "description": {
+      "translate": "wardbound.adv.maestro_revealed.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:root_secrets"
+}

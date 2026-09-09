@@ -1,0 +1,324 @@
+{
+  "units": "seconds",
+  "visual_only": true,
+  "clips": {
+    "intro": [
+      {
+        "time_seconds": 0.4,
+        "socket": "floor_cast_socket",
+        "effect": "ritual_ring"
+      },
+      {
+        "time_seconds": 4.6,
+        "socket": "chest_socket",
+        "effect": "seal_glint"
+      }
+    ],
+    "phase_transition": [
+      {
+        "time_seconds": 3.3,
+        "socket": "back_socket",
+        "effect": "spectral_score"
+      },
+      {
+        "time_seconds": 3.5,
+        "socket": "halo_socket",
+        "effect": "halo"
+      },
+      {
+        "time_seconds": 4.2,
+        "socket": "floor_cast_socket",
+        "effect": "phase_ring"
+      }
+    ],
+    "conduct_loop": [
+      {
+        "time_seconds": 0.9,
+        "socket": "baton_tip_socket",
+        "effect": "downbeat"
+      },
+      {
+        "time_seconds": 1.6,
+        "socket": "conducting_arc_left_socket",
+        "effect": "conducting_arc"
+      },
+      {
+        "time_seconds": 2.35,
+        "socket": "baton_tip_socket",
+        "effect": "conducting_arc"
+      }
+    ],
+    "conduct_strike": [
+      {
+        "time_seconds": 1.28,
+        "socket": "baton_tip_socket",
+        "effect": "cutting_arc"
+      }
+    ],
+    "left_hand_cast": [
+      {
+        "time_seconds": 1.5,
+        "socket": "hand_left_socket",
+        "effect": "hand_cast"
+      }
+    ],
+    "right_hand_cast": [
+      {
+        "time_seconds": 1.5,
+        "socket": "hand_right_socket",
+        "effect": "hand_cast"
+      }
+    ],
+    "dual_hand_cast": [
+      {
+        "time_seconds": 2.18,
+        "socket": "hand_left_socket",
+        "effect": "dual_cast"
+      },
+      {
+        "time_seconds": 2.18,
+        "socket": "hand_right_socket",
+        "effect": "dual_cast"
+      }
+    ],
+    "command_gesture": [
+      {
+        "time_seconds": 1.75,
+        "socket": "finger_left_index_socket",
+        "effect": "command_marker"
+      }
+    ],
+    "summoning_gesture": [
+      {
+        "time_seconds": 2.6,
+        "socket": "floor_cast_socket",
+        "effect": "summon_circle"
+      },
+      {
+        "time_seconds": 3.9,
+        "socket": "back_socket",
+        "effect": "spectral_score"
+      }
+    ],
+    "shockwave_release": [
+      {
+        "time_seconds": 2.0,
+        "socket": "floor_cast_socket",
+        "effect": "shockwave"
+      }
+    ],
+    "note_barrage": [
+      {
+        "time_seconds": 1.15,
+        "socket": "baton_tip_socket",
+        "effect": "note_bolt"
+      },
+      {
+        "time_seconds": 2.15,
+        "socket": "baton_tip_socket",
+        "effect": "note_bolt"
+      },
+      {
+        "time_seconds": 3.15,
+        "socket": "baton_tip_socket",
+        "effect": "note_bolt"
+      },
+      {
+        "time_seconds": 4.15,
+        "socket": "baton_tip_socket",
+        "effect": "note_bolt"
+      }
+    ],
+    "wave_attack": [
+      {
+        "time_seconds": 1.94,
+        "socket": "sound_wave_socket",
+        "effect": "wave_front"
+      }
+    ],
+    "slam_attack": [
+      {
+        "time_seconds": 2.3,
+        "socket": "floor_cast_socket",
+        "effect": "slam_impact"
+      }
+    ],
+    "dash_lunge": [
+      {
+        "time_seconds": 0.94,
+        "socket": "foot_right_socket",
+        "effect": "dash_release"
+      },
+      {
+        "time_seconds": 1.05,
+        "socket": "baton_tip_socket",
+        "effect": "lunge_arc"
+      }
+    ],
+    "grand_crescendo": [
+      {
+        "time_seconds": 3.96,
+        "socket": "halo_socket",
+        "effect": "crescendo_halo"
+      },
+      {
+        "time_seconds": 5.49,
+        "socket": "back_socket",
+        "effect": "grand_score"
+      },
+      {
+        "time_seconds": 7.56,
+        "socket": "stage_ring_socket",
+        "effect": "grand_release"
+      }
+    ],
+    "silence_gesture": [
+      {
+        "time_seconds": 1.6,
+        "socket": "head_socket",
+        "effect": "silence_seal"
+      }
+    ],
+    "death_start": [
+      {
+        "time_seconds": 2.6,
+        "socket": "chest_socket",
+        "effect": "seal_break"
+      }
+    ],
+    "death_fall": [
+      {
+        "time_seconds": 3.59,
+        "socket": "floor_cast_socket",
+        "effect": "fall_dust"
+      }
+    ],
+    "baton_flourish": [
+      {
+        "time_seconds": 1.55,
+        "socket": "baton_tip_socket",
+        "effect": "cutting_arc"
+      }
+    ],
+    "accusation": [
+      {
+        "time_seconds": 1.45,
+        "socket": "finger_left_index_socket",
+        "effect": "note_bolt"
+      }
+    ],
+    "counter_guard": [
+      {
+        "time_seconds": 1.9,
+        "socket": "chest_socket",
+        "effect": "seal_glint"
+      }
+    ],
+    "counter_riposte": [
+      {
+        "time_seconds": 1.3,
+        "socket": "baton_tip_socket",
+        "effect": "cutting_arc"
+      }
+    ],
+    "staccato_combo": [
+      {
+        "time_seconds": 1.05,
+        "socket": "baton_tip_socket",
+        "effect": "note_bolt"
+      },
+      {
+        "time_seconds": 1.93,
+        "socket": "baton_tip_socket",
+        "effect": "note_bolt"
+      },
+      {
+        "time_seconds": 2.9,
+        "socket": "baton_tip_socket",
+        "effect": "note_bolt"
+      }
+    ],
+    "legato_sweep": [
+      {
+        "time_seconds": 2.4,
+        "socket": "hand_left_socket",
+        "effect": "wave_front"
+      },
+      {
+        "time_seconds": 3.8,
+        "socket": "hand_right_socket",
+        "effect": "wave_front"
+      }
+    ],
+    "orchestra_summon": [
+      {
+        "time_seconds": 4.34,
+        "socket": "orchestra_00_socket",
+        "effect": "ritual_ring"
+      },
+      {
+        "time_seconds": 4.34,
+        "socket": "orchestra_01_socket",
+        "effect": "ritual_ring"
+      },
+      {
+        "time_seconds": 4.34,
+        "socket": "orchestra_02_socket",
+        "effect": "ritual_ring"
+      },
+      {
+        "time_seconds": 4.34,
+        "socket": "orchestra_03_socket",
+        "effect": "ritual_ring"
+      },
+      {
+        "time_seconds": 4.34,
+        "socket": "orchestra_04_socket",
+        "effect": "ritual_ring"
+      },
+      {
+        "time_seconds": 4.34,
+        "socket": "orchestra_05_socket",
+        "effect": "ritual_ring"
+      },
+      {
+        "time_seconds": 4.34,
+        "socket": "orchestra_06_socket",
+        "effect": "ritual_ring"
+      },
+      {
+        "time_seconds": 4.34,
+        "socket": "orchestra_07_socket",
+        "effect": "ritual_ring"
+      }
+    ],
+    "silence_field": [
+      {
+        "time_seconds": 3.8,
+        "socket": "stage_ring_socket",
+        "effect": "phase_ring"
+      }
+    ],
+    "levitation_loop": [
+      {
+        "time_seconds": 2,
+        "socket": "halo_socket",
+        "effect": "halo"
+      }
+    ],
+    "levitation_end": [
+      {
+        "time_seconds": 1.8,
+        "socket": "floor_cast_socket",
+        "effect": "fall_dust"
+      }
+    ],
+    "curtain_call": [
+      {
+        "time_seconds": 1.25,
+        "socket": "back_socket",
+        "effect": "spectral_score"
+      }
+    ]
+  }
+}

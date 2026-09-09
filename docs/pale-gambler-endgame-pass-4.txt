@@ -1,0 +1,32 @@
+WARD BOUND — PALE GAMBLER ENDGAME PASS 4
+
+This pass turns the Gambler's late fight into a mechanical final exam rather than a larger random attack pool.
+
+NEW HANDS
+- Dead Man's Draw: four coffin cards are collected in sequence; phase 3 finishes with an opposite-card double collection.
+- False Tell: the House deliberately presents false rays; only the final reveal identifies the real red cuts and teal bluffs.
+- Suit Call: each participating player receives a personal Spade/Heart/Club/Diamond seal. Their own seal is highlighted privately.
+- Royal Flush: five large floor cards form a hand; selected pairs are collected over multiple waves.
+- The Last Deal: a forced six-stage phase-3 exam combining Dealer Cross, Split Pot, Double Down, Mirror Debt, Royal sanctuary and False Tell.
+
+ENDGAME SYSTEMS
+- House Read: consecutive clean hands progressively expose the Gambler and increase the punish multiplier.
+- Final Tell: completing The Last Deal cleanly opens the largest vulnerability window.
+- ALL IN: below 8% vitality the Gambler removes most recovery, increases outgoing pressure and uses a lethal endgame hand pool.
+
+PRESENTATION
+- New authored textures: dead_mans_draw, false_tell, four suit seals, royal_flush, last_deal, all_in, house_read, final_tell.
+- New GeckoLib animations for all five new hands.
+- Boss bar now displays the live hand, House Read level, Final Tell and ALL IN state.
+- All 512 authoritative telegraph cues may now render; ornate floor geometry is no longer silently cut at 260.
+
+ARM / HAND FIX
+- The model faces -Z. Positive X arm pitch is therefore the real forward cast direction.
+- Combat animations have been normalized to positive-X forward keyframes.
+- Renderer runtime clamps the arm/hand chain into the forward hemisphere and biases shoulder/hand pivots toward the coat front.
+- No non-idle Gambler arm/hand keyframe retains a negative-X attack pitch.
+
+ROBUSTNESS
+- Texture FX list has a hard 1280 cosmetic safety cap.
+- GamblerTextureFx flushes only render types it owns instead of globally ending the entire client buffer batch.
+- Master cue packet remains capped at 512 sender-side, while the Gambler renderer now consumes that complete cap.

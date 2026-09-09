@@ -1,0 +1,49 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.sealwrights_key.idle": {
+      "loop": true,
+      "animation_length": 4.0,
+      "bones": {
+        "crown": {
+          "rotation": {
+            "0.0": [
+              0,
+              -1,
+              0
+            ],
+            "2.0": [
+              0,
+              1.5,
+              0
+            ],
+            "4.0": [
+              0,
+              -1,
+              0
+            ]
+          }
+        },
+        "ward_gem": {
+          "scale": {
+            "0.0": [
+              1,
+              1,
+              1
+            ],
+            "2.0": [
+              1.04,
+              1.04,
+              1.04
+            ],
+            "4.0": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      }
+    }
+  }
+}

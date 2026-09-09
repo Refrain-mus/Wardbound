@@ -1,0 +1,891 @@
+{
+  "pin_rise": {
+    "subtitle": "wardbound.subtitle.pin_rise",
+    "sounds": [
+      {
+        "name": "wardbound:lock/pin_rise"
+      }
+    ]
+  },
+  "pin_set": {
+    "subtitle": "wardbound.subtitle.pin_set",
+    "sounds": [
+      {
+        "name": "wardbound:lock/pin_set"
+      }
+    ]
+  },
+  "pin_drop": {
+    "subtitle": "wardbound.subtitle.pin_drop",
+    "sounds": [
+      {
+        "name": "wardbound:lock/pin_drop"
+      }
+    ]
+  },
+  "overset": {
+    "subtitle": "wardbound.subtitle.overset",
+    "sounds": [
+      {
+        "name": "wardbound:lock/overset"
+      }
+    ]
+  },
+  "plug_turn": {
+    "subtitle": "wardbound.subtitle.plug_turn",
+    "sounds": [
+      {
+        "name": "wardbound:lock/plug_turn"
+      }
+    ]
+  },
+  "wrench_slip": {
+    "subtitle": "wardbound.subtitle.wrench_slip",
+    "sounds": [
+      {
+        "name": "wardbound:lock/wrench_slip"
+      }
+    ]
+  },
+  "ward_open": {
+    "subtitle": "wardbound.subtitle.ward_open",
+    "sounds": [
+      {
+        "name": "wardbound:lock/ward_open"
+      }
+    ]
+  },
+  "ward_seal": {
+    "subtitle": "wardbound.subtitle.ward_seal",
+    "sounds": [
+      {
+        "name": "wardbound:lock/ward_seal"
+      }
+    ]
+  },
+  "ward_break": {
+    "subtitle": "wardbound.subtitle.ward_break",
+    "sounds": [
+      {
+        "name": "wardbound:lock/ward_break"
+      }
+    ]
+  },
+  "ward_fail": {
+    "subtitle": "wardbound.subtitle.ward_fail",
+    "sounds": [
+      {
+        "name": "wardbound:lock/ward_fail"
+      }
+    ]
+  },
+  "mark": {
+    "subtitle": "wardbound.subtitle.mark",
+    "sounds": [
+      {
+        "name": "wardbound:lock/mark"
+      }
+    ]
+  },
+  "mark_bad": {
+    "subtitle": "wardbound.subtitle.mark_bad",
+    "sounds": [
+      {
+        "name": "wardbound:lock/mark_bad"
+      }
+    ]
+  },
+  "life_lost": {
+    "subtitle": "wardbound.subtitle.life_lost",
+    "sounds": [
+      {
+        "name": "wardbound:lock/life_lost"
+      }
+    ]
+  },
+  "key_turn": {
+    "subtitle": "wardbound.subtitle.key_turn",
+    "sounds": [
+      {
+        "name": "wardbound:lock/key_turn"
+      }
+    ]
+  },
+  "heartbeat": {
+    "subtitle": "wardbound.subtitle.heartbeat",
+    "sounds": [
+      {
+        "name": "wardbound:lock/heartbeat"
+      }
+    ]
+  },
+  "heart_use": {
+    "subtitle": "wardbound.subtitle.heart_use",
+    "sounds": [
+      {
+        "name": "wardbound:lock/heart_use"
+      }
+    ]
+  },
+  "charm_spent": {
+    "subtitle": "wardbound.subtitle.charm_spent",
+    "sounds": [
+      {
+        "name": "wardbound:lock/charm_spent"
+      }
+    ]
+  },
+  "stone_turn": {
+    "subtitle": "wardbound.subtitle.stone_turn",
+    "sounds": [
+      {
+        "name": "wardbound:lock/stone_turn"
+      }
+    ]
+  },
+  "root_grow": {
+    "subtitle": "wardbound.subtitle.root_grow",
+    "sounds": [
+      {
+        "name": "wardbound:lock/root_grow"
+      }
+    ]
+  },
+  "root_wither": {
+    "subtitle": "wardbound.subtitle.root_wither",
+    "sounds": [
+      {
+        "name": "wardbound:lock/root_wither"
+      }
+    ]
+  },
+  "eye_open": {
+    "subtitle": "wardbound.subtitle.eye_open",
+    "sounds": [
+      {
+        "name": "wardbound:lock/eye_open"
+      }
+    ]
+  },
+  "eye_hover": {
+    "subtitle": "wardbound.subtitle.eye_hover",
+    "sounds": [
+      {
+        "name": "wardbound:lock/eye_hover"
+      }
+    ]
+  },
+  "eye_choose": {
+    "subtitle": "wardbound.subtitle.eye_choose",
+    "sounds": [
+      {
+        "name": "wardbound:lock/eye_choose"
+      }
+    ]
+  },
+  "ward_hum": {
+    "subtitle": "wardbound.subtitle.ward_hum",
+    "sounds": [
+      {
+        "name": "wardbound:lock/ward_hum"
+      }
+    ]
+  },
+  "ward_hum_unsigned": {
+    "subtitle": "wardbound.subtitle.ward_hum_unsigned",
+    "sounds": [
+      {
+        "name": "wardbound:lock/ward_hum_unsigned"
+      }
+    ]
+  },
+  "surface_still": {
+    "subtitle": "wardbound.subtitle.surface_still",
+    "sounds": [
+      {
+        "name": "wardbound:lock/surface_still"
+      }
+    ]
+  },
+  "surface_close": {
+    "subtitle": "wardbound.subtitle.surface_close",
+    "sounds": [
+      {
+        "name": "wardbound:lock/surface_close"
+      }
+    ]
+  },
+  "yoke_strain": {
+    "subtitle": "wardbound.subtitle.yoke_strain",
+    "sounds": [
+      {
+        "name": "wardbound:lock/yoke_strain"
+      }
+    ]
+  },
+  "eye_close": {
+    "subtitle": "wardbound.subtitle.eye_close",
+    "sounds": [
+      {
+        "name": "wardbound:lock/eye_close"
+      }
+    ]
+  },
+  "master_motif": {
+    "subtitle": "wardbound.subtitle.master_motif",
+    "sounds": [
+      {
+        "name": "wardbound:lock/master_motif"
+      }
+    ]
+  },
+  "braid_pull": {
+    "sounds": [
+      {
+        "name": "wardbound:lock/braid_pull"
+      }
+    ]
+  },
+  "braid_settle": {
+    "sounds": [
+      {
+        "name": "wardbound:lock/braid_settle"
+      }
+    ]
+  },
+  "braid_rebuke": {
+    "sounds": [
+      {
+        "name": "wardbound:lock/braid_rebuke"
+      }
+    ]
+  },
+  "veilstep_step": {
+    "sounds": [
+      {
+        "name": "wardbound:lock/veilstep_step"
+      }
+    ]
+  },
+  "veilstep_chime": {
+    "sounds": [
+      {
+        "name": "wardbound:lock/veilstep_chime"
+      }
+    ]
+  },
+  "veilstep_rebuke": {
+    "sounds": [
+      {
+        "name": "wardbound:lock/veilstep_rebuke"
+      }
+    ]
+  },
+  "ledger_loot_ambient": {
+    "sounds": [
+      {
+        "name": "wardbound:ledger/loot_ambient"
+      }
+    ]
+  },
+  "ledger_chronicle_ambient": {
+    "sounds": [
+      {
+        "name": "wardbound:ledger/chronicle_ambient"
+      }
+    ]
+  },
+  "ledger_last_ward_ambient": {
+    "sounds": [
+      {
+        "name": "wardbound:ledger/last_ward_ambient"
+      }
+    ]
+  },
+  "ledger_grimoire_ambient": {
+    "sounds": [
+      {
+        "name": "wardbound:ledger/grimoire_ambient"
+      }
+    ]
+  },
+  "ledger_status_ambient": {
+    "sounds": [
+      {
+        "name": "wardbound:ledger/status_ambient"
+      }
+    ]
+  },
+  "gambler_invitation_reveal": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/invitation_reveal"
+      }
+    ]
+  },
+  "gambler_table_open": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/table_open"
+      }
+    ]
+  },
+  "gambler_ace_oath": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/ace_oath"
+      }
+    ]
+  },
+  "gambler_choice_bind": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/choice_bind"
+      }
+    ]
+  },
+  "gambler_boss_intro": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/boss_intro"
+      }
+    ]
+  },
+  "gambler_boss_theme": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/boss_theme",
+        "stream": true
+      }
+    ]
+  },
+  "gambler_phase_break": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/phase_break"
+      }
+    ]
+  },
+  "gambler_royal_cast": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/royal_cast"
+      }
+    ]
+  },
+  "gambler_death_collapse": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/death_collapse"
+      }
+    ]
+  },
+  "gambler_fan_cast": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/fan_cast"
+      }
+    ]
+  },
+  "gambler_fan_impact": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/fan_impact"
+      }
+    ]
+  },
+  "gambler_ring_cast": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/ring_cast"
+      }
+    ]
+  },
+  "gambler_ring_impact": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/ring_impact"
+      }
+    ]
+  },
+  "gambler_card_flip": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/card_flip"
+      }
+    ]
+  },
+  "gambler_card_slam": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/card_slam"
+      }
+    ]
+  },
+  "gambler_teeth_rise": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/teeth_rise"
+      }
+    ]
+  },
+  "gambler_starfall_cast": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/starfall_cast"
+      }
+    ]
+  },
+  "gambler_starfall_impact": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/starfall_impact"
+      }
+    ]
+  },
+  "gambler_wall_rip": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/wall_rip"
+      }
+    ]
+  },
+  "gambler_spiral_cast": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/spiral_cast"
+      }
+    ]
+  },
+  "gambler_ambient_detonation": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/ambient_detonation"
+      }
+    ]
+  },
+  "gambler_voice_1": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/voice_1"
+      }
+    ]
+  },
+  "gambler_voice_2": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/voice_2"
+      }
+    ]
+  },
+  "gambler_voice_3": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/voice_3"
+      }
+    ]
+  },
+  "gambler_hurt_1": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/hurt_1"
+      }
+    ]
+  },
+  "gambler_hurt_2": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/hurt_2"
+      }
+    ]
+  },
+  "gambler_hurt_3": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/hurt_3"
+      }
+    ]
+  },
+  "gambler_ambience_1": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/ambience_1"
+      }
+    ]
+  },
+  "gambler_ambience_2": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/ambience_2"
+      }
+    ]
+  },
+  "gambler_ambience_3": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/ambience_3"
+      }
+    ]
+  },
+  "curator_manifestation": {
+    "subtitle": "subtitles.wardbound.curator_manifestation",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/manifestation",
+        "stream": false
+      }
+    ]
+  },
+  "curator_archive_opening": {
+    "subtitle": "subtitles.wardbound.curator_archive_opening",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/archive_opening",
+        "stream": false
+      }
+    ]
+  },
+  "curator_paper_movement": {
+    "subtitle": "subtitles.wardbound.curator_paper_movement",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/paper_movement",
+        "stream": false
+      }
+    ]
+  },
+  "curator_ash_sweep": {
+    "subtitle": "subtitles.wardbound.curator_ash_sweep",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/ash_sweep",
+        "stream": false
+      }
+    ]
+  },
+  "curator_seal_activation": {
+    "subtitle": "subtitles.wardbound.curator_seal_activation",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/seal_activation",
+        "stream": false
+      }
+    ]
+  },
+  "curator_seal_break": {
+    "subtitle": "subtitles.wardbound.curator_seal_break",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/seal_break",
+        "stream": false
+      }
+    ]
+  },
+  "curator_attack_charge": {
+    "subtitle": "subtitles.wardbound.curator_attack_charge",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/attack_charge",
+        "stream": false
+      }
+    ]
+  },
+  "curator_impact": {
+    "subtitle": "subtitles.wardbound.curator_impact",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/impact",
+        "stream": false
+      }
+    ]
+  },
+  "curator_phase_transition": {
+    "subtitle": "subtitles.wardbound.curator_phase_transition",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/phase_transition",
+        "stream": false
+      }
+    ]
+  },
+  "curator_ambient_presence": {
+    "subtitle": "subtitles.wardbound.curator_ambient_presence",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/ambient_presence",
+        "stream": false
+      }
+    ]
+  },
+  "curator_whispers": {
+    "subtitle": "subtitles.wardbound.curator_whispers",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/whispers",
+        "stream": false
+      }
+    ]
+  },
+  "curator_hurt": {
+    "subtitle": "subtitles.wardbound.curator_hurt",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/hurt",
+        "stream": false
+      }
+    ]
+  },
+  "curator_vulnerability": {
+    "subtitle": "subtitles.wardbound.curator_vulnerability",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/vulnerability",
+        "stream": false
+      }
+    ]
+  },
+  "curator_death": {
+    "subtitle": "subtitles.wardbound.curator_death",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/death",
+        "stream": false
+      }
+    ]
+  },
+  "curator_victory": {
+    "subtitle": "subtitles.wardbound.curator_victory",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/victory",
+        "stream": false
+      }
+    ]
+  },
+  "curator_boss_theme": {
+    "subtitle": "subtitles.wardbound.curator_boss_theme",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/boss_theme",
+        "stream": true
+      }
+    ]
+  },
+  "gambler_cross_cast": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/cross_cast"
+      }
+    ]
+  },
+  "gambler_cross_impact": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/cross_impact"
+      }
+    ]
+  },
+  "gambler_chip_cast": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/chip_cast"
+      }
+    ]
+  },
+  "gambler_chip_impact": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/chip_impact"
+      }
+    ]
+  },
+  "gambler_pot_cast": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/pot_cast"
+      }
+    ]
+  },
+  "gambler_pot_impact": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/pot_impact"
+      }
+    ]
+  },
+  "gambler_heavy_hit_1": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/heavy_hit_1"
+      }
+    ]
+  },
+  "gambler_heavy_hit_2": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/heavy_hit_2"
+      }
+    ]
+  },
+  "gambler_heavy_hit_3": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/heavy_hit_3"
+      }
+    ]
+  },
+  "gambler_speech_1": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/speech_1"
+      }
+    ]
+  },
+  "gambler_speech_2": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/speech_2"
+      }
+    ]
+  },
+  "gambler_speech_3": {
+    "sounds": [
+      {
+        "name": "wardbound:gambler/speech_3"
+      }
+    ]
+  },
+  "curator_shelf_cast": {
+    "subtitle": "subtitles.wardbound.curator_ash_sweep",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/ash_sweep",
+        "stream": false,
+        "pitch": 0.82,
+        "volume": 0.92
+      }
+    ]
+  },
+  "curator_ring_cast": {
+    "subtitle": "subtitles.wardbound.curator_archive_opening",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/archive_opening",
+        "stream": false,
+        "pitch": 1.16,
+        "volume": 0.78
+      }
+    ]
+  },
+  "curator_errata_mark": {
+    "subtitle": "subtitles.wardbound.curator_paper_movement",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/paper_movement",
+        "stream": false,
+        "pitch": 0.78,
+        "volume": 1.0
+      }
+    ]
+  },
+  "curator_index_burn": {
+    "subtitle": "subtitles.wardbound.curator_phase_transition",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/phase_transition",
+        "stream": false,
+        "pitch": 0.68,
+        "volume": 1.0
+      }
+    ]
+  },
+  "curator_open_binding": {
+    "subtitle": "subtitles.wardbound.curator_vulnerability",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/vulnerability",
+        "stream": false,
+        "pitch": 1.08,
+        "volume": 1.0
+      }
+    ]
+  },
+  "curator_preserve": {
+    "subtitle": "subtitles.wardbound.curator_seal_activation",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/seal_activation",
+        "stream": false,
+        "pitch": 1.13,
+        "volume": 0.9
+      }
+    ]
+  },
+  "curator_fracture": {
+    "subtitle": "subtitles.wardbound.curator_seal_break",
+    "sounds": [
+      {
+        "name": "wardbound:ashen_curator/seal_break",
+        "stream": false,
+        "pitch": 0.84,
+        "volume": 1.0
+      }
+    ]
+  },
+  "silas_presence": {
+    "sounds": []
+  },
+  "silas_testimony": {
+    "sounds": []
+  },
+  "ancient_smith.impact": {
+    "sounds": [
+      {
+        "name": "minecraft:block.anvil.land",
+        "type": "event",
+        "volume": 0.65
+      }
+    ],
+    "subtitle": "subtitles.ancient_smith.impact"
+  },
+  "ancient_smith.heavy": {
+    "sounds": [
+      {
+        "name": "minecraft:block.anvil.land",
+        "type": "event",
+        "volume": 0.65
+      }
+    ],
+    "subtitle": "subtitles.ancient_smith.heavy"
+  },
+  "ancient_smith.final": {
+    "sounds": [
+      {
+        "name": "minecraft:block.anvil.land",
+        "type": "event",
+        "volume": 0.65
+      }
+    ],
+    "subtitle": "subtitles.ancient_smith.final"
+  },
+  "ancient_smith.metal": {
+    "sounds": [
+      {
+        "name": "minecraft:block.anvil.use",
+        "type": "event",
+        "volume": 0.65
+      }
+    ],
+    "subtitle": "subtitles.ancient_smith.metal"
+  },
+  "ancient_smith.breath": {
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.ambient",
+        "type": "event",
+        "volume": 0.65
+      }
+    ],
+    "subtitle": "subtitles.ancient_smith.breath"
+  }
+}

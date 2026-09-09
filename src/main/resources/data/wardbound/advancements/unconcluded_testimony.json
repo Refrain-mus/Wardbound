@@ -1,0 +1,37 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:unconcluded_testimony"
+    },
+    "title": {
+      "translate": "wardbound.adv.unconcluded_testimony"
+    },
+    "description": {
+      "translate": "wardbound.adv.unconcluded_testimony.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "have": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "wardbound:unconcluded_testimony"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "have"
+    ]
+  ],
+  "parent": "wardbound:silas_fragment_read"
+}

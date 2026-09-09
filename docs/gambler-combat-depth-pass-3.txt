@@ -1,0 +1,34 @@
+Wardbound / Pale Gambler - Combat Depth Pass 3
+
+Main fixes
+- Corrected arm-forward convention: negative X pitch is treated as the forward combat thrust.
+- Runtime pose guard now forces both arms/hands to the forward hemisphere while a hand is active.
+- Arm/hand geo chain is physically anchored 0.9 model units toward the face/front (negative Z) to stop coat-plane clipping.
+- Replaced static combat arm poses with forward windup -> thrust -> recoil keyframes.
+- Added dedicated animations for Stacked Deck, Buried Ace, Mirror Debt, House Edge and Double Down.
+- Fixed stale/ghost telegraphs after the final wave of Starfall, Chip Storm, Buried Ace, Mirror Debt, House Edge and Double Down.
+- Gambler streamed boss theme bind now clears a temporary stopping latch when the same boss becomes valid again.
+- Gambler cosmetic cinematic packet now fails soft to a NOOP instead of disconnecting the client on malformed cosmetic data.
+
+New combat patterns
+HOUSE EDGE
+- Rotating annulus plus card-blade spokes.
+- Later phases add more waves/spokes and rotate the House edge between strikes.
+
+DOUBLE DOWN
+- Two opposite safe circles; the rest of the table is collected.
+- Safe pair rotates between waves; phase 3 adds a third rotation.
+
+New texture-backed VFX
+- house_edge.png
+- double_down.png
+- forward_cast.png
+- house_tell.png
+- mirror_splinter.png
+- stacked_seal.png
+
+Presentation
+- Every hand charge now gets a forward cast crest.
+- Stacked Deck, Mirror Debt, House Edge and Double Down receive unique authored texture motifs.
+- Open Tell uses its own teal/gold vulnerability crest.
+- Buried Ace and Mirror Debt use dedicated custom motifs instead of generic sigil reuse.

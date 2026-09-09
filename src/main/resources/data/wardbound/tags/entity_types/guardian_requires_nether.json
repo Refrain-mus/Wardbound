@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:blaze",
+    "minecraft:ghast",
+    "minecraft:magma_cube",
+    "minecraft:hoglin",
+    "minecraft:piglin",
+    "minecraft:piglin_brute",
+    "minecraft:wither_skeleton",
+    "minecraft:zombified_piglin"
+  ]
+}

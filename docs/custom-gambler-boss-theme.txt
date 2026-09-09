@@ -1,0 +1,30 @@
+WARDBOUND // CUSTOM PALE GAMBLER BOSS THEME
+
+What was added
+- A dedicated looping sound slot: wardbound:gambler_boss_theme
+- Source file path: src/main/resources/assets/wardbound/sounds/gambler/boss_theme.ogg
+- Automatic behaviour:
+  * starts when a living Pale Gambler is active near the player
+  * loops while the fight continues
+  * fades out on death, despawn, logout-range loss, or encounter collapse
+
+How to use your own music
+1) Convert your track to OGG Vorbis.
+2) Replace boss_theme.ogg with your own file.
+3) Keep the same file name and path.
+4) Build the mod.
+
+Alternative: resource pack override
+- You can also override this exact resource from a resource pack:
+  assets/wardbound/sounds/gambler/boss_theme.ogg
+- This lets you keep the mod code untouched and swap themes freely.
+
+Config knobs (config/wardbound.json > bosses > pale_gambler)
+- theme_enabled
+- theme_volume
+- theme_fade_in_ticks
+- theme_fade_out_ticks
+
+Notes
+- boss_theme.ogg included in the repo is only a placeholder so the slot always resolves.
+- Replace it with your real track for the final experience.

@@ -1,0 +1,67 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="wardbound"
+version="1.0"
+displayName="Wardbound"
+description='''
+Wardbound turns structure loot containers into progression-driven ward encounters.
+Resolve distinct minigames, earn scaled rewards, discover relics, bargain with Masters,
+and unlock increasingly corrupted systems as the world begins to remember you.
+'''
+authors="Wardbound"
+
+[[dependencies.wardbound]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1]"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.wardbound]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.wardbound]]
+    modId="geckolib"
+    mandatory=true
+    versionRange="[4.8,)"
+    ordering="AFTER"
+    side="BOTH"
+
+
+
+[[dependencies.wardbound]]
+    modId="lodestone"
+    mandatory=true
+    versionRange="[1,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.wardbound]]
+    modId="attributefix"
+    mandatory=true
+    versionRange="[21.0.5,22)"
+    ordering="NONE"
+    side="BOTH"
+
+
+[[dependencies.wardbound]]
+    modId="placebo"
+    mandatory=true
+    versionRange="[8.6.0,9)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.wardbound]]
+    # Apothic Attributes 1.20.1 still declares itself as attributeslib.
+    modId="attributeslib"
+    mandatory=true
+    versionRange="[1.3.7,2)"
+    ordering="AFTER"
+    side="BOTH"

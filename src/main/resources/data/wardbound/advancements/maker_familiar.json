@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:sealwrights_key"
+    },
+    "title": {
+      "translate": "wardbound.adv.maker_familiar"
+    },
+    "description": {
+      "translate": "wardbound.adv.maker_familiar.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:root_house"
+}

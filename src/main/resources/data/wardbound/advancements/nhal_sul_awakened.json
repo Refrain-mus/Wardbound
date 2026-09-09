@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:nhal_sul"
+    },
+    "title": {
+      "translate": "wardbound.adv.nhal_sul_awakened"
+    },
+    "description": {
+      "translate": "wardbound.adv.nhal_sul_awakened.desc"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:nhal_sul"
+}

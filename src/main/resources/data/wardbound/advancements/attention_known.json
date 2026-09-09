@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "item": "wardbound:witness_ledger"
+    },
+    "title": {
+      "translate": "wardbound.adv.attention_known"
+    },
+    "description": {
+      "translate": "wardbound.adv.attention_known.desc"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "wardbound:attention_hunted"
+}
