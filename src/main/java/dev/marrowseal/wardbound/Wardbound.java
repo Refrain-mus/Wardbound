@@ -1,18 +1,18 @@
 package dev.marrowseal.wardbound;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
-import dev.marrowseal.wardbound.client.WardConfigScreen;
 import dev.marrowseal.wardbound.item.WardItems;
 import dev.marrowseal.wardbound.loot.WardLootModifier;
 import dev.marrowseal.wardbound.net.MinigameResultPacket;
@@ -86,8 +86,9 @@ public class Wardbound {
      * <p>55: Ninth Margin virtual hotbar spell cast intent packet added.
      * <p>56: Dealer's Hand reward draw/choice packets added.
      * <p>57: Cthulhu Head arena combat adds new Lodestone attack cue kinds.
+     * <p>59: shard consumption can display the consumed shard with vanilla item-activation presentation.
      */
-    private static final String PROTOCOL = "58";
+    private static final String PROTOCOL = "59";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MODID, "main"),
@@ -118,12 +119,10 @@ public class Wardbound {
 
         WardConfig.load();
 
-        // Adds the "Config" button next to Wardbound in the Mods list (Mods menu -> Wardbound -> Config).
-        // The lambda's body is only ever executed on the client, so this is safe on a dedicated
-        // server even though WardConfigScreen is a client-only class.
-        ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
-                () -> new ConfigScreenHandler.ConfigScreenFactory(
-                        (minecraft, parentScreen) -> new WardConfigScreen(parentScreen)));
+        // Client-only UI hooks are registered from WardboundClientHooks so a dedicated
+        // server never has to resolve Minecraft client/config-screen classes.
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                () -> dev.marrowseal.wardbound.client.WardboundClientHooks::registerConfigScreen);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
@@ -193,6 +192,8 @@ public class Wardbound {
                 dev.marrowseal.wardbound.net.OpenDealersHandPacket::encode, dev.marrowseal.wardbound.net.OpenDealersHandPacket::decode, dev.marrowseal.wardbound.net.OpenDealersHandPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(id++, dev.marrowseal.wardbound.net.DealersHandChoicePacket.class,
                 dev.marrowseal.wardbound.net.DealersHandChoicePacket::encode, dev.marrowseal.wardbound.net.DealersHandChoicePacket::decode, dev.marrowseal.wardbound.net.DealersHandChoicePacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(id++, dev.marrowseal.wardbound.net.ShardActivationPacket.class,
+                dev.marrowseal.wardbound.net.ShardActivationPacket::encode, dev.marrowseal.wardbound.net.ShardActivationPacket::decode, dev.marrowseal.wardbound.net.ShardActivationPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
     }
 
     private void registerSerializers(RegisterEvent event) {

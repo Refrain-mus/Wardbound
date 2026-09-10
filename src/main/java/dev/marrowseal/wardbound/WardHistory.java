@@ -74,6 +74,7 @@ public final class WardHistory {
     public static void openLedger(ServerPlayer player) {
         WardAdvancements.ledgerOpened(player);
         CompoundTag root = persistedRoot(player);
+        if (compactLegacyFieldDropWhispers(root)) saveRoot(player, root);
         if (player.getServer() != null) {
             LockData data = LockData.get(player.getServer());
             WardAdvancements.progression(player, data.totalBeaten(player.getUUID()));
@@ -87,17 +88,21 @@ public final class WardHistory {
 
     /** Reconstruct event-driven advancement nodes from Ledger discoveries for existing saves. */
     private static void backfillAdvancements(ServerPlayer player, CompoundTag root) {
+        boolean masterPhase = player != null && player.getServer() != null
+                && CardMaster.phaseActive(LockData.get(player.getServer()), player.getUUID());
         for (MinigameType game : MinigameType.values())
             if (discovered(root, "GAME:" + game.id)) WardAdvancements.enterMinigame(player, game);
         for (ForbiddenBargain card : ForbiddenBargain.values())
             if (discovered(root, "ACCEPTED:" + card.id)) WardAdvancements.cardSigned(player, card);
-        for (CardMaster master : CardMaster.values())
-            if (discovered(root, "DEALER:" + master.id)) WardAdvancements.dealerSeen(player, master);
-        for (MasterSignature signature : MasterSignature.values())
-            if (discovered(root, "MASTER:" + signature.name())) WardAdvancements.masterSeen(player, signature);
+        if (masterPhase) {
+            for (CardMaster master : CardMaster.values())
+                if (discovered(root, "DEALER:" + master.id)) WardAdvancements.dealerSeen(player, master);
+            for (MasterSignature signature : MasterSignature.values())
+                if (discovered(root, "MASTER:" + signature.name())) WardAdvancements.masterSeen(player, signature);
+        }
         for (PlayerImprint.Trace trace : PlayerImprint.Trace.values())
             if (trace != PlayerImprint.Trace.UNREAD && discovered(root, "IMPRINT:" + trace.name())) WardAdvancements.imprintSeen(player, trace);
-        for (AttentionSystem.Stage stage : AttentionSystem.Stage.values())
+        if (masterPhase) for (AttentionSystem.Stage stage : AttentionSystem.Stage.values())
             if (stage != AttentionSystem.Stage.UNNOTICED && discovered(root, "ATTENTION_STAGE:" + stage.name())) WardAdvancements.attentionSeen(player, stage);
         if (hasDiscoveryPrefix(root, "CORRUPTION:")) WardAdvancements.corruptionSeen(player);
         if (hasDiscoveryPrefix(root, "OCCULT_CHAIN:")) WardAdvancements.occultChainSeen(player);
@@ -106,6 +111,7 @@ public final class WardHistory {
         if (hasDiscoveryPrefix(root, "CARD_MUTATION:")) WardAdvancements.cardRevisionSeen(player);
         for (String token : discoveriesWithPrefix(root, "ANOMALY:")) {
             String anomaly = token.substring("ANOMALY:".length());
+            if (!masterPhase && "attention".equalsIgnoreCase(anomaly)) continue;
             WardAdvancements.anomalySeen(player, anomaly);
         }
     }
@@ -116,7 +122,10 @@ public final class WardHistory {
     }
 
     public static void discoverMaster(ServerPlayer player, MasterSignature signature, int relation) {
-        if (player == null || signature == null) return;
+        if (player == null || signature == null || player.getServer() == null) return;
+        // Seal-maker relation can accumulate invisibly from ordinary wards, but the
+        // existence of named Master hands is late-game information.
+        if (!CardMaster.phaseActive(LockData.get(player.getServer()), player.getUUID())) return;
         WardAdvancements.masterSeen(player, signature);
         if (!hasLedger(player)) return;
         discover(player, "MASTER:" + signature.name());
@@ -266,14 +275,20 @@ public final class WardHistory {
                     + SEP + "GAME" + SEP + game.ordinal() + SEP + MinigameMastery.tierLabel(data, player.getUUID(), game)
                     + SEP + MinigameMastery.detail(data, player.getUUID(), game));
         }
-        out.add("— MASTER HANDS —");
-        for (MasterSignature sig : MasterSignature.values()) {
-            String token = "MASTER:" + sig.name();
-            if (discovered(root, token)) {
+        boolean masterPhase = data != null && CardMaster.phaseActive(data, player.getUUID());
+        boolean anyMasterHand = false;
+        if (masterPhase) for (MasterSignature sig : MasterSignature.values()) {
+            if (discovered(root, "MASTER:" + sig.name())) { anyMasterHand = true; break; }
+        }
+        if (masterPhase && anyMasterHand) {
+            out.add("— MASTER HANDS —");
+            for (MasterSignature sig : MasterSignature.values()) {
+                String token = "MASTER:" + sig.name();
+                if (!discovered(root, token)) continue;
                 int relation = data == null ? 0 : data.relation(player.getUUID(), sig);
                 String mood = relation >= 12 ? "familiar" : relation <= -12 ? "resentful" : relation > 2 ? "inclined" : relation < -2 ? "cold" : "unread";
                 out.add("[✦] " + prettify(sig.name()) + " · " + mood + " (" + (relation >= 0 ? "+" : "") + relation + ")");
-            } else out.add("[·] ???");
+            }
         }
         out.add("— ENCOUNTERS —");
         String[][] anomalies = {
@@ -281,11 +296,21 @@ public final class WardHistory {
                 {"living", "Living Ward"}, {"unsigned", "Unsigned Seal"}, {"attention", "The Attention"},
                 {"gauntlet", "Gauntlet"}, {"curse_escalation", "Matured Curse"}, {"hidden_page", "Self-Written Page"}
         };
-        for (String[] a : anomalies) out.add(discovered(root, "ANOMALY:" + a[0]) ? "[☽] " + a[1] : "[·] ???");
-        out.add("— CARD MASTERS —");
+        for (String[] a : anomalies) {
+            boolean phaseHidden = "attention".equals(a[0]) && !masterPhase;
+            out.add(!phaseHidden && discovered(root, "ANOMALY:" + a[0]) ? "[☽] " + a[1] : "[·] ???");
+        }
+        LockData dealerData = data == null ? LockData.get(player.getServer()) : data;
+        boolean anyCardMaster = false;
         for (CardMaster dealer : CardMaster.values()) {
-            boolean seen = discovered(root, "DEALER:" + dealer.id) || dealer.known(data == null ? LockData.get(player.getServer()) : data, player.getUUID());
-            out.add(seen ? "[✒] " + dealer.title : "[·] ???");
+            if (discovered(root, "DEALER:" + dealer.id) || dealer.known(dealerData, player.getUUID())) { anyCardMaster = true; break; }
+        }
+        if (masterPhase && anyCardMaster) {
+            out.add("— CARD MASTERS —");
+            for (CardMaster dealer : CardMaster.values()) {
+                boolean seen = discovered(root, "DEALER:" + dealer.id) || dealer.known(dealerData, player.getUUID());
+                if (seen) out.add("[✒] " + dealer.title);
+            }
         }
         out.add("— BARGAINS & LAWS —");
         for (ForbiddenBargain card : ForbiddenBargain.values()) {
@@ -308,11 +333,13 @@ public final class WardHistory {
             out.add(seen ? "[✦] " + conjunction.title + " · " + conjunction.formula + " · " + conjunction.effect : "[·] ???");
         }
 
-        out.add("— ATTENTION RECORD —");
-        for (AttentionSystem.Stage stage : AttentionSystem.Stage.values()) {
-            if (stage == AttentionSystem.Stage.UNNOTICED) continue;
-            out.add(discovered(root, "ATTENTION_STAGE:" + stage.name())
-                    ? "[◉] " + stage.title + " · " + AttentionSystem.stageRule(stage) : "[○] ???");
+        if (data != null && CardMaster.phaseActive(data, player.getUUID())) {
+            out.add("— ATTENTION RECORD —");
+            for (AttentionSystem.Stage stage : AttentionSystem.Stage.values()) {
+                if (stage == AttentionSystem.Stage.UNNOTICED) continue;
+                out.add(discovered(root, "ATTENTION_STAGE:" + stage.name())
+                        ? "[◉] " + stage.title + " · " + AttentionSystem.stageRule(stage) : "[○] ???");
+            }
         }
 
         out.add("— BEHAVIOURAL TRACES —");
@@ -344,16 +371,26 @@ public final class WardHistory {
             out.add((hybridMask & bit) != 0 ? "[⟁] " + prettify(mode.name()) : "[·] hybrid: ???");
         }
 
-        out.add("— MASTER HISTORIES —");
-        for (CardMaster master : CardMaster.values()) {
-            int chapter = data == null ? 0 : MasterStory.chapter(data, player.getUUID(), master);
-            if (chapter <= 0) { out.add("[·] ???"); continue; }
-            out.add("[✒] " + master.title + " · Chapter " + chapter + "/" + MasterStory.MAX_CHAPTER + " · " + MasterStory.chapterName(master, chapter));
-            out.add("    " + MasterStory.chapterText(master, chapter));
+        boolean anyKnownMaster = false;
+        if (data != null) {
+            for (CardMaster master : CardMaster.values()) {
+                if (master.known(data, player.getUUID()) || MasterStory.chapter(data, player.getUUID(), master) > 0) {
+                    anyKnownMaster = true;
+                    break;
+                }
+            }
         }
-        if (hasDiscoveryPrefix(root, "RIVALRY:"))
-            out.add("[⚯] Rival counter-offers documented · " + (data == null ? "relations unavailable" : MasterStory.rivalrySummary(data, player.getUUID())));
-        else out.add("[·] Rivalry: ???");
+        if (masterPhase && anyKnownMaster) {
+            out.add("— MASTER HISTORIES —");
+            for (CardMaster master : CardMaster.values()) {
+                int chapter = MasterStory.chapter(data, player.getUUID(), master);
+                if (!master.known(data, player.getUUID()) && chapter <= 0) continue;
+                out.add("[✒] " + master.title + " · Chapter " + chapter + "/" + MasterStory.MAX_CHAPTER + " · " + MasterStory.chapterName(master, chapter));
+                out.add("    " + MasterStory.chapterText(master, chapter));
+            }
+            if (hasDiscoveryPrefix(root, "RIVALRY:"))
+                out.add("[⚯] Rival counter-offers documented · " + MasterStory.rivalrySummary(data, player.getUUID()));
+        }
 
         out.add("— CARD REVISIONS —");
         boolean anyMutation = false;
@@ -384,18 +421,23 @@ public final class WardHistory {
         }
         if (!anyCorruption) out.add("[·] No interacting curses documented.");
 
-        out.add("— DEATH RESONANCE —");
-        if (data == null || DeathResonance.score(data, player.getUUID()) <= 0) out.add("[·] No active death resonance documented.");
-        else out.add("[☾] " + DeathResonance.detail(data, player.getUUID())
-                + " · Higher resonance strengthens parts of existing Death Laws while drawing future Death Hands closer.");
+        int resolvedForLateLore = data == null ? 0 : data.totalBeaten(player.getUUID());
+        if (resolvedForLateLore >= WardConfig.deathCardsAfterBeaten) {
+            out.add("— DEATH RESONANCE —");
+            if (DeathResonance.score(data, player.getUUID()) <= 0) out.add("[·] No active death resonance documented.");
+            else out.add("[☾] " + DeathResonance.detail(data, player.getUUID())
+                    + " · Higher resonance strengthens parts of existing Death Laws while drawing future Death Hands closer.");
+        }
 
-        out.add("— OCCULT CHAINS —");
-        for (OccultChainEvents.ChainEvent event : OccultChainEvents.ChainEvent.values()) {
-            int stage = data == null ? 0 : OccultChainEvents.stage(data, player.getUUID(), event);
-            if (stage > 0) {
-                out.add("[⛓] " + event.title + " · " + stage + "/" + event.maxStage + " · " + OccultChainEvents.stageText(event, stage));
-                out.add("    Margin hint: " + OccultChainEvents.nextHint(event, stage));
-            } else out.add("[·] ???");
+        if (masterPhase) {
+            out.add("— OCCULT CHAINS —");
+            for (OccultChainEvents.ChainEvent event : OccultChainEvents.ChainEvent.values()) {
+                int stage = data == null ? 0 : OccultChainEvents.stage(data, player.getUUID(), event);
+                if (stage > 0) {
+                    out.add("[⛓] " + event.title + " · " + stage + "/" + event.maxStage + " · " + OccultChainEvents.stageText(event, stage));
+                    out.add("    Margin hint: " + OccultChainEvents.nextHint(event, stage));
+                } else out.add("[·] ???");
+            }
         }
 
         out.add("— GUARDIAN TAXONOMY —");
@@ -484,6 +526,7 @@ public final class WardHistory {
         LockData data = LockData.get(player.getServer());
         UUID id = player.getUUID();
         int beaten = data.totalBeaten(id);
+        boolean masterPhase = CardMaster.phaseActive(data, id);
 
         ruleSection(out, "THE LEDGER",
                 "The Ledger is the authoritative reference for Wardbound rules. New sections appear when the corresponding system becomes eligible.",
@@ -515,12 +558,12 @@ public final class WardHistory {
                 "Echo never permanently doubles a family. A fresh Echo must be signed for every future amplified card.");
         if (beaten >= WardConfig.fieldCardAfterBeaten) ruleSection(out, "FIELD CARDS",
                 "Field cards can be carried out of the immediate post-ward moment. Sealed Cards are opened later, away from combat, and still obey the same card-family and progression rules.");
-        if (beaten >= WardConfig.watcherAfter) ruleSection(out, "THE WATCHER",
+        if (masterPhase && beaten >= WardConfig.watcherAfter) ruleSection(out, "THE WATCHER",
                 "After enough resolved wards, one maker's handwriting may begin recurring more often for you. This is a slow bias, never certainty, and it does not unlock cards or rarities ahead of their own shelves.",
                 "The bias grows across long-term play and remains capped. Relationship, rivalry and card legality are still evaluated normally after the maker is chosen.");
         if (beaten >= WardConfig.chainAfterBeaten) ruleSection(out, "SEAL CHAINS",
                 "A chain is a linked sequence of wards. Following the trail to its last seal can pay unique rewards such as the Sealwright's Key. Breaking a chain abandons its accumulated promise.");
-        if (beaten >= WardConfig.masterCardsAfterBeaten) ruleSection(out, "MASTER HANDS & RELATION",
+        if (masterPhase && beaten >= WardConfig.masterCardsAfterBeaten) ruleSection(out, "MASTER HANDS & RELATION",
                 "Master cards carry a maker's signature and relationship. Familiarity changes presentation, counter-offers and authored clauses; it does not silently replace the base reward rules.",
                 "Rival masters can answer one another later in progression. The Grimoire records discovered histories and relation state.");
         if (beaten >= WardConfig.contractCardsAfterBeaten) ruleSection(out, "CONTRACTS",
@@ -528,7 +571,7 @@ public final class WardHistory {
         if (beaten >= WardConfig.curseCardsAfterBeaten) ruleSection(out, "CURSES & SCARS",
                 "Curses are deliberately harder to escape than ordinary negative cards and can mature or combine into corruptions. Remedies remove only the clauses they explicitly name.",
                 "Red Pen can cut a harmful card from the current offer, but Curse-heavy hands have a lower chance to offer that escape.");
-        if (beaten >= WardMeasureSystem.UNLOCK_AFTER) ruleSection(out, "HOUSE MEASURES & CUTS",
+        if (data != null && WardMeasureSystem.unlocked(data, player.getUUID())) ruleSection(out, "HOUSE MEASURES & CUTS",
                 "After this progression band, eligible ordinary signed wards form a recurring three-ward line: Opening, Pressure, then Verdict. Unsigned seals, Cthulhu, Eldritch/Gauntlet stages, possessed wards, chains and depth/reseal loops do not consume the cadence.",
                 "Verdict does not invent a foreign puzzle. It applies one clause you already know from Wardbound's authored minigame rules: Reversed Face, Loaded Tempo or Binding Clause.",
                 "Clean and Perfect work across all three wards earns leverage. A strong Measure can bank one or two Cuts, to a maximum reserve of " + WardMeasureSystem.MAX_CUTS + ".",
@@ -586,7 +629,7 @@ public final class WardHistory {
                     "The Black Study, Wound Clock and Hunger of Order are lesser burdens. Their named remedies, Debt Unwritten and Absolution can remove them; Death laws remain outside ordinary remedy logic.");
         }
 
-        int next = nextRuleUnlock(beaten);
+        int next = nextRuleUnlock(beaten, masterPhase);
         if (next > beaten) {
             out.add("— SEALED MARGIN —");
             out.add("[LOCKED] Another rules section will become legible after " + next + " resolved wards. Current standing: " + beaten + ".");
@@ -603,51 +646,58 @@ public final class WardHistory {
         for (String line : lines) if (line != null && !line.isBlank()) out.add(line);
     }
 
-    private static int nextRuleUnlock(int beaten) {
-        int[] thresholds = { WardConfig.normalCardsAfterBeaten, ForbiddenBargain.THE_RED_PEN.minResolved, ForbiddenBargain.DEBT_ECHO.minResolved,
-                WardConfig.fieldCardAfterBeaten, WardConfig.watcherAfter, WardConfig.chainAfterBeaten,
-                WardConfig.masterCardsAfterBeaten, WardConfig.contractCardsAfterBeaten, WardConfig.curseCardsAfterBeaten,
-                WardMeasureSystem.UNLOCK_AFTER, WardConfig.deceptionUnlockAfter, WardConfig.ritualCardsAfterBeaten, WardConfig.bonusFreshRollAfterBeaten,
+    private static int nextRuleUnlock(int beaten, boolean masterPhase) {
+        int[] ordinaryThresholds = { WardConfig.normalCardsAfterBeaten, ForbiddenBargain.THE_RED_PEN.minResolved, ForbiddenBargain.DEBT_ECHO.minResolved,
+                WardConfig.fieldCardAfterBeaten, WardConfig.chainAfterBeaten,
+                WardConfig.contractCardsAfterBeaten, WardConfig.curseCardsAfterBeaten,
+                WardConfig.deceptionUnlockAfter, WardConfig.ritualCardsAfterBeaten, WardConfig.bonusFreshRollAfterBeaten,
                 WardConfig.hybridUnlockAfter, WardConfig.mutationTier1AfterBeaten, WardConfig.epicCardsAfterBeaten,
                 WardConfig.covenantCardsAfterBeaten, WardConfig.uniqueCardsAfterBeaten, WardConfig.eldritchAfterBeaten,
                 WardConfig.eyeAfterBeaten, WardConfig.deathCardsAfterBeaten, WardConfig.cthulhuAfterBeaten };
         int next = Integer.MAX_VALUE;
-        for (int threshold : thresholds) if (threshold > beaten && threshold < next) next = threshold;
+        for (int threshold : ordinaryThresholds) if (threshold > beaten && threshold < next) next = threshold;
+        if (masterPhase) {
+            if (WardConfig.watcherAfter > beaten) next = Math.min(next, WardConfig.watcherAfter);
+            if (WardMeasureSystem.UNLOCK_AFTER > beaten) next = Math.min(next, WardMeasureSystem.UNLOCK_AFTER);
+        }
         return next == Integer.MAX_VALUE ? beaten : next;
     }
 
-    private static String nextProgressionUnlockText(int beaten) {
-        record Unlock(int at, String label) {}
+    private static String nextProgressionUnlockText(LockData data, UUID id, int beaten) {
+        record Unlock(int at, String label, boolean masterOnly) {}
         Unlock[] unlocks = {
-                new Unlock(WardConfig.normalCardsAfterBeaten, "Card table"),
-                new Unlock(WardConfig.afflictionAfterBeaten, "Afflictions"),
-                new Unlock(WardConfig.fieldCardAfterBeaten, "Field cards"),
-                new Unlock(WardConfig.watcherAfter, "Watcher attention"),
-                new Unlock(WardConfig.chainAfterBeaten, "Seal chains"),
-                new Unlock(WardConfig.masterCardsAfterBeaten, "Master cards"),
-                new Unlock(WardConfig.contractCardsAfterBeaten, "Contract hands"),
-                new Unlock(WardConfig.possessedAfterBeaten, "Possessed wards"),
-                new Unlock(WardConfig.curseCardsAfterBeaten, "Curse hands"),
-                new Unlock(WardConfig.emberAfterBeaten, "Nether ember eligibility"),
-                new Unlock(WardMeasureSystem.UNLOCK_AFTER, "House Measures & Cuts"),
-                new Unlock(WardConfig.bonusFreshRollAfterBeaten, "Bonus offer cadence"),
-                new Unlock(WardConfig.ritualCardsAfterBeaten, "Ritual hands"),
-                new Unlock(WardConfig.mutationTier1AfterBeaten, "Revision I / expert & corrupted minigames"),
-                new Unlock(WardConfig.unsignedAfterBeaten, "Unsigned seals"),
-                new Unlock(WardConfig.epicCardsAfterBeaten, "Epic cards"),
-                new Unlock(WardConfig.deceptionUnlockAfter, "Minigame deception"),
-                new Unlock(WardConfig.covenantCardsAfterBeaten, "Covenant hands"),
-                new Unlock(WardConfig.hybridUnlockAfter, "Hybrid minigame rounds"),
-                new Unlock(WardConfig.mutationTier2AfterBeaten, "Mutation / Revision II"),
-                new Unlock(WardConfig.uniqueCardsAfterBeaten, "Unique laws"),
-                new Unlock(WardConfig.eldritchAfterBeaten, "Eldritch chains"),
-                new Unlock(WardConfig.eyeAfterBeaten, "Savant eligibility"),
-                new Unlock(WardConfig.mutationTier3AfterBeaten, "Mutation / Palimpsest tier"),
-                new Unlock(WardConfig.deathCardsAfterBeaten, "Death hands / Maestro depth"),
-                new Unlock(WardConfig.cthulhuAfterBeaten, "Cthulhu ward and Head depth")
+                new Unlock(WardConfig.normalCardsAfterBeaten, "Card table", false),
+                new Unlock(WardConfig.afflictionAfterBeaten, "Afflictions", false),
+                new Unlock(WardConfig.fieldCardAfterBeaten, "Field cards", false),
+                new Unlock(WardConfig.watcherAfter, "Watcher attention", true),
+                new Unlock(WardConfig.chainAfterBeaten, "Seal chains", false),
+                new Unlock(WardConfig.contractCardsAfterBeaten, "Contract hands", false),
+                new Unlock(WardConfig.possessedAfterBeaten, "Possessed wards", false),
+                new Unlock(WardConfig.curseCardsAfterBeaten, "Curse hands", false),
+                new Unlock(WardConfig.emberAfterBeaten, "Nether ember eligibility", false),
+                new Unlock(WardMeasureSystem.UNLOCK_AFTER, "House Measures & Cuts", true),
+                new Unlock(WardConfig.bonusFreshRollAfterBeaten, "Bonus offer cadence", false),
+                new Unlock(WardConfig.ritualCardsAfterBeaten, "Ritual hands", false),
+                new Unlock(WardConfig.mutationTier1AfterBeaten, "Revision I / expert & corrupted minigames", false),
+                new Unlock(WardConfig.unsignedAfterBeaten, "Unsigned seals", false),
+                new Unlock(WardConfig.epicCardsAfterBeaten, "Epic cards", false),
+                new Unlock(WardConfig.deceptionUnlockAfter, "Minigame deception", false),
+                new Unlock(WardConfig.covenantCardsAfterBeaten, "Covenant hands", false),
+                new Unlock(WardConfig.hybridUnlockAfter, "Hybrid minigame rounds", false),
+                new Unlock(WardConfig.mutationTier2AfterBeaten, "Mutation / Revision II", false),
+                new Unlock(WardConfig.uniqueCardsAfterBeaten, "Unique laws", false),
+                new Unlock(WardConfig.eldritchAfterBeaten, "Eldritch chains", false),
+                new Unlock(WardConfig.eyeAfterBeaten, "Savant eligibility", false),
+                new Unlock(WardConfig.mutationTier3AfterBeaten, "Mutation / Palimpsest tier", false),
+                new Unlock(WardConfig.deathCardsAfterBeaten, "Death hands / Maestro depth", false),
+                new Unlock(WardConfig.cthulhuAfterBeaten, "Cthulhu ward and Head depth", false)
         };
+        boolean masterPhase = CardMaster.phaseActive(data, id);
         Unlock best = null;
-        for (Unlock u : unlocks) if (u.at() > beaten && (best == null || u.at() < best.at())) best = u;
+        for (Unlock u : unlocks) {
+            if (u.masterOnly() && !masterPhase) continue;
+            if (u.at() > beaten && (best == null || u.at() < best.at())) best = u;
+        }
         return best == null ? "All current progression shelves unlocked" : best.label() + " at " + best.at();
     }
 
@@ -681,7 +731,7 @@ public final class WardHistory {
         addEffectSourceStats(out, player, data, id);
         out.add(stat("WARD", "Standing", data.totalBeaten(id) + " seals broken", "Director: " + band + (samples.length > 0 ? " · avg " + avg : "")));
         int beaten = data.totalBeaten(id);
-        String nextUnlock = nextProgressionUnlockText(beaten);
+        String nextUnlock = nextProgressionUnlockText(data, id, beaten);
         out.add(stat("WARD", "Progression", beaten + " resolved", nextUnlock + " · fresh-table bonuses at " + WardConfig.bonusFreshRollAfterBeaten));
         if (WardMeasureSystem.unlocked(data, id)) {
             int nextMeasure = WardMeasureSystem.nextStage(data, id);
@@ -823,15 +873,27 @@ public final class WardHistory {
         int deathPity = data.uniqueInt(id, "death_hand_pity");
         float nextFieldChance = CardBalance.fieldDropChance(fieldPity) * 100f;
         float nextDeathChance = (CardBalance.deathHandChance(deathPity, false) + DeathResonance.deathHandBonus(data, id, false)) * 100f;
-        out.add(stat("CARDS", "Field Cards", opened + " opened · " + signed + " signed",
-                String.format(java.util.Locale.ROOT, "Next hostile drop %.3f%% · pressure %s · pity %d/%d.",
-                        nextFieldChance, CardBalance.pressureBand(fieldPity, CardBalance.FIELD_PITY_START, CardBalance.FIELD_PITY_GUARANTEE),
-                        fieldPity, CardBalance.FIELD_PITY_GUARANTEE)));
-        out.add(stat("DEATH", "Death Hand Pressure", deathPity + " / " + CardBalance.DEATH_PITY_GUARANTEE,
-                String.format(java.util.Locale.ROOT, "Next eligible table %.2f%% · %s pity pressure · resonance %s · only while at least one unsigned Death law remains.",
-                        nextDeathChance, CardBalance.pressureBand(deathPity, CardBalance.DEATH_PITY_START, CardBalance.DEATH_PITY_GUARANTEE), DeathResonance.detail(data, id))));
-        for (CardMaster dealer : CardMaster.values()) {
-            boolean known = dealer.known(data, id);
+        int resolvedWards = data.totalBeaten(id);
+        String fieldDetail;
+        if (resolvedWards < WardConfig.fieldCardAfterBeaten) {
+            fieldDetail = "Drops locked · " + resolvedWards + "/" + WardConfig.fieldCardAfterBeaten
+                    + " resolved wards · pity inactive until the field-card shelf opens.";
+        } else {
+            boolean nextGuaranteed = CardBalance.fieldDropGuaranteed(fieldPity);
+            fieldDetail = String.format(java.util.Locale.ROOT,
+                    "Next eligible hostile %s · pressure %s · dry streak %d · hard guarantee in %d eligible kill%s.",
+                    nextGuaranteed ? "GUARANTEED" : String.format(java.util.Locale.ROOT, "%.2f%%", nextFieldChance),
+                    CardBalance.pressureBand(fieldPity, CardBalance.FIELD_PITY_START, CardBalance.FIELD_PITY_GUARANTEE),
+                    fieldPity, CardBalance.fieldKillsUntilGuarantee(fieldPity),
+                    CardBalance.fieldKillsUntilGuarantee(fieldPity) == 1 ? "" : "s");
+        }
+        out.add(stat("CARDS", "Field Cards", opened + " opened · " + signed + " signed", fieldDetail));
+        if (resolvedWards >= WardConfig.deathCardsAfterBeaten)
+            out.add(stat("DEATH", "Death Hand Pressure", deathPity + " / " + CardBalance.DEATH_PITY_GUARANTEE,
+                    String.format(java.util.Locale.ROOT, "Next eligible table %.2f%% · %s pity pressure · resonance %s · only while at least one unsigned Death law remains.",
+                            nextDeathChance, CardBalance.pressureBand(deathPity, CardBalance.DEATH_PITY_START, CardBalance.DEATH_PITY_GUARANTEE), DeathResonance.detail(data, id))));
+        if (CardMaster.phaseActive(data, id)) for (CardMaster dealer : CardMaster.values()) {
+            if (!dealer.known(data, id)) continue;
             int relation = dealer.relation(data, id);
             int tier = dealer.relationTier(data, id);
             String hand = switch (tier) {
@@ -846,12 +908,11 @@ public final class WardHistory {
             int audiences = data.uniqueInt(id, "dealer_audiences_" + dealer.id);
             int accepts = data.uniqueInt(id, "dealer_acceptances_" + dealer.id);
             int refusals = data.uniqueInt(id, "dealer_refusals_" + dealer.id);
-            out.add(stat("DEALER", known ? dealer.title : "???",
-                    known ? Math.max(0, relation) + " / 20 · " + dealer.mood(data, id) : "unresolved",
-                    known ? "True favor " + (relation >= 0 ? "+" : "") + relation + " · grudge " + grudge + "/3 · signature "
+            out.add(stat("DEALER", dealer.title,
+                    Math.max(0, relation) + " / 20 · " + dealer.mood(data, id),
+                    "True favor " + (relation >= 0 ? "+" : "") + relation + " · grudge " + grudge + "/3 · signature "
                             + String.format(java.util.Locale.ROOT, "%.1f%%", dealer.signatureChance(data, id) * 100f)
-                            + " · audiences " + audiences + ", accepted " + accepts + ", refused " + refusals + " · " + hand
-                            : "Identity reveals through field-card progression."));
+                            + " · audiences " + audiences + ", accepted " + accepts + ", refused " + refusals + " · " + hand));
         }
         return Collections.unmodifiableList(out);
     }
@@ -1174,13 +1235,26 @@ public final class WardHistory {
                         + " · interacting laws are tracked separately from family heat."));
 
         StringBuilder masters = new StringBuilder();
+        StringBuilder lineage = new StringBuilder();
+        int knownMasters = 0;
         for (CardMaster master : CardMaster.values()) {
+            if (!master.known(data, id)) continue;
+            knownMasters++;
             if (masters.length() > 0) masters.append(" · ");
+            if (lineage.length() > 0) lineage.append(" · ");
             int relation = master.relation(data, id);
             masters.append(master.title.replace("The ", "")).append(" ").append(relation >= 0 ? "+" : "").append(relation);
+            lineage.append(master.title.replace("The ", "")).append(" resonance ").append(CardLineage.resonance(data, id, master));
         }
-        out.add(stat("ANALYSIS", "Master Influence", masters.toString(),
-                "Card lineage: " + CardLineage.summary(data, id) + " · rivalry: " + MasterStory.rivalrySummary(data, id) + "."));
+        // Master identities are progression discoveries. Analysis must not spoil names,
+        // relation values or hidden lineage before the corresponding dealer is known.
+        if (knownMasters > 0) {
+            String rivalry = knownMasters >= 2
+                    ? " · crossfire " + data.uniqueInt(id, "dealer_rivalry_events") + " · rivalry heat " + data.uniqueInt(id, "dealer_rivalry_heat") + "/12"
+                    : "";
+            out.add(stat("ANALYSIS", "Master Influence", masters.toString(),
+                    "Known threads " + knownMasters + "/" + CardMaster.values().length + " · " + lineage + rivalry + "."));
+        }
 
         if (WardMeasureSystem.unlocked(data, id)) {
             out.add(stat("ANALYSIS", "House Leverage", WardMeasureSystem.cuts(data, id) + " / " + WardMeasureSystem.MAX_CUTS + " Cuts",
@@ -1225,11 +1299,14 @@ public final class WardHistory {
                 "Heart debt " + data.heartDebt(id) + " · Death-buried " + data.deathHeartDebt(id)
                         + " · covenant stain " + data.uniqueInt(id, "covenant_stain") + "."));
 
-        AttentionSystem.Stage attentionStage = AttentionSystem.current(data, id);
-        int highestAttention = Math.max(attentionStage.ordinal(), data.uniqueInt(id, "attention_highest_stage"));
-        out.add(stat("RISK", "Attention", AttentionSystem.detail(data, id),
-                "Highest observed stage: " + AttentionSystem.Stage.values()[Math.min(highestAttention, AttentionSystem.Stage.values().length - 1)].title
-                        + " · " + AttentionSystem.stageRule(attentionStage)));
+        boolean masterPhase = CardMaster.phaseActive(data, id);
+        if (masterPhase) {
+            AttentionSystem.Stage attentionStage = AttentionSystem.current(data, id);
+            int highestAttention = Math.max(attentionStage.ordinal(), data.uniqueInt(id, "attention_highest_stage"));
+            out.add(stat("RISK", "Attention", AttentionSystem.detail(data, id),
+                    "Highest observed stage: " + AttentionSystem.Stage.values()[Math.min(highestAttention, AttentionSystem.Stage.values().length - 1)].title
+                            + " · " + AttentionSystem.stageRule(attentionStage)));
+        }
         PlayerImprint.Trace trace = PlayerImprint.dominant(data, id);
         out.add(stat("MEMORY", "Behavioural Trace", PlayerImprint.compact(data, id),
                 (trace == PlayerImprint.Trace.UNREAD ? "No dominant trace yet. " : trace.detail + " ") + PlayerImprint.full(data, id) + "."));
@@ -1237,11 +1314,20 @@ public final class WardHistory {
                 MinigameSkillProfile.detail(data, id)));
 
         StringBuilder story = new StringBuilder();
-        for (CardMaster master : CardMaster.values()) {
+        StringBuilder storyDetail = new StringBuilder();
+        int knownStoryMasters = 0;
+        if (masterPhase) for (CardMaster master : CardMaster.values()) {
+            if (!master.known(data, id)) continue;
+            knownStoryMasters++;
             if (story.length() > 0) story.append(" · ");
+            if (storyDetail.length() > 0) storyDetail.append(" · ");
             story.append(master.title.replace("The ", "")).append(" ").append(MasterStory.chapter(data, id, master)).append("/").append(MasterStory.MAX_CHAPTER);
+            storyDetail.append(master.title.replace("The ", "")).append(" resonance ").append(CardLineage.resonance(data, id, master));
         }
-        out.add(stat("STORY", "Master Threads", story.toString(), MasterStory.rivalrySummary(data, id) + " · " + CardLineage.summary(data, id)));
+        if (masterPhase && knownStoryMasters > 0) {
+            if (knownStoryMasters >= 2) storyDetail.append(" · crossfire ").append(data.uniqueInt(id, "dealer_rivalry_events"));
+            out.add(stat("STORY", "Master Threads", story.toString(), "Known threads " + knownStoryMasters + "/" + CardMaster.values().length + " · " + storyDetail));
+        }
         boolean knownThree = data.uniqueInt(id,"gambler_defeated")>0 && data.uniqueInt(id,"curator_defeated")>0 && data.uniqueInt(id,"notary_defeated")>0;
         if(knownThree && data.uniqueInt(id,"maestro_defeated")==0)
             out.add(stat("GLITCH","Fourth Signature","Score Beyond the Margin",
@@ -1265,12 +1351,14 @@ public final class WardHistory {
                     : "World law remains unsigned.");
             out.add(stat("MASTER", "Housebreaker's Laws", state, detail));
         }
-        StringBuilder chains = new StringBuilder();
-        for (OccultChainEvents.ChainEvent event : OccultChainEvents.ChainEvent.values()) {
-            if (chains.length() > 0) chains.append(" · ");
-            chains.append(event.title).append(" ").append(OccultChainEvents.summary(data, id, event));
+        if (masterPhase) {
+            StringBuilder chains = new StringBuilder();
+            for (OccultChainEvents.ChainEvent event : OccultChainEvents.ChainEvent.values()) {
+                if (chains.length() > 0) chains.append(" · ");
+                chains.append(event.title).append(" ").append(OccultChainEvents.summary(data, id, event));
+            }
+            out.add(stat("GLITCH", "Occult Chains", chains.toString(), "Cross-system sequences advance only when their actual conditions occur; ordinary grinding does not skip stages."));
         }
-        out.add(stat("GLITCH", "Occult Chains", chains.toString(), "Cross-system sequences advance only when their actual conditions occur; ordinary grinding does not skip stages."));
 
         int revisions = 0, palimpsests = 0;
         for (ForbiddenBargain card : ForbiddenBargain.values()) {
@@ -1282,7 +1370,7 @@ public final class WardHistory {
         for (CurseEvolution.Corruption corruption : CurseEvolution.Corruption.values()) if (CurseEvolution.known(data, id, corruption)) corruptions++;
         out.add(stat("ARCHIVE", "Living Laws", revisions + " revised · " + palimpsests + " palimpsest · " + corruptions + " corrupted",
                 "Repeated signatures can revise stable cards through three layers; compatible curses can corrupt one another into hostile combined clauses."));
-        out.add(stat("MASTER", "Ash Archive", dev.marrowseal.wardbound.boss.CuratorProgression.status(player),
+        if (masterPhase) out.add(stat("MASTER", "Ash Archive", dev.marrowseal.wardbound.boss.CuratorProgression.status(player),
                 "The returned record becomes the Ashen Archive Codex after the Curator's story, Ash in the Margin, and a curse evolution. Open the codex to preserve or burn the testimony, then let it judge the archive space around the reader."));
         if(data.uniqueInt(id,"curator_defeated")>0)out.add(stat("SOVEREIGNTY","The Last Margin","Active archive relic",
                 "Open a six-second blank margin. The next wound is mostly archived, then returned to nearby enemies as an Ash Rebuttal after a short delay."));
@@ -1295,9 +1383,10 @@ public final class WardHistory {
                 anomaliesOpened + " signed / " + anomaliesDealt + " dealt",
                 "Favorable " + data.uniqueInt(id, "anomaly_good") + " · hostile " + data.uniqueInt(id, "anomaly_bad")
                         + " · outcomes remain unreadable until signature."));
-        out.add(stat("DEATH", "Death Resonance", DeathResonance.detail(data, id),
-                "Memento target " + DeathResonance.mementoTarget(data, id) + " kills · Grave Bell target " + DeathResonance.graveBellTarget(data, id)
-                        + " kills · resonance slowly bleeds off on completed physical wards."));
+        if (data.totalBeaten(id) >= WardConfig.deathCardsAfterBeaten)
+            out.add(stat("DEATH", "Death Resonance", DeathResonance.detail(data, id),
+                    "Memento target " + DeathResonance.mementoTarget(data, id) + " kills · Grave Bell target " + DeathResonance.graveBellTarget(data, id)
+                            + " kills · resonance slowly bleeds off on completed physical wards."));
 
         if (player.level() instanceof net.minecraft.server.level.ServerLevel sl) {
             var pos = player.blockPosition();
@@ -1610,6 +1699,47 @@ public final class WardHistory {
             if (token.startsWith(prefix)) out.add(token);
         }
         return out;
+    }
+
+
+    /**
+     * Hardening-14 migration: older field-card drops wrote one CardMaster flavour
+     * line into the Chronicle for every physical drop. A short combat test could
+     * therefore consume most of the useful history with repeated ??? dialogue.
+     * These lines were atmospheric, not progression records, so retire them once.
+     */
+    private static boolean compactLegacyFieldDropWhispers(CompoundTag root) {
+        final String marker = "FieldDropWhisperSpamCompactedV1";
+        if (root == null || root.getBoolean(marker)) return false;
+        ListTag list = root.getList(RECORDS, Tag.TAG_STRING);
+        for (int i = list.size() - 1; i >= 0; i--) {
+            String raw = list.getString(i);
+            int first = raw.indexOf(SEP);
+            int second = first < 0 ? -1 : raw.indexOf(SEP, first + SEP.length());
+            String text = second < 0 ? raw : raw.substring(second + SEP.length());
+            if (isLegacyFieldDropWhisper(text)) {
+                list.remove(i);
+            }
+        }
+        root.put(RECORDS, list);
+        root.putBoolean(marker, true);
+        return true;
+    }
+
+    private static boolean isLegacyFieldDropWhisper(String text) {
+        if (text == null || text.isBlank()) return false;
+        return text.contains("Do not mistake ash for an ending. Open this when the noise stops.")
+                || text.contains("The edges are already burned. The part that matters is still legible.")
+                || text.contains("Keep this closed until you can hear the paper cooling.")
+                || text.contains("I removed the page that would have comforted you. It was irrelevant.")
+                || text.contains("This event has been witnessed. Your signature is the only absent thing.")
+                || text.contains("I have notarized the death. The card is merely the receipt.")
+                || text.contains("A record has found you before I finished writing it. Inconvenient.")
+                || text.contains("There is a blank clause here. It is blank only because you have not failed it yet.")
+                || text.contains("One card. No table. You may still find a way to lose.")
+                || text.contains("I wagered that you would pick this up. Thank you for the confirmation.")
+                || text.contains("Do not open it during a fight. I dislike odds I did not arrange.")
+                || text.contains("The hand was better before I removed the card that would have saved you.");
     }
 
     private static void addLine(ServerPlayer player, String key, String kind, String line) {

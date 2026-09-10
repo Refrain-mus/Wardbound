@@ -64,7 +64,7 @@ public final class WildCardEffects {
             case VILLAGE_PARDON -> timed(data,id,"village_cold") || timed(data,id,"iron_accusation")
                     || timed(data,id,"golem_enmity") || data.hasUnique(id,"village_exile");
             case FOURTH_CARD -> data.uniqueInt(id,"deck_plus_one") <= 0;
-            case FIFTH_CARD -> data.uniqueInt(id,"deck_plus_two") <= 0;
+            case FIFTH_CARD -> CardMaster.phaseActive(data, id) && data.uniqueInt(id,"deck_plus_two") <= 0;
             case NARROW_HAND -> data.uniqueInt(id,"deck_narrow") <= 0;
             case CURSE_DAMPER -> data.uniqueInt(id,"deck_curse_damper") <= 0;
             case CURSE_BAIT -> data.uniqueInt(id,"deck_curse_bait") <= 0;

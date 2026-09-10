@@ -1,6 +1,8 @@
 package dev.marrowseal.wardbound.boss;
 
 import dev.marrowseal.wardbound.LockData;
+import dev.marrowseal.wardbound.MinigameMastery;
+import dev.marrowseal.wardbound.MinigameType;
 import dev.marrowseal.wardbound.WardHistory;
 import dev.marrowseal.wardbound.WardHud;
 import dev.marrowseal.wardbound.WardConfig;
@@ -30,6 +32,12 @@ public final class CthulhuHeadProgression {
         if (d.totalBeaten(p.getUUID()) < WardConfig.cthulhuAfterBeaten) {
             WardHud.send(p, "THE CANTICLE // The scar is audible, but your record has not reached the depth that can hold it. "
                     + d.totalBeaten(p.getUUID()) + "/" + WardConfig.cthulhuAfterBeaten + " wards.", WardHud.Mood.GLITCH, 3600);
+            return false;
+        }
+        if (WardConfig.cthulhuWardsEnabled
+                && MinigameMastery.wins(d, p.getUUID(), MinigameType.CTHULHUS_GAME) <= 0) {
+            WardHud.send(p, "THE CANTICLE // The notation has no completed examination to follow. Survive Cthulhu's Game before asking the scar to become a door.",
+                    WardHud.Mood.GLITCH, 4200);
             return false;
         }
         if (!p.level().dimension().equals(Level.END)) {
@@ -70,10 +78,12 @@ public final class CthulhuHeadProgression {
         if (p == null || p.getServer() == null) return;
         LockData d = LockData.get(p.getServer());
         if (d.uniqueInt(p.getUUID(), REWARD_PENDING) == 0) return;
-        if (!contains(p, WardItems.ABYSSAL_VESTIGE.get())) {
+        boolean delivered = contains(p, WardItems.ABYSSAL_VESTIGE.get());
+        if (!delivered) {
             ItemStack reward = new ItemStack(WardItems.ABYSSAL_VESTIGE.get());
-            if (!p.getInventory().add(reward)) p.drop(reward, false);
+            delivered = MasterInvocationRelics.giveOrProtectedDrop(p, reward);
         }
+        if (!delivered) return;
         d.setUniqueInt(p.getUUID(), REWARD_PENDING, 0);
         WardHud.send(p,
                 "ABYSSAL VESTIGE // The Head carried a memory of its absent body. The Idol reacts to it.",
@@ -86,10 +96,12 @@ public final class CthulhuHeadProgression {
         LockData d = LockData.get(p.getServer());
         if (d.uniqueInt(p.getUUID(), REWARD_PENDING) != 0) deliverVictory(p);
         if (d.uniqueInt(p.getUUID(), RETURN_CANTICLE) == 0) return;
-        if (!contains(p, WardItems.CANTICLE_FOR_THE_SLEEPER.get())) {
+        boolean restored = contains(p, WardItems.CANTICLE_FOR_THE_SLEEPER.get());
+        if (!restored) {
             ItemStack key = new ItemStack(WardItems.CANTICLE_FOR_THE_SLEEPER.get());
-            if (!p.getInventory().add(key)) p.drop(key, false);
+            restored = MasterInvocationRelics.giveOrProtectedDrop(p, key);
         }
+        if (!restored) return;
         d.setUniqueInt(p.getUUID(), RETURN_CANTICLE, 0);
         WardHud.send(p, "THE CANTICLE // The notation survived the failed dream.", WardHud.Mood.GLITCH, 2600);
     }

@@ -14,7 +14,7 @@ public final class CuratorEvents {
     @SubscribeEvent public static void tick(TickEvent.PlayerTickEvent e){
         if(e.phase!=TickEvent.Phase.END || !(e.player instanceof ServerPlayer p) || p.tickCount%100!=0)return;
         var d=LockData.get(p.getServer());var id=p.getUUID();
-        if(BossConfig.curator().enabled() && CuratorProgression.evidence(d,id) && d.uniqueInt(id,"curator_defeated")==0 && d.uniqueInt(id,"curator_writ_issued")==0){if(p.getInventory().contains(new ItemStack(WardItems.ARCHIVE_WRIT.get())))d.setUniqueInt(id,"curator_writ_issued",1);else{CuratorProgression.giveWrit(p);CuratorProgression.message(p,"A returned record has bound itself into the Ashen Archive Codex. Open it before you decide what deserves to survive.");}}
+        if(BossConfig.curator().enabled() && CuratorProgression.evidence(d,id) && d.uniqueInt(id,"curator_defeated")==0 && d.uniqueInt(id,"curator_writ_issued")==0){if(p.getInventory().contains(new ItemStack(WardItems.ARCHIVE_WRIT.get())))d.setUniqueInt(id,"curator_writ_issued",1);else{CuratorProgression.giveWrit(p);if(d.uniqueInt(id,"curator_writ_issued")!=0)CuratorProgression.message(p,"A returned record has bound itself into the Ashen Archive Codex. Open it before you decide what deserves to survive.");}}
     }
     private static boolean admin(net.minecraft.commands.CommandSourceStack s){return s.hasPermission(2)||(s.getEntity() instanceof ServerPlayer p && p.isCreative());}
     @SubscribeEvent public static void commands(RegisterCommandsEvent e){

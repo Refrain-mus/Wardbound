@@ -2,6 +2,7 @@ package dev.marrowseal.wardbound.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.marrowseal.wardbound.Wardbound;
+import dev.marrowseal.wardbound.WardConfig;
 import dev.marrowseal.wardbound.item.WardItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -29,8 +30,10 @@ public final class ClientSavantOverlay {
     private static String speaker = "THE SAVANT // OBSERVING";
     private static long masterUntil;
     private static long shownAtMs;
+    private static final int MAX_MASTER_QUEUE = 3;
+    private static final long MAX_QUEUED_AGE_MS = 12000L;
     private static final Deque<QueuedMasterLine> MASTER_QUEUE = new ArrayDeque<>();
-    private record QueuedMasterLine(String speaker, String line, int durationMs) {}
+    private record QueuedMasterLine(String speaker, String line, int durationMs, long queuedAtMs) {}
 
     private ClientSavantOverlay() {}
 
@@ -38,7 +41,7 @@ public final class ClientSavantOverlay {
         if (System.currentTimeMillis() < masterUntil) return;
         speaker = "THE SAVANT // OBSERVING";
         line = text == null ? "" : text.trim();
-        displayMs = DEFAULT_DISPLAY_MS;
+        displayMs = Math.min(9000L, Math.max(DEFAULT_DISPLAY_MS, 2200L + line.length() * 16L));
         shownAtMs = System.currentTimeMillis();
     }
 
@@ -49,10 +52,21 @@ public final class ClientSavantOverlay {
     public static void showMaster(String name, String text, int durationMs) {
         String nextSpeaker = name == null ? "THE SAVANT // OBSERVING" : name;
         String nextLine = text == null ? "" : text.trim();
-        int nextDuration = Math.max(1800, Math.min(9000, durationMs));
+        int requestedDuration = Math.max(1800, Math.min(9000, durationMs));
+        int readableDuration = Math.min(9000, 2200 + nextLine.length() * 16);
+        boolean urgent = isUrgentLine(nextLine);
+        int nextDuration = urgent ? requestedDuration : Math.max(requestedDuration, readableDuration);
         long now = System.currentTimeMillis();
+        if (urgent) {
+            // Combat-readable lines are state, not flavour. Never show COUNT or an
+            // objection window several seconds after the mechanic has already happened.
+            MASTER_QUEUE.clear();
+            activateMaster(nextSpeaker, nextLine, nextDuration, now);
+            return;
+        }
         if (now < masterUntil && !line.isEmpty()) {
-            if (MASTER_QUEUE.size() < 6) MASTER_QUEUE.addLast(new QueuedMasterLine(nextSpeaker, nextLine, nextDuration));
+            while (MASTER_QUEUE.size() >= MAX_MASTER_QUEUE) MASTER_QUEUE.removeFirst();
+            MASTER_QUEUE.addLast(new QueuedMasterLine(nextSpeaker, nextLine, nextDuration, now));
             return;
         }
         activateMaster(nextSpeaker, nextLine, nextDuration, now);
@@ -74,7 +88,7 @@ public final class ClientSavantOverlay {
         long age = now - shownAtMs;
         if (age < 0) return;
         if (age >= displayMs) {
-            QueuedMasterLine queued = MASTER_QUEUE.pollFirst();
+            QueuedMasterLine queued = pollFresh(now);
             if (queued == null) { line = ""; return; }
             activateMaster(queued.speaker(), queued.line(), queued.durationMs(), now);
             age = 0;
@@ -93,6 +107,10 @@ public final class ClientSavantOverlay {
 
         float fade = age < 220L ? age / 220f : age > displayMs - 300L ? Math.max(0f, (displayMs - age) / 300f) : 1f;
         List<String> lines = wrap(font, line, gambler ? Math.min(360, screenW - 88) : curator ? Math.min(340, screenW - 84) : notary ? Math.min(350, screenW - 84) : Math.min(300, screenW - 76));
+        // Keep dialogue clear of combat and the hotbar. Long speeches advance through
+        // compact pages over their allotted display window instead of climbing off-screen.
+        int maxVisibleLines = screenH < 300 ? 3 : screenH < 420 ? 4 : 5;
+        lines = pageWindow(lines, age, displayMs, maxVisibleLines);
         if (gambler) renderGambler(g, font, screenW, screenH, lines, age, fade);
         else if (curator) renderCurator(g, font, screenW, screenH, lines, age, fade);
         else if (notary) renderNotary(g, font, screenW, screenH, lines, age, fade);
@@ -241,7 +259,8 @@ public final class ClientSavantOverlay {
         int cyanAlpha = Math.max(0, Math.min(210, Math.round(210 * fade)));
         int violetAlpha = Math.max(0, Math.min(165, Math.round(165 * fade)));
         boolean impact = isImpactLine(line);
-        int jitter = impact && age < 650L && ((age / 80L) % 4L == 1L) ? (((age / 80L) & 1L) == 0L ? 1 : -1) : 0;
+        int jitter = !WardConfig.accessibilityReduceMotion && impact && age < 650L && ((age / 80L) % 4L == 1L)
+                ? (((age / 80L) & 1L) == 0L ? 1 : -1) : 0;
         left += jitter;
         right += jitter;
 
@@ -269,7 +288,8 @@ public final class ClientSavantOverlay {
         pose.scale(textScale, textScale, 1f);
         int drawY = y + 14;
         for (String s : lines) {
-            String draw = impact && age < 720L && ((age / 95L) % 5L == 2L) ? microStutter(s) : s;
+            String draw = !WardConfig.accessibilityReduceFlashing && impact && age < 720L && ((age / 95L) % 5L == 2L)
+                    ? microStutter(s) : s;
             Component text = Component.literal(draw).withStyle(style -> style.withFont(UNIFORM_FONT).withColor(ChatFormatting.LIGHT_PURPLE).withItalic(true));
             g.drawCenteredString(font, text, Math.round((screenW / 2f + jitter) / textScale), Math.round(drawY / textScale), 0xE3D3FF);
             drawY += lineH;
@@ -360,10 +380,39 @@ public final class ClientSavantOverlay {
         return false;
     }
 
+
+    private static QueuedMasterLine pollFresh(long now) {
+        QueuedMasterLine queued;
+        while ((queued = MASTER_QUEUE.pollFirst()) != null) {
+            if (now - queued.queuedAtMs() <= MAX_QUEUED_AGE_MS) return queued;
+        }
+        return null;
+    }
+
+    private static boolean isUrgentLine(String text) {
+        if (text == null) return false;
+        String x = text.toUpperCase(java.util.Locale.ROOT);
+        return x.startsWith("COUNT //") || x.startsWith("OBJECTION WINDOW //")
+                || x.startsWith("OBJECTION SUSTAINED //") || x.startsWith("JUDGMENT ENTERED //")
+                || x.startsWith("BREACH //") || x.startsWith("SUIT CALL //");
+    }
+
+    private static List<String> pageWindow(List<String> source, long age, long duration, int perPage) {
+        if (source == null || source.isEmpty()) return List.of("");
+        int size = Math.max(1, perPage);
+        int pages = Math.max(1, (source.size() + size - 1) / size);
+        if (pages == 1) return source;
+        double progress = duration <= 0 ? 0.0 : Math.max(0.0, Math.min(0.999999, age / (double) duration));
+        int page = Math.min(pages - 1, (int) (progress * pages));
+        int from = page * size;
+        int to = Math.min(source.size(), from + size);
+        return new ArrayList<>(source.subList(from, to));
+    }
+
     private static List<String> wrap(Font font, String text, int maxWidth) {
         List<String> out = new ArrayList<>();
         StringBuilder current = new StringBuilder();
-        for (String word : text.split("\s+")) {
+        for (String word : text.split("\\s+")) {
             String candidate = current.length() == 0 ? word : current + " " + word;
             if (font.width(candidate) <= maxWidth || current.length() == 0) {
                 current.setLength(0);

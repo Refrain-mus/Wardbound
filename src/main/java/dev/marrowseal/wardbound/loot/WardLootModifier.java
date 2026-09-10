@@ -77,6 +77,8 @@ public class WardLootModifier extends LootModifier {
         CompoundTag persistent = container.getPersistentData();
         if (!persistent.contains(ChestValuator.TAG_MULT)) return loot;
 
+        boolean linkedReward = persistent.getBoolean(ChestValuator.TAG_LINKED_REWARD);
+        persistent.remove(ChestValuator.TAG_LINKED_REWARD);
         float multiplier = RewardBreakdown.clamp(persistent.getFloat(ChestValuator.TAG_MULT));
         persistent.remove(ChestValuator.TAG_MULT);       // one shot
         container.setChanged();
@@ -91,7 +93,7 @@ public class WardLootModifier extends LootModifier {
         if (Math.abs(multiplier - 1.0f) >= 0.01f) {
             boolean allowFreshRoll = bonusFreshRollUnlocked(context, who);
             result = multiplier > 1.0f ? grow(loot, multiplier, context, allowFreshRoll) : shrink(loot, multiplier);
-            report(context, who, multiplier, before, totalWorth(result));
+            if (!linkedReward) report(context, who, multiplier, before, totalWorth(result));
         }
 
         // Eldritch Shard is deliberately not another multiplier. It repeats the
@@ -115,24 +117,26 @@ public class WardLootModifier extends LootModifier {
         // become a currency you accumulate without noticing.
         int relicGrade = persistent.getInt(ChestValuator.TAG_RELIC_GRADE);
         persistent.remove(ChestValuator.TAG_RELIC_GRADE);
-        if (relicGrade >= 2) {
-            result.add(new ItemStack(context.getRandom().nextFloat() < 0.15f
-                    ? WardItems.BLOODGLASS_SHARD.get() : WardItems.ELDRITCH_SHARD.get()));
-        } else if (relicGrade == 1) {
-            result.add(new ItemStack(context.getRandom().nextFloat() < 0.25f
-                    ? WardItems.ECHO_SHARD.get() : WardItems.WARD_SPLINTER.get()));
-        }
-        else addCharmDrop(result, multiplier, before,
-                context.getLevel().dimension() == Level.END,
-                context.getLevel().dimension() == Level.NETHER,
-                context, who);
+        if (!linkedReward) {
+            if (relicGrade >= 2) {
+                result.add(new ItemStack(context.getRandom().nextFloat() < 0.15f
+                        ? WardItems.BLOODGLASS_SHARD.get() : WardItems.ELDRITCH_SHARD.get()));
+            } else if (relicGrade == 1) {
+                result.add(new ItemStack(context.getRandom().nextFloat() < 0.25f
+                        ? WardItems.ECHO_SHARD.get() : WardItems.WARD_SPLINTER.get()));
+            }
+            else addCharmDrop(result, multiplier, before,
+                    context.getLevel().dimension() == Level.END,
+                    context.getLevel().dimension() == Level.NETHER,
+                    context, who);
 
-        // Silas testimony fragments are world-lore, not a combat reward. They can only
-        // appear after an actually resolved ward chest and are progression-gated so later
-        // truths never leak into the opening chapters.
-        if (who != null && context.getLevel().getServer() != null) {
-            ServerPlayer witness = context.getLevel().getServer().getPlayerList().getPlayer(who);
-            if (witness != null) SilasLore.tryAddWorldFragment(result, witness, context.getRandom());
+            // Silas testimony fragments are world-lore, not a combat reward. They can only
+            // appear after an actually resolved ward chest and are progression-gated so later
+            // truths never leak into the opening chapters.
+            if (who != null && context.getLevel().getServer() != null) {
+                ServerPlayer witness = context.getLevel().getServer().getPlayerList().getPlayer(who);
+                if (witness != null) SilasLore.tryAddWorldFragment(result, witness, context.getRandom());
+            }
         }
         return result;
     }
@@ -264,7 +268,7 @@ public class WardLootModifier extends LootModifier {
             text = String.format("Loot x%.2f  \u2014  haul up %d%%", multiplier, percent);
             colour = ChatFormatting.GREEN;
         } else if (percent < 0) {
-            text = String.format("Loot x%.2f  \u2014  %d%% of the haul taken", multiplier, -percent);
+            text = String.format("Loot x%.2f  \u2014  %d%% of loot value taken", multiplier, -percent);
             colour = ChatFormatting.RED;
         } else {
             return;

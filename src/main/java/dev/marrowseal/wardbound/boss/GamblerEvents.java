@@ -106,11 +106,18 @@ public final class GamblerEvents {
             }))
             .then(Commands.literal("invitation").executes(c -> {
                 ServerPlayer p = c.getSource().getPlayerOrException();
-                if (!GamblerProgression.eligible(LockData.get(p.getServer()), p.getUUID())) {
-                    p.sendSystemMessage(Component.literal("Invitation not ready: " + GamblerProgression.requirements(LockData.get(p.getServer()), p.getUUID())));
+                LockData d = LockData.get(p.getServer());
+                if (!GamblerProgression.eligible(d, p.getUUID())) {
+                    p.sendSystemMessage(Component.literal("Invitation not ready: " + GamblerProgression.requirements(d, p.getUUID())));
                     return 0;
                 }
-                return GamblerProgression.manifestInvitation(p) ? 1 : 0;
+                if (d.uniqueInt(p.getUUID(), "gambler_invitation_issued") != 0) {
+                    p.sendSystemMessage(Component.literal("The invitation has already been issued. It does not write duplicate originals."));
+                    return 0;
+                }
+                if (!GamblerProgression.manifestInvitation(p)) return 0;
+                d.setUniqueInt(p.getUUID(), "gambler_invitation_issued", 1);
+                return 1;
             }))
             .then(Commands.literal("reclaim").executes(c -> {
                 ServerPlayer p = c.getSource().getPlayerOrException();

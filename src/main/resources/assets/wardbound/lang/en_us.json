@@ -568,5 +568,9 @@
   "item.wardbound.canticle_for_the_sleeper": "Canticle for the Sleeper",
   "item.wardbound.abyssal_vestige": "Abyssal Vestige",
   "wardbound.adv.maestro_revealed": "Beyond the Three",
-  "wardbound.adv.maestro_revealed.desc": "Conclude the Gambler, Curator and Notary, then find a score written by an author whose road never touched theirs."
+  "wardbound.adv.maestro_revealed.desc": "Conclude the Gambler, Curator and Notary, then find a score written by an author whose road never touched theirs.",
+  "wardbound.ui.dialogue.back": "BACK",
+  "wardbound.ui.dialogue.next": "NEXT",
+  "wardbound.ui.dialogue.close": "CLOSE",
+  "wardbound.ui.dialogue.hint": "SPACE / WHEEL"
 }

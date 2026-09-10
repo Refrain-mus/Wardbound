@@ -156,7 +156,7 @@ public final class AnomalyCardSystem {
             }
             case ANOMALY_BLACK -> {
                 if (roll < 18 && !restrained) { bad=true; result = applyRandomCurse(player, data, random); }
-                else if (roll < 33 && !restrained) { bad=true; AttentionSystem.set(player,data,data.attention(id)+6,"a black anomaly noticed the player"); result = "The black card did not change you. It changed how closely the system watches you."; }
+                else if (roll < 33 && !restrained && CardMaster.phaseActive(data, id)) { bad=true; AttentionSystem.set(player,data,data.attention(id)+6,"a black anomaly noticed the player"); result = "The black card did not change you. It changed how closely the system watches you."; }
                 else if (roll < 48 && !restrained) { bad=true; player.addEffect(new MobEffectInstance(MobEffects.DARKNESS,20*60,0,false,true,true)); player.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,20*60,1,false,true,true)); result = "One minute was crossed out of your senses and strength."; }
                 else if (roll < 63) { WildCardEffects.apply(player,data,ForbiddenBargain.WARDENS_BLIND_SPOT); result = "For four minutes, Wardens found an intentional blank where you should be."; }
                 else if (roll < 77) { WildCardEffects.apply(player,data,ForbiddenBargain.TEN_SECONDS_UNWRITTEN); result = "Ten seconds were removed from the damage ledger."; }

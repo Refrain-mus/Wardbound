@@ -1,4 +1,4 @@
-# Wardbound 1.0 — Maestro / Beyond-the-Three Progression
+# Wardbound 1.0.2 — Maestro / Beyond-the-Three Progression
 
 ## Cosmology
 

@@ -7,8 +7,8 @@ package dev.marrowseal.wardbound;
 public final class CardBalance {
     private CardBalance() {}
 
-    public static final int FIELD_PITY_START = 110;
-    public static final int FIELD_PITY_GUARANTEE = 550;
+    public static final int FIELD_PITY_START = 10;
+    public static final int FIELD_PITY_GUARANTEE = 30;
     public static final int DEATH_PITY_START = 18;
     public static final int DEATH_PITY_GUARANTEE = 80;
 
@@ -19,18 +19,35 @@ public final class CardBalance {
     /** Card-table frequency rises slowly across the longer 1.0 progression. */
     public static float bargainProgression(int resolved) {
         if (resolved < WardConfig.normalCardsAfterBeaten) return 0f;
-        if (resolved < BARGAIN_RAMP_1) return 0.35f;
-        if (resolved < BARGAIN_RAMP_2) return 0.55f;
-        if (resolved < BARGAIN_RAMP_3) return 0.78f;
+        if (resolved < BARGAIN_RAMP_1) return 0.85f;
+        if (resolved < BARGAIN_RAMP_2) return 0.90f;
+        if (resolved < BARGAIN_RAMP_3) return 0.95f;
         return 1.0f;
     }
 
-    /** Next eligible hostile-kill chance for a physical Sealed Card. */
+    /**
+     * Next eligible hostile-kill chance for a physical Sealed Card.
+     *
+     * <p>{@code pity} is the number of consecutive eligible misses. The base
+     * chance is untouched through the first ten misses, then rises by one
+     * percentage point per miss. The 30th eligible kill is handled as a hard
+     * guarantee by {@link #fieldDropGuaranteed(int)}.
+     */
     public static float fieldDropChance(int pity) {
         int clean = Math.max(0, pity);
-        float boost = clean <= FIELD_PITY_START ? 0f
-                : Math.min(0.0150f, (clean - FIELD_PITY_START) * 0.000018f);
+        float boost = clean < FIELD_PITY_START ? 0f
+                : Math.min(0.20f, (clean - FIELD_PITY_START + 1) * 0.01f);
         return Math.min(1.0f, WardConfig.fieldCardDropChance + boost);
+    }
+
+    /** True when the next eligible hostile kill is the 30th attempt in the dry streak. */
+    public static boolean fieldDropGuaranteed(int pity) {
+        return Math.max(0, pity) + 1 >= FIELD_PITY_GUARANTEE;
+    }
+
+    /** Maximum number of additional eligible hostile kills before the hard guarantee fires. */
+    public static int fieldKillsUntilGuarantee(int pity) {
+        return Math.max(1, FIELD_PITY_GUARANTEE - Math.max(0, pity));
     }
 
     /** Conditional Death-hand chance after a normal card table has already appeared. */

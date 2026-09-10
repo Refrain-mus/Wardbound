@@ -462,6 +462,41 @@ public class RootwayScreen extends BaseMinigameScreen {
 
     @Override
     protected boolean onKey(int key) {
+        // Once the player believes the route is finished, SHIFT acts as a
+        // submit/fast-forward key. It never grants a free success: the current
+        // board is traced exactly as the live root would traverse it.
+        if (key != 340 && key != 344) return false; // GLFW left/right shift
+        if (finished || resolved) return true;
+        if (!routeReachesMouth()) {
+            Sfx.markBad();
+            showBanner("The route is not through yet", theme().dim, 650);
+            return true;
+        }
+        finished = true;
+        Sfx.plugTurn(0.8f);
+        succeed(Mth.clamp(1f - turns / (float) Math.max(8, cols * rows), 0.25f, 1f));
+        return true;
+    }
+
+    /** Pure validation used by SHIFT-submit; it does not advance or mutate the live root. */
+    private boolean routeReachesMouth() {
+        int x = 0, y = entryRow, from = W;
+        boolean[] seen = new boolean[cols * rows];
+        for (int guard = 0; guard < cols * rows + 2; guard++) {
+            if (x < 0 || x >= cols || y < 0 || y >= rows) return false;
+            int cell = idx(x, y);
+            if (seen[cell] || dead[cell] || (shape[cell] & from) == 0) return false;
+            seen[cell] = true;
+            int out = shape[cell] & ~from;
+            if (Integer.bitCount(out) != 1) return false;
+            int di = dirIndex(out);
+            int nx = x + DX[di], ny = y + DY[di];
+            if (nx >= cols) return out == E;
+            if (nx < 0 || ny < 0 || ny >= rows) return false;
+            x = nx;
+            y = ny;
+            from = opposite(out);
+        }
         return false;
     }
 
@@ -698,7 +733,7 @@ public class RootwayScreen extends BaseMinigameScreen {
     protected String hintText() {
         if (finished) return "It is through";
         if (grace > 0f) return String.format("It starts moving in %.1fs \u2014 lay the way now", grace);
-        if (mossy) return "Turn the stones ahead of it \u00b7 click moss to scrape it clear";
-        return "Turn the stones ahead of it \u2014 it will not wait for you";
+        if (mossy) return "Turn the stones \u00b7 scrape moss \u00b7 SHIFT when the route is complete";
+        return "Turn the stones ahead of it \u00b7 SHIFT when the route is complete";
     }
 }

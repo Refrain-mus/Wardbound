@@ -152,9 +152,21 @@ public abstract class BaseMinigameScreen extends Screen {
     private int lastEldritchBeat = -1;
     /** Physical key -> key delivered to the minigame, so refraction cannot leave a held control stuck. */
     private final java.util.Map<Integer, Integer> deliveredKeys = new java.util.HashMap<>();
+    /**
+     * Mouse buttons whose press was actually delivered to the host minigame.
+     *
+     * <p>A corruption phase can begin between press and release. Without pairing
+     * the two events, the release used to be swallowed by blackout/possession,
+     * leaving hold-driven locks (Pressure, Keyway, Balance, Vessel) logically
+     * pressed until another input happened. Keyboard input already kept this
+     * mapping; mouse input now follows the same rule.</p>
+     */
+    private final java.util.Set<Integer> deliveredMouseButtons = new java.util.HashSet<>();
 
     /** Server-authoritative global ward progression. */
     protected final int resolvedWards;
+    /** Whether late Master presentation is actually allowed for this player. */
+    protected final boolean masterPhase;
 
     protected int lives;
     /** Balance telemetry: significant wrong inputs/lives lost during this attempt. */
@@ -176,6 +188,9 @@ public abstract class BaseMinigameScreen extends Screen {
     private final long openedAtMillis = System.currentTimeMillis();
     /** Elapsed time already spent on this attempt before the current screen instance. */
     private final float elapsedBeforeOpen;
+    // Follows the same capped simulation clock as gameplay. Mandatory title/read
+    // pauses therefore do not advance hybrid triggers or inflate telemetry.
+    private float activeElapsedSeconds;
     private static final int INTRO_MS = 220;
 
     private final List<Burst> bursts = new ArrayList<>();
@@ -188,6 +203,7 @@ public abstract class BaseMinigameScreen extends Screen {
         this.pos = msg.pos;
         this.value = msg.value;
         this.resolvedWards = msg.resolvedWards;
+        this.masterPhase = msg.masterPhase;
         this.gameType = MinigameType.byOrdinal(msg.gameId);
         this.gameTimeScale = msg.timeScale;
         this.gameSpeedScale = msg.speedScale;
@@ -219,9 +235,10 @@ public abstract class BaseMinigameScreen extends Screen {
         this.measureStage = msg.measureStage;
         this.measureClause = msg.measureClause;
         this.masteryTier = Math.max(0, Math.min(5, msg.masteryTier));
-        // A brand-new ordinary discipline teaches its clean grammar first. Maker handwriting is
-        // mechanically neutral until the player has proved they can solve that discipline a few
-        // times; special narrative wards deliberately bypass this courtesy.
+        // The global opening stretch teaches clean ward grammar before authored handwriting
+        // joins the rotation. After normal card hands emerge, unfamiliar disciplines can still
+        // receive one restrained ordinary quirk; hard narrative mutations keep their separate
+        // server-side requirement of at least one real win in that discipline.
         this.makerStyle = introductoryWard() ? MakerMinigameBehavior.Style.UNSIGNED
                 : MakerMinigameBehavior.style(this.seed, this.unsigned);
         this.corruptionVariant = MinigameCorruption.variant(this.gameType, msg.corruptionVariant);
@@ -327,8 +344,23 @@ public abstract class BaseMinigameScreen extends Screen {
         return cardMinigameMask | WardMeasureSystem.clauseMask(measureClause);
     }
 
-    /** First few successful solves of an ordinary discipline are intentionally uncluttered. */
+    /**
+     * Global onboarding keeps the very first stretch of Wardbound readable.
+     *
+     * <p>Do not tie this to Mastery I: with 26 disciplines that made ordinary
+     * quirks/anomalies disappear for far too long, because every discipline had
+     * to earn two wins + mastery XP before any handwriting could appear. Once
+     * normal card hands enter the game, ordinary sub-features are allowed even
+     * on an unfamiliar discipline; their intensity is still capped below.</p>
+     */
     protected final boolean introductoryWard() {
+        return gameType != MinigameType.CTHULHUS_GAME
+                && resolvedWards < WardConfig.normalCardsAfterBeaten
+                && !advancedNarrativeWard();
+    }
+
+    /** The player has not yet graduated this individual discipline out of tier 0. */
+    protected final boolean unfamiliarDiscipline() {
         return gameType != MinigameType.CTHULHUS_GAME && masteryTier == 0 && !advancedNarrativeWard();
     }
 
@@ -443,7 +475,7 @@ public abstract class BaseMinigameScreen extends Screen {
     }
 
     private float elapsedSeconds() {
-        return elapsedBeforeOpen + Math.max(0f, (System.currentTimeMillis() - openedAtMillis) / 1000f);
+        return elapsedBeforeOpen + Math.max(0f, activeElapsedSeconds);
     }
 
     private int clientLatencyMs() {
@@ -498,6 +530,13 @@ public abstract class BaseMinigameScreen extends Screen {
      */
     protected abstract void step(float dt);
 
+    /**
+     * A screen may briefly freeze authored gameplay while it presents a phase title,
+     * memory witness, or equivalent mandatory read. The global clock and corruption
+     * cadence must not consume that presentation time.
+     */
+    protected boolean presentationPauseActive() { return false; }
+
     /** Consumes the time since the last call and runs {@link #step(float)} with it. */
     protected final void catchUp() {
         long now = System.nanoTime();
@@ -507,16 +546,20 @@ public abstract class BaseMinigameScreen extends Screen {
         // A long stall (window drag, chunk load) should not teleport the dial across the board.
         if (dt > 0.25f) dt = 0.25f;
         tickMasterMotif(dt);
-        tickHybrid(dt);
-        tickDeception(dt);
+        boolean presentationPause = presentationPauseActive();
+        if (!presentationPause) {
+            activeElapsedSeconds += dt;
+            tickHybrid(dt);
+            tickDeception(dt);
+        }
         tickAnomalies(dt);
-        tickCorruption(dt);
+        if (!presentationPause) tickCorruption(dt);
         if (!resolved && !hybridActive) step(dt * gameSpeedScale * corruptionSpeedScale());
     }
 
     /** Three short notes near the start of a signed ward. */
     private void tickMasterMotif(float dt) {
-        if (!WardConfig.masterAudioMotifsEnabled || unsigned || motifNote >= 3) return;
+        if (!WardConfig.masterAudioMotifsEnabled || !masterPhase || unsigned || motifNote >= 3) return;
         motifElapsed += dt;
         float[] at = {0.06f, 0.22f, 0.41f};
         if (motifNote < 3 && motifElapsed >= at[motifNote]) {
@@ -548,7 +591,8 @@ public abstract class BaseMinigameScreen extends Screen {
     private void rollAnomalies() {
         if (!WardConfig.anomaliesEnabled || introductoryWard()) return;
         java.util.List<Anomaly> hits = new java.util.ArrayList<>();
-        float learningChance = advancedNarrativeWard() ? 1f : (masteryTier == 1 ? 0.38f : masteryTier == 2 ? 0.72f : 1f);
+        float learningChance = advancedNarrativeWard() ? 1f
+                : (masteryTier <= 0 ? 0.30f : masteryTier == 1 ? 0.48f : masteryTier == 2 ? 0.76f : 1f);
         for (Anomaly a : Anomaly.values()) {
             if (!allows(a)) continue;
             // An unsigned seal takes every hostile condition going. It is not
@@ -662,7 +706,7 @@ public abstract class BaseMinigameScreen extends Screen {
 
     /** Two known-hand thresholds worth telling the player about. */
     protected String knownHandNote() {
-        if (!WardConfig.masterSignaturesEnabled) return null;
+        if (!WardConfig.masterSignaturesEnabled || !masterPhase) return null;
         MasterSignature signature = MasterSignature.ofSeed(seed);
         if (familiarity >= WardConfig.masterSignatureKnowAfter)
             return signature.label() + " \u00b7 you know this hand well";
@@ -675,7 +719,7 @@ public abstract class BaseMinigameScreen extends Screen {
     private void tickAnomalies(float dt) {
         if (sealBreak > 0f) sealBreak -= dt;
 
-        if (clockTotal > 0f && !resolved && !hybridActive) {
+        if (clockTotal > 0f && !resolved && !hybridActive && !presentationPauseActive()) {
             clockLeft -= dt;
             if (clockLeft <= 0f) {
                 clockLeft = 0f;
@@ -686,6 +730,9 @@ public abstract class BaseMinigameScreen extends Screen {
         }
         if (has(Anomaly.SHROUDED)) shroudT += dt;
         if (has(Anomaly.GUTTERING)) gutter += dt;
+        // Mandatory presentation pauses may keep cosmetic drift alive, but no
+        // timed gameplay anomaly is allowed to tax the player behind the title.
+        if (presentationPauseActive()) return;
         if (!has(Anomaly.HURRIED) || resolved || hybridActive) return;
 
         clock -= clockDrain * dt;
@@ -879,6 +926,13 @@ public abstract class BaseMinigameScreen extends Screen {
 
     private double refractMouseX(double mx) {
         double delivered = mx;
+        if (possessed && possessedPattern() == 2 && possessedSurging()) {
+            // Hungry Pull physically drags the delivered input toward the ward's
+            // mouth. The cursor itself need not teleport; the rim telegraph above
+            // tells the player that the mechanism is stealing leverage.
+            float pull = 0.10f + 0.08f * Mth.clamp((possessedBeatPhase() - 0.62f) / 2.13f, 0f, 1f);
+            delivered = Mth.lerp(pull, (float) delivered, (float) centerX());
+        }
         if (eldritchRefractionActive() || effectiveMirrorActive()) {
             int x = left();
             delivered = x + panelWidth() - (delivered - x);
@@ -892,7 +946,8 @@ public abstract class BaseMinigameScreen extends Screen {
     }
 
     private int refractKey(int key) {
-        if (!eldritchRefractionActive() && !effectiveMirrorActive()) return key;
+        boolean possessedReverse = possessed && possessedPattern() == 1 && possessedSurging();
+        if (!eldritchRefractionActive() && !effectiveMirrorActive() && !possessedReverse) return key;
         return switch (key) {
             case 65 -> 68;   // A -> D
             case 68 -> 65;   // D -> A
@@ -913,20 +968,39 @@ public abstract class BaseMinigameScreen extends Screen {
         catchUp();
         if (!resolved && hybridActive) return (button == 0 || button == 1) ? hybridClick(mx, my, button) : true;
         if (!resolved && corruptionInputSuppressed() && (button == 0 || button == 1)) return true;
+        if (!resolved && possessedSeizing() && (button == 0 || button == 1)) {
+            showBanner("POSSESSION · INPUT SEIZED", Painter.lighten(0xFF9A4E83, 0.18f), 260);
+            return true;
+        }
         if (!resolved && eldritchHushActive() && (button == 0 || button == 1)) {
             if (loseLife("The mouth answered before you did"))
                 showBanner("DO NOT ANSWER THE HUSH", COL_BAD, 760);
             return true;
         }
-        if (!resolved && onClick(refractMouseX(mx), my, button)) return true;
+        if (!resolved && onClick(refractMouseX(mx), my, button)) {
+            deliveredMouseButtons.add(button);
+            return true;
+        }
         return super.mouseClicked(mx, my, button);
     }
 
     @Override
     public final boolean mouseReleased(double mx, double my, int button) {
         catchUp();
+
+        // A release paired with a host-minigame press must always reach that
+        // minigame, even if blackout, possession, or a hybrid interruption
+        // appeared meanwhile. The release is cleanup, not a fresh action.
+        boolean wasDelivered = deliveredMouseButtons.remove(button);
+        if (wasDelivered) {
+            onRelease(refractMouseX(mx), my, button);
+            return true;
+        }
+
         if (!resolved && hybridActive) return (button == 0 || button == 1) ? hybridRelease(button) : true;
         if (!resolved && corruptionInputSuppressed() && (button == 0 || button == 1)) return true;
+        if (!resolved && possessedSeizing() && (button == 0 || button == 1)) return true;
+        if (!resolved && eldritchHushActive() && (button == 0 || button == 1)) return true;
         if (!resolved && onRelease(refractMouseX(mx), my, button)) return true;
         return super.mouseReleased(mx, my, button);
     }
@@ -948,6 +1022,10 @@ public abstract class BaseMinigameScreen extends Screen {
                 showBanner("DO NOT ANSWER THE HUSH", COL_BAD, 760);
             return true;
         }
+        if (!resolved && possessedSeizing() && corruptedKey(key)) {
+            showBanner("POSSESSION · INPUT SEIZED", Painter.lighten(0xFF9A4E83, 0.18f), 260);
+            return true;
+        }
         if (!resolved) {
             int delivered = refractKey(key);
             if (onKey(delivered)) {
@@ -962,11 +1040,18 @@ public abstract class BaseMinigameScreen extends Screen {
     public final boolean keyReleased(int key, int scan, int mods) {
         catchUp();
         if (!resolved && key == 256) return true;
+
+        Integer paired = deliveredKeys.remove(key);
+        if (paired != null) {
+            // Same invariant as mouse input: a key released after an interruption
+            // still has to clear the host lock's held state.
+            onKeyRelease(paired);
+            return true;
+        }
         if (!resolved && hybridActive) {
             return hybridKeyRelease(key);
         }
-        int delivered = deliveredKeys.containsKey(key) ? deliveredKeys.remove(key) : key;
-        if (!resolved && onKeyRelease(delivered)) return true;
+        if (!resolved && onKeyRelease(key)) return true;
         return super.keyReleased(key, scan, mods);
     }
 
@@ -1385,7 +1470,9 @@ public abstract class BaseMinigameScreen extends Screen {
         if (value >= WardConfig.quirkTwoThreshold) base = 2;
         else if (value >= WardConfig.quirkOneThreshold) base = 1;
         else base = seedVariance(99) < WardConfig.quirkLowValueChance ? 1 : 0;
-        if (!advancedNarrativeWard() && masteryTier == 1) base = Math.min(base, 1);
+        // After global onboarding an unfamiliar discipline may show one authored
+        // quirk, but never the full two-quirk stack until the player knows it.
+        if (!advancedNarrativeWard() && masteryTier <= 1) base = Math.min(base, 1);
         if (possessed) base = Math.min(2, base + 1);
         return base;
     }
@@ -1822,15 +1909,15 @@ public abstract class BaseMinigameScreen extends Screen {
                 p.roundOutline(x, y, w, contentBottom() - contentTop() - 4, col);
                 p.ringThick(centerX(), contentTop() + 15, 8, 2, col);
                 p.disc(centerX(), contentTop() + 15, 2, Painter.withAlpha(0xFFE7B9D5, 0xD0));
-                String hold = possessedPattern() == 1 ? "POSSESSION · STUTTER"
-                        : (possessedPattern() == 2 ? "POSSESSION · DRAWING BREATH" : "POSSESSION · THE MECHANISM HOLDS");
+                String hold = possessedPattern() == 1 ? "POSSESSION · INPUT STUTTER / DIRECTIONS WILL FLIP"
+                        : (possessedPattern() == 2 ? "POSSESSION · DRAWING BREATH / CENTER PULL NEXT" : "POSSESSION · INPUT SEIZED / LURCH NEXT");
                 smallCentered(g, hold, centerX(), contentTop() + 26,
                         Painter.lighten(0xFFB86A9D, 0.18f), 0.72f);
             } else if (possessedSurging()) {
                 int a = WardConfig.accessibilityReduceFlashing ? 0x62 : 0x58 + Math.round(breath(2.1f) * 0x28);
                 p.roundOutline(x - 2, y - 2, w + 4, contentBottom() - contentTop(), Painter.withAlpha(0xFF9A3D72, a));
-                String surge = possessedPattern() == 1 ? "POSSESSION · MISSED BEAT"
-                        : (possessedPattern() == 2 ? "POSSESSION · HUNGRY PULL" : "POSSESSION · LURCH");
+                String surge = possessedPattern() == 1 ? "POSSESSION · BROKEN BEAT / LEFT ↔ RIGHT"
+                        : (possessedPattern() == 2 ? "POSSESSION · HUNGRY PULL / INPUT DRAG" : "POSSESSION · LURCH / MECHANISM ACCELERATED");
                 smallCentered(g, surge, centerX(), contentTop() + 8,
                         Painter.withAlpha(0xFFE3A5CA, 0xD0), 0.72f);
             }

@@ -82,7 +82,7 @@ public final class RewardBreakdown {
                 contempt ? WardConfig.contemptLoot : 1f,
                 unsigned ? WardConfig.unsignedLoot : 1f,
                 gauntletFinal ? WardConfig.gauntletLoot : 1f,
-                WardConfig.globalRollMultiplier,
+                1f, // global ward-roll frequency is intentionally not a reward factor
                 clean);
     }
 
@@ -104,7 +104,7 @@ public final class RewardBreakdown {
                 contempt ? WardConfig.contemptLoot : 1f,
                 unsigned ? WardConfig.unsignedLoot : 1f,
                 gauntletFinal ? WardConfig.gauntletLoot : 1f,
-                WardConfig.globalRollMultiplier, 0f);
+                1f, 0f); // global ward-roll frequency is intentionally not a reward factor
         return r.total;
     }
 

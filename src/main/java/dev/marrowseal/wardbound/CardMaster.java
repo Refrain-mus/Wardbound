@@ -9,9 +9,11 @@ import net.minecraft.util.RandomSource;
 
 /** Card-only masters that do not author physical wards. Their identities unlock through field-card play. */
 public enum CardMaster {
-    ASHEN_CURATOR("ashen_curator", "The Ashen Curator", MasterSignature.VEILED, 0, 2),
-    MOURNING_NOTARY("mourning_notary", "The Mourning Notary", MasterSignature.EXACTING, 3, 6),
-    PALE_GAMBLER("pale_gambler", "The Pale Gambler", MasterSignature.CROOKED, 7, 11);
+    // The three Masters are peers, not a tutorial ladder. They all enter the
+    // late-game card layer together so early Wardbound reads as wards + cards.
+    ASHEN_CURATOR("ashen_curator", "The Ashen Curator", MasterSignature.VEILED, 120, 160),
+    MOURNING_NOTARY("mourning_notary", "The Mourning Notary", MasterSignature.EXACTING, 120, 160),
+    PALE_GAMBLER("pale_gambler", "The Pale Gambler", MasterSignature.CROOKED, 120, 160);
 
     public final String id;
     public final String title;
@@ -69,7 +71,7 @@ public enum CardMaster {
     }
 
     public String presenterLabel(LockData data, UUID player) {
-        if (!known(data, player)) return "???";
+        if (!known(data, player)) return "Unread Hand";
         int relation = relation(data, player);
         return title + " · " + mood(data, player) + " · favor " + (relation >= 0 ? "+" : "") + relation + "/20";
     }
@@ -179,9 +181,38 @@ public enum CardMaster {
         return ASHEN_CURATOR;
     }
 
+    /** True only after at least one Master has actually entered the field-card pool. */
+    public static boolean anyEligible(int opened) {
+        for (CardMaster master : values()) if (opened >= master.entersPoolAfter) return true;
+        return false;
+    }
+
+    /**
+     * Single authoritative gate for the late dealer/Master layer.
+     *
+     * <p>Field cards are intentionally farmable once discovered, so their counter
+     * cannot be the only key to the late game. Requiring the matching resolved-ward
+     * shelf prevents a mob farm from revealing Curator/Notary/Gambler while the
+     * player's actual Wardbound progression is still in its onboarding chapters.</p>
+     */
+    public static boolean phaseActive(LockData data, UUID player) {
+        return phaseActiveAt(data, player, data == null || player == null ? 0 : data.uniqueInt(player, "field_cards_opened"));
+    }
+
+    /** Prospective variant used while the next field card is being opened. */
+    public static boolean phaseActiveAt(LockData data, UUID player, int opened) {
+        return data != null && player != null
+                && anyEligible(Math.max(0, opened))
+                && data.totalBeaten(player) >= WardConfig.masterCardsAfterBeaten;
+    }
+
     /** Weighted to avoid the same dealer dominating every field drop while still respecting relationships. */
     public static CardMaster choose(LockData data, UUID player, RandomSource random) {
-        int opened = data.uniqueInt(player, "field_cards_opened");
+        return chooseAt(data, player, random, data.uniqueInt(player, "field_cards_opened"));
+    }
+
+    /** Selection against an explicit opened-card shelf; avoids a one-card activation lag. */
+    public static CardMaster chooseAt(LockData data, UUID player, RandomSource random, int opened) {
         List<CardMaster> pool = new ArrayList<>();
         int totalWeight = 0;
         int last = data.uniqueInt(player, "last_card_master");
@@ -211,31 +242,6 @@ public enum CardMaster {
         data.setUniqueInt(player, "last_card_master_streak", last == chosenKey ? Math.min(4, streak + 1) : 1);
         data.setUniqueInt(player, "last_card_master", chosenKey);
         return chosen;
-    }
-
-    public String fieldDropLine(boolean known, RandomSource random) {
-        String speaker = known ? title : "???";
-        String[] lines = switch (this) {
-            case ASHEN_CURATOR -> new String[]{
-                    "Do not mistake ash for an ending. Open this when the noise stops.",
-                    "The edges are already burned. The part that matters is still legible.",
-                    "Keep this closed until you can hear the paper cooling.",
-                    "I removed the page that would have comforted you. It was irrelevant."
-            };
-            case MOURNING_NOTARY -> new String[]{
-                    "This event has been witnessed. Your signature is the only absent thing.",
-                    "I have notarized the death. The card is merely the receipt.",
-                    "A record has found you before I finished writing it. Inconvenient.",
-                    "There is a blank clause here. It is blank only because you have not failed it yet."
-            };
-            case PALE_GAMBLER -> new String[]{
-                    "One card. No table. You may still find a way to lose.",
-                    "I wagered that you would pick this up. Thank you for the confirmation.",
-                    "Do not open it during a fight. I dislike odds I did not arrange.",
-                    "The hand was better before I removed the card that would have saved you."
-            };
-        };
-        return speaker + ": " + lines[random.nextInt(lines.length)];
     }
 
     public String acceptanceLine(LockData data, UUID player, ForbiddenBargain card, RandomSource random) {
@@ -286,17 +292,26 @@ public enum CardMaster {
         };
     }
 
-    /** Returns true when this interaction reveals a new card-master identity. */
-    public static boolean updateReveals(ServerPlayerView view, LockData data, UUID player) {
+    /** Returns true when this interaction reveals this dealer's identity. */
+    public static boolean updateReveal(ServerPlayerView view, LockData data, UUID player, CardMaster master) {
+        if (master == null || !phaseActive(data, player)) return false;
         int opened = data.uniqueInt(player, "field_cards_opened");
-        boolean any = false;
-        for (CardMaster master : values()) {
-            if (opened >= master.revealAfter && !master.known(data, player)) {
-                data.setUnique(player, "dealer_known_" + master.id, true);
-                if (view != null) view.reveal(master);
-                any = true;
-            }
+        int audiences = data.uniqueInt(player, "dealer_audiences_" + master.id);
+        // Equal thresholds do not mean simultaneous exposition. Each peer Master
+        // identifies itself only on one of its own post-threshold audiences.
+        if (opened >= master.revealAfter && audiences >= 3 && !master.known(data, player)) {
+            data.setUnique(player, "dealer_known_" + master.id, true);
+            if (view != null) view.reveal(master);
+            return true;
         }
+        return false;
+    }
+
+    /** Compatibility/debug helper; gameplay should prefer updateReveal for the active dealer. */
+    public static boolean updateReveals(ServerPlayerView view, LockData data, UUID player) {
+        if (!phaseActive(data, player)) return false;
+        boolean any = false;
+        for (CardMaster master : values()) any |= updateReveal(view, data, player, master);
         return any;
     }
 

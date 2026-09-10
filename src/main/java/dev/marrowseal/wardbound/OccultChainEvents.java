@@ -27,6 +27,10 @@ public final class OccultChainEvents {
         return Math.max(0, Math.min(event.maxStage, data.uniqueInt(id, "occult_chain_" + event.id)));
     }
 
+    private static boolean masterPhase(LockData data, UUID id) {
+        return CardMaster.phaseActive(data, id);
+    }
+
     private static void advance(ServerPlayer player, LockData data, ChainEvent event, int target, String text) {
         UUID id = player.getUUID();
         int before = stage(data, id, event);
@@ -43,8 +47,10 @@ public final class OccultChainEvents {
     public static void onChestResolved(ServerPlayer player, LockData data, int threatTier, boolean eldritchShard, boolean success) {
         if (player == null || data == null) return;
         UUID id = player.getUUID();
+        if (!masterPhase(data, id)) return;
         int black = stage(data, id, ChainEvent.BLACK_TABLE);
-        if (black == 0 && AttentionSystem.current(data, id).ordinal() >= AttentionSystem.Stage.HUNTED.ordinal()
+        if (black == 0 && CardMaster.PALE_GAMBLER.known(data, id)
+                && AttentionSystem.current(data, id).ordinal() >= AttentionSystem.Stage.HUNTED.ordinal()
                 && CardMaster.PALE_GAMBLER.relation(data, id) >= 8) {
             advance(player, data, ChainEvent.BLACK_TABLE, 1, "The Gambler notices that the thing hunting you is also pricing the outcome.");
             black = 1;
@@ -71,13 +77,16 @@ public final class OccultChainEvents {
     public static void onCardSigned(ServerPlayer player, LockData data, CardMaster dealer, ForbiddenBargain card) {
         if (player == null || data == null || card == null) return;
         UUID id = player.getUUID();
+        if (!masterPhase(data, id)) return;
 
         int ash = stage(data, id, ChainEvent.ASH_MARGIN);
-        if (ash == 0 && dealer == CardMaster.ASHEN_CURATOR && card.isCurse() && CardMaster.ASHEN_CURATOR.relation(data, id) >= 8) {
+        if (ash == 0 && CardMaster.ASHEN_CURATOR.known(data, id)
+                && dealer == CardMaster.ASHEN_CURATOR && card.isCurse() && CardMaster.ASHEN_CURATOR.relation(data, id) >= 8) {
             advance(player, data, ChainEvent.ASH_MARGIN, 1, "The Curator lets a curse survive the ash on purpose.");
             ash = 1;
         }
-        if (ash == 1 && dealer == CardMaster.MOURNING_NOTARY && card.isRitual()) {
+        if (ash == 1 && CardMaster.MOURNING_NOTARY.known(data, id)
+                && dealer == CardMaster.MOURNING_NOTARY && card.isRitual()) {
             advance(player, data, ChainEvent.ASH_MARGIN, 2, "The Notary countersigns a ritual beside the Curator's surviving curse.");
             ash = 2;
         }
@@ -112,6 +121,7 @@ public final class OccultChainEvents {
     public static void onRitualComplete(ServerPlayer player, LockData data, int purity) {
         if (player == null || data == null) return;
         UUID id = player.getUUID();
+        if (!masterPhase(data, id)) return;
         if (stage(data, id, ChainEvent.ASH_MARGIN) == 2 && purity >= 100) {
             advance(player, data, ChainEvent.ASH_MARGIN, 3, "The countersigned rite is completed without a breach.");
             CardMaster.ASHEN_CURATOR.addRelation(data, id, 2);
@@ -124,6 +134,7 @@ public final class OccultChainEvents {
     public static void onConjunctionDiscovered(ServerPlayer player, LockData data) {
         if (player == null || data == null) return;
         UUID id = player.getUUID();
+        if (!masterPhase(data, id)) return;
         int known = CardConjunctions.knownCount(data, id);
         if (stage(data, id, ChainEvent.WITNESS_SEQUENCE) == 0 && known >= 3)
             advance(player, data, ChainEvent.WITNESS_SEQUENCE, 1, "Three conjunctions make the Grimoire dense enough for the Savant to call it a network.");

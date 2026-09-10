@@ -40,7 +40,6 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import dev.marrowseal.wardbound.item.SealedCardItem;
 import dev.marrowseal.wardbound.item.CthulhuEyeItem;
 import dev.marrowseal.wardbound.item.WardItems;
 import net.minecraftforge.event.TickEvent;
@@ -424,22 +423,31 @@ public final class BargainEffects {
         // pathological saves from going thousands of eligible kills without ever seeing one.
         if (data.totalBeaten(id) >= WardConfig.fieldCardAfterBeaten) {
             int pity = data.uniqueInt(id, "field_card_pity");
-            boolean guaranteed = pity >= CardBalance.FIELD_PITY_GUARANTEE;
+            boolean guaranteed = CardBalance.fieldDropGuaranteed(pity);
             float chance = CardBalance.fieldDropChance(pity);
             if (guaranteed || player.getRandom().nextFloat() < chance) {
                 data.setUniqueInt(id, "field_card_pity", 0);
-                CardMaster dealer = CardMaster.choose(data, id, player.getRandom());
+                // Do not pre-assign a Card Master at kill time. Doing so made a pile
+                // of cards farmed before opening any of them all belong to the same
+                // early dealer, and every drop also spammed that dealer's dialogue.
+                // An untagged Sealed Card chooses its hand only when the player opens it.
                 ItemStack sealed = new ItemStack(WardItems.SEALED_CARD.get());
-                sealed.getOrCreateTag().putString(SealedCardItem.TAG_DEALER, dealer.id);
                 if (!player.getInventory().add(sealed)) player.drop(sealed, false);
-                String line = dealer.fieldDropLine(dealer.known(data, id), player.getRandom());
-                WardHud.message(player, net.minecraft.network.chat.Component.literal(line)
-                        .withStyle(net.minecraft.ChatFormatting.DARK_PURPLE, net.minecraft.ChatFormatting.ITALIC), false);
+
+                // The first physical field card gets one atmospheric clue. Later
+                // drops are communicated by the pickup sounds/particles only; Master
+                // dialogue belongs to actually opening and answering a hand.
+                if (!data.hasUnique(id, "field_card_first_drop_seen")) {
+                    data.setUnique(id, "field_card_first_drop_seen", true);
+                    WardHud.message(player, net.minecraft.network.chat.Component.literal(
+                                    "A sealed card slips free. It stays quiet until you choose to open it.")
+                            .withStyle(net.minecraft.ChatFormatting.DARK_PURPLE, net.minecraft.ChatFormatting.ITALIC), false);
+                }
                 level.playSound(null, player.blockPosition(), SoundEvents.BOOK_PAGE_TURN, SoundSource.PLAYERS, 0.72f, 0.72f);
                 level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.34f, 0.62f);
                 level.sendParticles(ParticleTypes.ENCHANT, player.getX(), player.getY(0.8), player.getZ(), 10, 0.24, 0.38, 0.24, 0.015);
             } else {
-                data.setUniqueInt(id, "field_card_pity", Math.min(CardBalance.FIELD_PITY_GUARANTEE, pity + 1));
+                data.setUniqueInt(id, "field_card_pity", Math.min(CardBalance.FIELD_PITY_GUARANTEE - 1, pity + 1));
             }
         }
 
@@ -1210,11 +1218,15 @@ public final class BargainEffects {
             }
         }
 
-        int beforeRelation = CardMaster.MOURNING_NOTARY.relation(data, id);
-        int relation = CardMaster.MOURNING_NOTARY.addRelation(data, id, finePrint ? 2 : 1);
-        if (relation > beforeRelation && (relation == 3 || relation == 8 || relation == 14)) {
-            CthulhuEyeItem.speakInsight(player, "notary_objective_relation_" + relation,
-                    "The Mourning Notary has begun to count your completed obligations separately from your signatures.", 20L * 90L);
+        boolean masterPhase = CardMaster.phaseActive(data, id);
+        if (masterPhase) {
+            int beforeRelation = CardMaster.MOURNING_NOTARY.relation(data, id);
+            int relation = CardMaster.MOURNING_NOTARY.addRelation(data, id, finePrint ? 2 : 1);
+            if (CardMaster.MOURNING_NOTARY.known(data, id) && relation > beforeRelation
+                    && (relation == 3 || relation == 8 || relation == 14)) {
+                CthulhuEyeItem.speakInsight(player, "notary_objective_relation_" + relation,
+                        "The Mourning Notary has begun to count your completed obligations separately from your signatures.", 20L * 90L);
+            }
         }
         data.setUniqueInt(id, "objectives_completed_total", data.uniqueInt(id, "objectives_completed_total") + 1);
         if (objective != null)
@@ -1222,7 +1234,8 @@ public final class BargainEffects {
                     data.uniqueInt(id, "objectives_completed_" + objective.kind.name().toLowerCase(java.util.Locale.ROOT)) + 1);
         data.setUniqueInt(id, "obj_completed_" + key, data.uniqueInt(id, "obj_completed_" + key) + 1);
 
-        level.playSound(null, player.blockPosition(), WardSounds.MASTER_MOTIF.get(), SoundSource.PLAYERS, 0.58f, 0.92f);
+        level.playSound(null, player.blockPosition(), masterPhase ? WardSounds.MASTER_MOTIF.get() : WardSounds.WARD_SEAL.get(),
+                SoundSource.PLAYERS, 0.58f, masterPhase ? 0.92f : 1.08f);
         level.sendParticles(ParticleTypes.ENCHANT, player.getX(), player.getY(0.7), player.getZ(), 22, 0.36, 0.52, 0.36, 0.025);
         WardHud.message(player, net.minecraft.network.chat.Component.literal(title + " is fulfilled. The payment is made.")
                 .withStyle(net.minecraft.ChatFormatting.GOLD, net.minecraft.ChatFormatting.BOLD), false);

@@ -11,6 +11,7 @@ import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import dev.marrowseal.wardbound.Wardbound;
+import dev.marrowseal.wardbound.WardConfig;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -40,9 +41,12 @@ public final class ClientWardEventOverlay {
         String incoming = text == null ? "" : text.trim();
         if (incoming.isEmpty()) return;
         int mood = Math.max(0, Math.min(4, moodId));
-        int duration = Math.max(1200, Math.min(6500, durationMs));
+        int requestedDuration = Math.max(1200, Math.min(6500, durationMs));
+        // Long HUD prose used to fade before the typewriter had even reached its tail.
+        // Extend locally for readability without changing the packet contract.
+        int duration = Math.min(9000, Math.max(requestedDuration, 1700 + incoming.length() * 14));
         long now = System.currentTimeMillis();
-        Entry entry = new Entry(incoming, mood, now, duration);
+        Entry entry = splitEntry(incoming, mood, now, duration);
 
         if (ACTIVE.isEmpty() || now - shownAtMs >= displayMs) {
             ACTIVE.clear();
@@ -111,15 +115,22 @@ public final class ClientWardEventOverlay {
             Entry entry = ACTIVE.get(entryIndex);
             long localAge = Math.max(0L, now - entry.addedAt);
             float revealRate = entry.mood == 1 ? 0.080f : entry.mood == 2 ? 0.110f : 0.15f;
-            int reveal = Math.min(entry.text.length(), Math.max(1, (int) (localAge * revealRate)));
+            int reveal = WardConfig.accessibilityReduceMotion
+                    ? entry.text.length()
+                    : Math.min(entry.text.length(), Math.max(1, (int) (localAge * revealRate)));
             String visible = entry.text.substring(0, reveal);
-            boolean glitchFrame = (entry.mood == 1 || entry.mood == 4) && localAge < 1250L && ((localAge / 85L) % 4L == 1L);
-            boolean stutterFrame = entry.mood == 2 && localAge < 850L && ((localAge / 70L) % 5L == 2L);
+            boolean glitchFrame = !WardConfig.accessibilityReduceFlashing
+                    && (entry.mood == 1 || entry.mood == 4) && localAge < 1250L && ((localAge / 85L) % 4L == 1L);
+            boolean stutterFrame = !WardConfig.accessibilityReduceFlashing
+                    && entry.mood == 2 && localAge < 850L && ((localAge / 70L) % 5L == 2L);
             if (glitchFrame) visible = corrupt(visible, localAge + entryIndex * 17L);
             if (stutterFrame && visible.length() > 4) visible = visible.substring(0, Math.max(1, visible.length() - 2));
 
+            if (ACTIVE.size() > 1 && !entry.speaker.isBlank()) visible = entry.speaker + " // " + visible;
             List<String> wrapped = wrap(font, visible, maxWidth - 24);
-            if (wrapped.size() > 2) wrapped = wrapped.subList(0, 2);
+            // Never throw the unread tail away. Once a long notice grows beyond three
+            // lines the window follows the newest lines, so the entire sentence can pass.
+            if (wrapped.size() > 3) wrapped = wrapped.subList(wrapped.size() - 3, wrapped.size());
             for (String line : wrapped) {
                 drawLines.add(new DrawLine(line, entry.mood));
                 widest = Math.max(widest, font.width(line));
@@ -130,13 +141,18 @@ public final class ClientWardEventOverlay {
         }
 
         if (drawLines.isEmpty()) return;
-        if (drawLines.size() > 7) drawLines = drawLines.subList(0, 7);
+        if (drawLines.size() > 8) drawLines = drawLines.subList(drawLines.size() - 8, drawLines.size());
+
+        String panelTitle = null;
+        if (ACTIVE.size() == 1 && !ACTIVE.get(0).speaker.isBlank()) panelTitle = ACTIVE.get(0).speaker;
+        else if (ACTIVE.size() > 1) panelTitle = anyReward ? "WARD // RESOLUTION" : anyGlitch ? "WARD // SIGNAL" : "WARD // EVENTS";
+        if (panelTitle != null) widest = Math.max(widest, font.width(panelTitle));
 
         float fadeWindow = Math.min(700f, Math.max(260f, displayMs * .22f));
         float fade = age > displayMs - fadeWindow ? (displayMs - age) / fadeWindow : 1f;
         int alpha = Math.max(0, Math.min(215, Math.round(215f * fade)));
         int lineH = 11;
-        int titleH = ACTIVE.size() > 1 ? 12 : 0;
+        int titleH = panelTitle != null ? 12 : 0;
         int panelW = Math.min(maxWidth + 20, widest + 34);
         int panelH = 9 + titleH + drawLines.size() * lineH;
         int x = sw / 2 - panelW / 2;
@@ -151,7 +167,7 @@ public final class ClientWardEventOverlay {
         int maxY = Math.max(minY, sh - panelH - bottomSafe);
         y = Math.max(minY, Math.min(maxY, y));
 
-        boolean jitter = anyDanger && age < 700L && ((age / 80L) % 4L == 1L);
+        boolean jitter = !WardConfig.accessibilityReduceMotion && anyDanger && age < 700L && ((age / 80L) % 4L == 1L);
         if (jitter) x += ((age / 80L) % 2L == 0L) ? 1 : -1;
 
         int accent = anyDanger ? 0x7B252E : anyGlitch ? 0x633B8E : anyReward ? 0x786125 : 0x255D61;
@@ -162,9 +178,8 @@ public final class ClientWardEventOverlay {
         g.fill(x + panelW - 4, y, x + panelW - 3, y + 8, (alpha << 24) | accent);
 
         int drawY = y + 5;
-        if (ACTIVE.size() > 1) {
-            String title = anyReward ? "WARD // RESOLUTION" : anyGlitch ? "WARD // SIGNAL" : "WARD // EVENTS";
-            Component c = Component.literal(title).withStyle(style -> style.withFont(UNIFORM_FONT).withBold(true));
+        if (panelTitle != null) {
+            Component c = Component.literal(panelTitle).withStyle(style -> style.withFont(UNIFORM_FONT).withBold(true));
             g.drawCenteredString(font, c, sw / 2, drawY, (alpha << 24) | 0xA7A0AF);
             drawY += titleH;
         }
@@ -203,7 +218,17 @@ public final class ClientWardEventOverlay {
         return new String(chars);
     }
 
-    private record Entry(String text, int mood, long addedAt, int durationMs) {}
+    private static Entry splitEntry(String incoming, int mood, long now, int duration) {
+        int split = incoming.indexOf("//");
+        if (split > 0 && split <= 32 && split + 2 < incoming.length()) {
+            String speaker = incoming.substring(0, split).trim();
+            String body = incoming.substring(split + 2).trim();
+            if (!speaker.isBlank() && !body.isBlank()) return new Entry(speaker, body, mood, now, duration);
+        }
+        return new Entry("", incoming, mood, now, duration);
+    }
+
+    private record Entry(String speaker, String text, int mood, long addedAt, int durationMs) {}
     private record DrawLine(String text, int mood) {}
 
     private static List<String> wrap(Font font, String text, int maxWidth) {

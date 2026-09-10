@@ -1404,6 +1404,7 @@ public enum ForbiddenBargain {
     /** Whether offering this card can change anything for this player now. */
     public boolean available(LockData data, UUID player, boolean watcherEligible) {
         int resolved = data.totalBeaten(player);
+        if (kind == Kind.MASTER && !CardMaster.phaseActive(data, player)) return false;
         if (!kindShelfUnlocked(kind, resolved) || resolved < minResolved) return false;
         return switch (this) {
             case BORROWED_BREATH -> !data.hasBorrowedBreath(player);

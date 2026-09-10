@@ -26,25 +26,26 @@ public final class WardConfig {
     private static final String FILE = "wardbound.json";
 
     /**
-     * Alpha config schema. A mismatched file is backed up and regenerated from
-     * current defaults instead of being migrated through historical schemas.
+     * Alpha config schema. Most mismatches are backed up and regenerated; the
+     * v30 -> v31, v31 -> v32, v32 -> v33 and v33 -> v34 are balance-only transitions.
+     * Unchanged old defaults migrate in place so unrelated custom settings are preserved.
      */
-    public static final int CONFIG_VERSION = 30;
+    public static final int CONFIG_VERSION = 34;
 
     /** Value below this uses lockChanceLow, at or above uses lockChanceHigh. */
     public static int lockThreshold = 30;
-    public static float lockChanceLow = 0.95f;
-    public static float lockChanceHigh = 0.95f;
-    /** Flat multiplier applied on top of everything else. */
+    public static float lockChanceLow = 0.45f;
+    public static float lockChanceHigh = 0.55f;
+    /** Global multiplier for the initial physical-ward roll. 1.0 keeps the low/high chances unchanged. */
     public static float globalRollMultiplier = 1.0f;
     /** Ask for a second right click before starting the minigame. */
     public static boolean requireConfirmClick = false;
     /** Chests whose loot table scores below this are never locked. */
     /**
      * Containers scoring below this never ward at all, whatever the chance says.
-     * Kept at 1 rather than 5: with the chance at 95% a floor of 5 was quietly
-     * exempting a noticeable share of structure chests, so the mod felt less
-     * frequent than the number in the config claimed it was.
+     * Kept at 1 rather than 5 so low-value structure loot can still participate.
+     * Frequency is controlled by the low/high chance pair instead of a hidden
+     * value floor that silently removes whole chest categories from the system.
      */
     public static int minValueToLock = 1;
     /** Work out item worth automatically from tags, tier, rarity and durability. */
@@ -147,14 +148,14 @@ public final class WardConfig {
     public static boolean masterSignaturesEnabled = true;
     /** Chance the maker's preferred quirk occupies one of the existing slots. */
     public static float masterSignatureBiasChance = 0.78f;
-    public static int masterSignatureRevealAfter = 5;
-    public static int masterSignatureKnowAfter = 12;
+    public static int masterSignatureRevealAfter = 18;
+    public static int masterSignatureKnowAfter = 42;
     public static float knownHandBonusPerSeal = 0.02f;
     public static float knownHandBonusCap = 0.25f;
 
     /** Rare post-ward card choice. Immediate chest rewards are flat additions; some cards also bind future ward terms. */
     public static boolean forbiddenBargainsEnabled = true;
-    public static float forbiddenBargainChance = 0.105f;
+    public static float forbiddenBargainChance = 0.12f;
     public static int forbiddenBargainMaxOffers = 4;
     public static float bargainBorrowedBreathReward = 0.12f;
     public static float bargainIronDebtReward = 0.16f;
@@ -306,10 +307,10 @@ public final class WardConfig {
     /** Field/card progression gates. Extreme hands simply do not exist before these milestones. */
     /** Normal chest bargains stay fully locked during the opening onboarding band. */
     public static int normalCardsAfterBeaten = 15;
-    public static int fieldCardAfterBeaten = 40;
+    public static int fieldCardAfterBeaten = 20;
     /** Eligible hostile kill chance to leave a physical Sealed Card. */
-    public static float fieldCardDropChance = 0.0040f;
-    public static int masterCardsAfterBeaten = 90;
+    public static float fieldCardDropChance = 0.075f;
+    public static int masterCardsAfterBeaten = 120;
     /** Objective-deck progression. Contracts are common tasks; Rituals are slower; Covenants are darker and rarer. */
     public static int contractCardsAfterBeaten = 110;
     public static int ritualCardsAfterBeaten = 240;
@@ -503,7 +504,7 @@ public final class WardConfig {
      * lock stops being a decision and becomes a prompt you dismiss, and the
      * moment it is routine it has lost the only thing it was for.
      */
-    public static float temptChance = 0.35f;
+    public static float temptChance = 0.15f;
     /** Loot multiplier per re-seal, compounding. */
     public static float temptMultiplier = 1.55f;
     /** How many times one container may be wound tighter. */
@@ -529,7 +530,7 @@ public final class WardConfig {
      * This is the only way either charm turns up without a crafting table, and
      * it is deliberately the reward for winning rather than for looting.
      */
-    public static float keyDropChance = 0.10f;
+    public static float keyDropChance = 0.06f;
     /**
      * Chance of a heart, scaled by how rich the chest was. A worthless chest
      * effectively never drops one; a jackpot chest is the only realistic source.
@@ -645,7 +646,12 @@ public final class WardConfig {
             JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
 
             int loadedVersion = root.has("config_version") ? root.get("config_version").getAsInt() : 0;
-            if (loadedVersion != CONFIG_VERSION) {
+            boolean migrateBalanceV30 = loadedVersion == 30;
+            boolean migrateFieldCardsV31 = loadedVersion == 31;
+            boolean migrateMasterPacingV32 = loadedVersion == 32;
+            boolean migrateLateMasterV33 = loadedVersion == 33;
+            if (loadedVersion != CONFIG_VERSION && !migrateBalanceV30 && !migrateFieldCardsV31
+                    && !migrateMasterPacingV32 && !migrateLateMasterV33) {
                 Path backup = file.resolveSibling("wardbound.pre-v" + CONFIG_VERSION + ".json");
                 Files.move(file, backup, StandardCopyOption.REPLACE_EXISTING);
                 Wardbound.LOG.warn("[Wardbound] alpha config schema {} != {}; backed up old config to {} and generated clean defaults",
@@ -927,6 +933,40 @@ public final class WardConfig {
                     }
                 }
             }
+            if (migrateBalanceV30) {
+                // v31 balance migration. Preserve custom values and only move
+                // fields that are still exactly on the old v30 defaults.
+                if (near(lockChanceLow, 0.95f) && near(lockChanceHigh, 0.95f)) {
+                    lockChanceLow = 0.45f;
+                    lockChanceHigh = 0.55f;
+                }
+                if (near(forbiddenBargainChance, 0.105f)) forbiddenBargainChance = 0.12f;
+                if (near(fieldCardDropChance, 0.0040f)) fieldCardDropChance = 0.075f;
+                if (near(temptChance, 0.35f)) temptChance = 0.15f;
+                if (near(keyDropChance, 0.10f)) keyDropChance = 0.06f;
+            }
+            if (migrateBalanceV30 || migrateFieldCardsV31 || migrateMasterPacingV32 || migrateLateMasterV33) {
+                // v32 field-card pacing migration. 40 was the old default; a
+                // deliberately customized gate is left alone.
+                if (fieldCardAfterBeaten == 40) fieldCardAfterBeaten = 20;
+
+                // v33 Master pacing migration. 1.0.2 shipped 5/12 and the first
+                // An intermediate source pass used 12/28 without advancing config_version.
+                // Upgrade either exact historical default pair, but preserve a
+                // player's deliberate custom thresholds.
+                boolean oldMasterDefaults = (masterSignatureRevealAfter == 5 && masterSignatureKnowAfter == 12)
+                        || (masterSignatureRevealAfter == 12 && masterSignatureKnowAfter == 28);
+                if (oldMasterDefaults) {
+                    masterSignatureRevealAfter = 18;
+                    masterSignatureKnowAfter = 42;
+                }
+                // v34: physical/private Master-card shelf now agrees with the
+                // field-card Master phase. Preserve deliberate custom values.
+                if (masterCardsAfterBeaten == 90) masterCardsAfterBeaten = 120;
+                clampAll();
+                save(file);
+                Wardbound.LOG.info("[Wardbound] migrated config balance defaults to v{} without replacing custom settings", CONFIG_VERSION);
+            }
             Wardbound.LOG.info("[Wardbound] config loaded, {} dimension entries", DIMENSIONS.size());
         } catch (Exception e) {
             Wardbound.LOG.warn("[Wardbound] could not read config: {}", e.toString());
@@ -942,9 +982,19 @@ public final class WardConfig {
      * values back, so a number typed into a box is held to exactly the same
      * bounds as a number typed into the file.
      */
+    private static boolean near(float a, float b) {
+        return Math.abs(a - b) < 0.00001f;
+    }
+
     public static void clampAll() {
 
         // keep the ranges sane no matter what someone typed into the file/screen
+        lockThreshold = Math.max(0, Math.min(100000, lockThreshold));
+        lockChanceLow = Math.max(0f, Math.min(1f, lockChanceLow));
+        lockChanceHigh = Math.max(0f, Math.min(1f, lockChanceHigh));
+        minValueToLock = Math.max(0, Math.min(100000, minValueToLock));
+        globalRollMultiplier = Math.max(0f, Math.min(4f, globalRollMultiplier));
+        autoValueScale = Math.max(0f, Math.min(10f, autoValueScale));
         minPins = Math.max(1, Math.min(20, minPins));
         maxPins = Math.max(minPins, Math.min(20, maxPins));
         pulseIntensity = Math.max(0f, Math.min(1f, pulseIntensity));
@@ -972,6 +1022,7 @@ public final class WardConfig {
         perfectWinLootAdd = Math.max(cleanWinLootAdd, Math.min(0.35f, perfectWinLootAdd));
         cleanWinRegardBonus = Math.max(0, Math.min(5, cleanWinRegardBonus));
         perfectWinRegardBonus = Math.max(cleanWinRegardBonus, Math.min(8, perfectWinRegardBonus));
+        advancedMinigameVariantChanceScale = Math.max(0f, Math.min(3f, advancedMinigameVariantChanceScale));
         deceptionUnlockAfter = Math.max(0, Math.min(10000, deceptionUnlockAfter));
         deceptionBaseChance = Math.max(0f, Math.min(0.50f, deceptionBaseChance));
         deceptionMaxChance = Math.max(deceptionBaseChance, Math.min(0.75f, deceptionMaxChance));
@@ -1113,6 +1164,10 @@ public final class WardConfig {
         tierMax = Math.max(0, Math.min(20, tierMax));
         tierDifficultyStep = Math.max(0f, Math.min(1f, tierDifficultyStep));
         tierLootStep = Math.max(0f, Math.min(2f, tierLootStep));
+        verdictAfter = Math.max(0, Math.min(10000, verdictAfter));
+        verdictThreshold = Math.max(-80, Math.min(140, verdictThreshold));
+        contemptDifficulty = Math.max(0.25f, Math.min(4f, contemptDifficulty));
+        contemptLoot = Math.max(0.10f, Math.min(12f, contemptLoot));
         watcherMaxChance = Math.max(0f, Math.min(1f, watcherMaxChance));
         watcherAfter = Math.max(0, Math.min(10000, watcherAfter));
         watcherRamp = Math.max(0f, Math.min(0.05f, watcherRamp));
@@ -1268,7 +1323,7 @@ public final class WardConfig {
         root.addProperty("auto_item_values", autoItemValues);
         root.addProperty("_5d", "auto_value_scale: nudge all automatic scores. 1.2 = chests feel richer and lock more often.");
         root.addProperty("auto_value_scale", autoValueScale);
-        root.addProperty("_6", "global_roll_multiplier: flat multiplier stacked on every reward. 1.0 = no change.");
+        root.addProperty("_6", "global_roll_multiplier: multiplies the initial physical-ward chance. 1.0 = base chance; 0 = no random physical wards.");
         root.addProperty("global_roll_multiplier", globalRollMultiplier);
         root.addProperty("_6a", "require_confirm_click: if true the minigame starts on a second right click, otherwise it opens immediately.");
         root.addProperty("require_confirm_click", requireConfirmClick);

@@ -30,6 +30,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import dev.marrowseal.wardbound.WardConfig;
+import dev.marrowseal.wardbound.CardMaster;
 import dev.marrowseal.wardbound.WardSounds;
 import dev.marrowseal.wardbound.LockData;
 import dev.marrowseal.wardbound.MinigameType;
@@ -496,6 +497,8 @@ public class CthulhuEyeItem extends Item implements GeoItem {
         MinecraftServer server = sp.getServer();
         if (server == null) return SAVANT_MAKERS[sp.getRandom().nextInt(SAVANT_MAKERS.length)];
         LockData data = LockData.get(server);
+        if (!CardMaster.phaseActive(data, sp.getUUID()) || data.totalBeaten(sp.getUUID()) < WardConfig.watcherAfter)
+            return SAVANT_MAKERS[sp.getRandom().nextInt(SAVANT_MAKERS.length)];
         String house = data.watcher(sp.getUUID());
         int familiar = data.familiarity(sp.getUUID(), house);
         int pick = sp.getRandom().nextInt(5);

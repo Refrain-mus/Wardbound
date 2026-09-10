@@ -93,15 +93,22 @@ public final class WardAdvancements {
     }
 
     public static void dealerSeen(ServerPlayer player, CardMaster master) {
-        if (master != null) award(player, "dealer_" + master.id);
+        if (player == null || player.getServer() == null || master == null) return;
+        LockData data = LockData.get(player.getServer());
+        if (CardMaster.phaseActive(data, player.getUUID())) award(player, "dealer_" + master.id);
     }
 
     public static void masterSeen(ServerPlayer player, MasterSignature signature) {
-        if (signature != null) award(player, "master_signature_" + signature.name().toLowerCase(java.util.Locale.ROOT));
+        if (player == null || player.getServer() == null || signature == null) return;
+        LockData data = LockData.get(player.getServer());
+        if (CardMaster.phaseActive(data, player.getUUID()))
+            award(player, "master_signature_" + signature.name().toLowerCase(java.util.Locale.ROOT));
     }
 
     public static void imprintSeen(ServerPlayer player, PlayerImprint.Trace trace) {
-        if (trace != null && trace != PlayerImprint.Trace.UNREAD)
+        if (player == null || player.getServer() == null || trace == null || trace == PlayerImprint.Trace.UNREAD) return;
+        LockData data = LockData.get(player.getServer());
+        if (CardMaster.phaseActive(data, player.getUUID()))
             award(player, "imprint_" + trace.name().toLowerCase(java.util.Locale.ROOT));
     }
 
@@ -127,6 +134,9 @@ public final class WardAdvancements {
     }
 
     public static void makerKnown(ServerPlayer player, int familiarity) {
+        if (player == null || player.getServer() == null) return;
+        LockData data = LockData.get(player.getServer());
+        if (!CardMaster.phaseActive(data, player.getUUID())) return;
         if (familiarity >= 3) award(player, "maker_familiar");
     }
 
@@ -156,11 +166,18 @@ public final class WardAdvancements {
         if (resolved >= WardConfig.afflictionAfterBeaten) award(player, "unlock_afflictions");
         if (resolved >= WardConfig.fieldCardAfterBeaten) award(player, "unlock_field_cards");
         if (resolved >= WardConfig.chainAfterBeaten) award(player, "unlock_chains");
-        if (resolved >= WardConfig.masterCardsAfterBeaten) award(player, "unlock_master_cards");
+        if (player != null && player.getServer() != null
+                && CardMaster.phaseActive(LockData.get(player.getServer()), player.getUUID())
+                && resolved >= WardConfig.masterCardsAfterBeaten) {
+            award(player, "root_house");
+            award(player, "unlock_master_cards");
+        }
         if (resolved >= WardConfig.contractCardsAfterBeaten) award(player, "unlock_contracts");
         if (resolved >= WardConfig.possessedAfterBeaten) award(player, "unlock_possessed");
         if (resolved >= WardConfig.curseCardsAfterBeaten) award(player, "unlock_curses");
-        if (resolved >= WardMeasureSystem.UNLOCK_AFTER) award(player, "unlock_house_measure");
+        if (player != null && player.getServer() != null
+                && WardMeasureSystem.unlocked(LockData.get(player.getServer()), player.getUUID()))
+            award(player, "unlock_house_measure");
         if (resolved >= WardConfig.deceptionUnlockAfter) award(player, "unlock_deception");
         if (resolved >= WardConfig.unsignedAfterBeaten) award(player, "unlock_unsigned");
         if (resolved >= WardConfig.ritualCardsAfterBeaten) award(player, "unlock_rituals");

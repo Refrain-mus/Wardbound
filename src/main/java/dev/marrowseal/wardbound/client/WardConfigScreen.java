@@ -13,6 +13,7 @@ import dev.marrowseal.wardbound.DimSettings;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
@@ -50,13 +51,12 @@ public class WardConfigScreen extends Screen {
     private static final int COL_FAINT = 0xFF6A5B45;
     private static final int COL_BAD = 0xFFC2553F;
 
-    private static final int PANEL_W = 440;
-    private static final int PANEL_H = 476;
-    private static final int COL_W = 182;
-    private static final int ROW_H = 33;
-    private static final int ROWS = 10;
+    private static final int MAX_PANEL_W = 760;
+    private static final int MAX_PANEL_H = 430;
+    private static final int NORMAL_ROWS_PER_CHUNK = 10;
+    private static final int SINGLE_ROWS_PER_CHUNK = 6;
 
-    private enum Kind { INT, FLOAT, BOOL, TEXT }
+    private enum Kind { INT, FLOAT, PERCENT, BOOL, TEXT }
 
     /** One setting: what it is called, what it does, and how to read and write it. */
     private static final class Row {
@@ -98,6 +98,12 @@ public class WardConfigScreen extends Screen {
             return new Row(label, note, Kind.FLOAT, null, get, null, null, set, null, null);
         }
 
+        static Row ofPercent(String label, String note, DoubleSupplier get, Consumer<String> set) {
+            String help = note == null || note.isBlank() ? "0 - 100%" : note.replace("0 - 1", "0 - 100%");
+            if (!help.contains("%")) help += " · enter %";
+            return new Row(label, help, Kind.PERCENT, null, get, null, null, set, null, null);
+        }
+
         static Row ofBool(String label, String note, BooleanSupplier get, Consumer<Boolean> set) {
             return new Row(label, note, Kind.BOOL, null, null, get, null, null, set, null);
         }
@@ -110,13 +116,14 @@ public class WardConfigScreen extends Screen {
             return switch (kind) {
                 case INT -> String.valueOf(readInt.getAsInt());
                 case FLOAT -> trim(readFloat.getAsDouble());
+                case PERCENT -> trim(readFloat.getAsDouble() * 100.0);
                 case BOOL -> "";
                 case TEXT -> readText.get();
             };
         }
 
         private static String trim(double d) {
-            String s = String.format("%.3f", d);
+            String s = String.format(Locale.ROOT, "%.3f", d);
             while (s.contains(".") && (s.endsWith("0") || s.endsWith("."))) {
                 s = s.substring(0, s.length() - 1);
             }
@@ -128,14 +135,16 @@ public class WardConfigScreen extends Screen {
     }
 
     private final List<Page> pages = new ArrayList<>();
+    private final Screen parent;
     private int page;
+    private int settingsChunk;
     private String problem = "";
     private int tuningIndex = MinigameType.CONSTELLATION.ordinal();
     private int dimensionIndex = 0;
-    private EditBox dimensionIdBox;
 
     public WardConfigScreen(Screen parent) {
         super(Component.literal("Wardbound"));
+        this.parent = parent;
         ACTIVE = this;
         buildPages();
     }
@@ -153,25 +162,25 @@ public class WardConfigScreen extends Screen {
      * mean anything.
      */
     private void buildPages() {
-        pages.add(new Page("Locking", List.of(
+        pages.add(new Page("Ward frequency", List.of(
                 Row.ofInt("Lock threshold", "below this uses the low chance",
                         () -> WardConfig.lockThreshold, s -> WardConfig.lockThreshold = pInt(s, WardConfig.lockThreshold)),
-                Row.ofFloat("Ward chance, poor", "0 - 1",
+                Row.ofPercent("Ward chance, poor", "0 - 1",
                         () -> WardConfig.lockChanceLow, s -> WardConfig.lockChanceLow = pFloat(s, WardConfig.lockChanceLow)),
-                Row.ofFloat("Ward chance, rich", "0 - 1",
+                Row.ofPercent("Ward chance, rich", "0 - 1",
                         () -> WardConfig.lockChanceHigh, s -> WardConfig.lockChanceHigh = pFloat(s, WardConfig.lockChanceHigh)),
                 Row.ofInt("Min value to ward", "junk chests below this stay open",
                         () -> WardConfig.minValueToLock, s -> WardConfig.minValueToLock = pInt(s, WardConfig.minValueToLock)),
-                Row.ofFloat("Loot kept on a loss", "0.4 = lose 60% of worth",
+                Row.ofPercent("Loot kept on a loss", "40% means 60% of loot value is lost",
                         () -> WardConfig.failLootMultiplier, s -> WardConfig.failLootMultiplier = pFloat(s, WardConfig.failLootMultiplier)),
-                Row.ofFloat("Global roll multiplier", "applied to every win",
+                Row.ofFloat("Global ward roll", "multiplies poor/rich ward chance; 1 = unchanged, 0 = disabled",
                         () -> WardConfig.globalRollMultiplier, s -> WardConfig.globalRollMultiplier = pFloat(s, WardConfig.globalRollMultiplier)),
-                Row.ofBool("Confirm click", "right click once to read, again to begin",
+                Row.ofBool("Confirm click", "first click previews the ward; second click begins",
                         () -> WardConfig.requireConfirmClick, v -> WardConfig.requireConfirmClick = v),
                 Row.ofBool("Auto item values", "score modded items on their own",
                         () -> WardConfig.autoItemValues, v -> WardConfig.autoItemValues = v))));
 
-        pages.add(new Page("Feel", List.of(
+        pages.add(new Page("Minigame feel", List.of(
                 Row.ofInt("Min pins", "keyway and drum",
                         () -> WardConfig.minPins, s -> WardConfig.minPins = pInt(s, WardConfig.minPins)),
                 Row.ofInt("Max pins", "keyway caps at 6",
@@ -188,19 +197,19 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.ambienceVolume, s -> WardConfig.ambienceVolume = pFloat(s, WardConfig.ambienceVolume)),
                 Row.ofFloat("Vessel settle, s", "delay before you may commit blind",
                         () -> WardConfig.vesselSettle, s -> WardConfig.vesselSettle = pFloat(s, WardConfig.vesselSettle)),
-                Row.ofFloat("Streak difficulty step", "per lock in a run",
+                Row.ofFloat("Streak difficulty step", "per ward in a win streak",
                         () -> WardConfig.streakDifficultyPerLock, s -> WardConfig.streakDifficultyPerLock = pFloat(s, WardConfig.streakDifficultyPerLock)),
                 Row.ofFloat("Streak difficulty cap", "ceiling on the above",
                         () -> WardConfig.streakDifficultyCap, s -> WardConfig.streakDifficultyCap = pFloat(s, WardConfig.streakDifficultyCap)))));
 
         pages.add(new Page("Rewards", List.of(
-                Row.ofFloat("Streak bonus per lock", "loot, per win in a run",
+                Row.ofFloat("Streak bonus per ward", "loot per ward in a win streak",
                         () -> WardConfig.streakBonusPerLock, s -> WardConfig.streakBonusPerLock = pFloat(s, WardConfig.streakBonusPerLock)),
                 Row.ofFloat("Streak bonus cap", "ceiling on the above",
                         () -> WardConfig.streakBonusCap, s -> WardConfig.streakBonusCap = pFloat(s, WardConfig.streakBonusCap)),
-                Row.ofFloat("Pulse intensity", "how hard the beating lock throbs",
+                Row.ofFloat("Pulse intensity", "how strongly the active ward throbs",
                         () -> WardConfig.pulseIntensity, s -> WardConfig.pulseIntensity = pFloat(s, WardConfig.pulseIntensity)),
-                Row.ofFloat("Eye drop chance", "once the threshold is beaten",
+                Row.ofPercent("Eye drop chance", "once the threshold is beaten",
                         () -> WardConfig.eyeDropChance, s -> WardConfig.eyeDropChance = pFloat(s, WardConfig.eyeDropChance)))));
 
         pages.add(new Page("Charms", List.of(
@@ -210,45 +219,33 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.heartBonusLives, s -> WardConfig.heartBonusLives = pInt(s, WardConfig.heartBonusLives)),
                 Row.ofFloat("Heart: loot bonus", "1.25 = +25%",
                         () -> WardConfig.heartLootBonus, s -> WardConfig.heartLootBonus = pFloat(s, WardConfig.heartLootBonus)),
-                Row.ofFloat("Key drop chance", "per lock beaten",
+                Row.ofPercent("Key drop chance", "per resolved ward",
                         () -> WardConfig.keyDropChance, s -> WardConfig.keyDropChance = pFloat(s, WardConfig.keyDropChance)),
-                Row.ofFloat("Heart drop chance", "scaled by chest worth",
+                Row.ofPercent("Heart drop chance", "scaled by chest worth",
                         () -> WardConfig.heartDropChance, s -> WardConfig.heartDropChance = pFloat(s, WardConfig.heartDropChance)),
-                Row.ofFloat("Relic drop chance", "shim and cyclopean lens",
-                        () -> WardConfig.relicDropChance, s -> WardConfig.relicDropChance = pFloat(s, WardConfig.relicDropChance)),
-                Row.ofInt("Eye cooldown, ticks", "3600 = three minutes",
-                        () -> WardConfig.eyeCooldownTicks, s -> WardConfig.eyeCooldownTicks = pInt(s, WardConfig.eyeCooldownTicks)),
-                Row.ofInt("Ember seconds", "added to the ward clock",
-                        () -> WardConfig.emberSeconds, s -> WardConfig.emberSeconds = pInt(s, WardConfig.emberSeconds)),
-                Row.ofFloat("Ember threshold", "Nether chests must beat this",
-                        () -> WardConfig.emberLootThreshold, s -> WardConfig.emberLootThreshold = pFloat(s, WardConfig.emberLootThreshold)),
-                Row.ofInt("Ember after wins", "resolved ward gate for Slow Ember eligibility",
-                        () -> WardConfig.emberAfterBeaten, s -> WardConfig.emberAfterBeaten = pInt(s, WardConfig.emberAfterBeaten)),
-                Row.ofFloat("Eye loot threshold", "End chests must beat this",
-                        () -> WardConfig.eyeLootThreshold, s -> WardConfig.eyeLootThreshold = pFloat(s, WardConfig.eyeLootThreshold)),
-                Row.ofInt("Savant after wins", "resolved ward gate for Savant eligibility",
-                        () -> WardConfig.eyeAfterBeaten, s -> WardConfig.eyeAfterBeaten = pInt(s, WardConfig.eyeAfterBeaten)))));
+                Row.ofPercent("Relic drop chance", "shim and cyclopean lens",
+                        () -> WardConfig.relicDropChance, s -> WardConfig.relicDropChance = pFloat(s, WardConfig.relicDropChance)))));
 
-        pages.add(new Page("The offer", List.of(
-                Row.ofBool("Offer enabled", "re-seal a beaten container",
+        pages.add(new Page("Re-seal offer", List.of(
+                Row.ofBool("Offer enabled", "offer an optional second minigame after a win",
                         () -> WardConfig.temptEnabled, v -> WardConfig.temptEnabled = v),
-                Row.ofFloat("Offer chance", "per lock beaten",
+                Row.ofPercent("Offer chance", "per resolved ward",
                         () -> WardConfig.temptChance, s -> WardConfig.temptChance = pFloat(s, WardConfig.temptChance)),
                 Row.ofFloat("Offer multiplier", "compounding, per re-seal",
                         () -> WardConfig.temptMultiplier, s -> WardConfig.temptMultiplier = pFloat(s, WardConfig.temptMultiplier)),
-                Row.ofInt("Offer max depth", "how often one chest may be wound",
+                Row.ofInt("Offer max depth", "maximum optional re-seal depth per chest",
                         () -> WardConfig.temptMaxDepth, s -> WardConfig.temptMaxDepth = pInt(s, WardConfig.temptMaxDepth)),
                 Row.ofFloat("Offer difficulty step", "per re-seal",
                         () -> WardConfig.temptDifficultyPerDepth, s -> WardConfig.temptDifficultyPerDepth = pFloat(s, WardConfig.temptDifficultyPerDepth)),
-                Row.ofFloat("Grudge difficulty", "per loss on one container",
+                Row.ofFloat("Grudge difficulty", "per failed ward on one container",
                         () -> WardConfig.spiteDifficulty, s -> WardConfig.spiteDifficulty = pFloat(s, WardConfig.spiteDifficulty)),
-                Row.ofFloat("Grudge loot", "per loss on one container",
+                Row.ofFloat("Grudge loot", "per failed ward on one container",
                         () -> WardConfig.spiteLoot, s -> WardConfig.spiteLoot = pFloat(s, WardConfig.spiteLoot)),
                 Row.ofInt("Grudge max", "how far one container escalates",
                         () -> WardConfig.spiteMax, s -> WardConfig.spiteMax = pInt(s, WardConfig.spiteMax)))));
 
-        pages.add(new Page("Consequences", List.of(
-                Row.ofFloat("Guardian chance", "on a lost lock",
+        pages.add(new Page("Failure & guardians", List.of(
+                Row.ofPercent("Guardian chance", "after a failed ward",
                         () -> WardConfig.guardianChance, s -> WardConfig.guardianChance = pFloat(s, WardConfig.guardianChance)),
                 Row.ofInt("Guardian max count", "scaled down by chest worth",
                         () -> WardConfig.guardianMaxCount, s -> WardConfig.guardianMaxCount = pInt(s, WardConfig.guardianMaxCount)),
@@ -258,19 +255,19 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.guardianDimensionLock, v -> WardConfig.guardianDimensionLock = v),
                 Row.ofBool("Guardian progression lock", "requires visiting Nether/End before those tiers unlock",
                         () -> WardConfig.guardianProgressionLock, v -> WardConfig.guardianProgressionLock = v),
-                Row.ofFloat("Wild pool chance", "ignore curated list, but still obey guardian locks",
+                Row.ofPercent("Wild pool chance", "ignore curated list, but still obey guardian locks",
                         () -> WardConfig.guardianWildChance, s -> WardConfig.guardianWildChance = pFloat(s, WardConfig.guardianWildChance)),
                 Row.ofInt("Horde size", "when it sends a crowd",
                         () -> WardConfig.hordeSize, s -> WardConfig.hordeSize = pInt(s, WardConfig.hordeSize)),
-                Row.ofFloat("Burn chance", "a lost ward takes the contents",
+                Row.ofPercent("Burn chance", "a lost ward takes the contents",
                         () -> WardConfig.failBurnChance, s -> WardConfig.failBurnChance = pFloat(s, WardConfig.failBurnChance)),
-                Row.ofFloat("Burn floor", "least that can survive",
+                Row.ofPercent("Burn floor", "minimum loot value that may survive",
                         () -> WardConfig.failBurnFloor, s -> WardConfig.failBurnFloor = pFloat(s, WardConfig.failBurnFloor)),
-                Row.ofFloat("Burn ceiling", "most that can survive",
+                Row.ofPercent("Burn ceiling", "maximum loot value that may survive",
                         () -> WardConfig.failBurnCeiling, s -> WardConfig.failBurnCeiling = pFloat(s, WardConfig.failBurnCeiling)))));
 
-        pages.add(new Page("The long game", List.of(
-                Row.ofInt("Tier step", "seals per tier, 0 disables",
+        pages.add(new Page("Progression tiers", List.of(
+                Row.ofInt("Tier step", "resolved wards per tier; 0 disables",
                         () -> WardConfig.tierStep, s -> WardConfig.tierStep = pInt(s, WardConfig.tierStep)),
                 Row.ofInt("Tier max", "ceiling on the curve",
                         () -> WardConfig.tierMax, s -> WardConfig.tierMax = pInt(s, WardConfig.tierMax)),
@@ -284,145 +281,151 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.watcherAfter, s -> WardConfig.watcherAfter = pInt(s, WardConfig.watcherAfter)),
                 Row.ofFloat("Watcher ramp", "how fast it closes in",
                         () -> WardConfig.watcherRamp, s -> WardConfig.watcherRamp = pFloat(s, WardConfig.watcherRamp)),
-                Row.ofFloat("Watcher max chance", "never certain",
+                Row.ofPercent("Watcher max chance", "never certain",
                         () -> WardConfig.watcherMaxChance, s -> WardConfig.watcherMaxChance = pFloat(s, WardConfig.watcherMaxChance)))));
 
-        pages.add(new Page("Endgame", List.of(
+        pages.add(new Page("Endgame wards", List.of(
                 Row.ofInt("Verdict after", "its seals before it judges you",
-                        () -> WardConfig.verdictAfter, s -> WardConfig.verdictAfter = pInt(s, WardConfig.verdictAfter)),
+                                        () -> WardConfig.verdictAfter, s -> WardConfig.verdictAfter = pInt(s, WardConfig.verdictAfter)),
                 Row.ofInt("Verdict threshold", "regard needed for favour",
-                        () -> WardConfig.verdictThreshold, s -> WardConfig.verdictThreshold = pInt(s, WardConfig.verdictThreshold)),
+                                        () -> WardConfig.verdictThreshold, s -> WardConfig.verdictThreshold = pInt(s, WardConfig.verdictThreshold)),
                 Row.ofFloat("Contempt difficulty", "on that house's seals",
-                        () -> WardConfig.contemptDifficulty, s -> WardConfig.contemptDifficulty = pFloat(s, WardConfig.contemptDifficulty)),
+                                        () -> WardConfig.contemptDifficulty, s -> WardConfig.contemptDifficulty = pFloat(s, WardConfig.contemptDifficulty)),
                 Row.ofFloat("Contempt loot", "and what it pays",
-                        () -> WardConfig.contemptLoot, s -> WardConfig.contemptLoot = pFloat(s, WardConfig.contemptLoot)),
-                Row.ofFloat("Unsigned chance", "a seal with no maker",
-                        () -> WardConfig.unsignedChance, s -> WardConfig.unsignedChance = pFloat(s, WardConfig.unsignedChance)),
+                                        () -> WardConfig.contemptLoot, s -> WardConfig.contemptLoot = pFloat(s, WardConfig.contemptLoot)),
+                Row.ofPercent("Unsigned chance", "a seal with no maker",
+                                        () -> WardConfig.unsignedChance, s -> WardConfig.unsignedChance = pFloat(s, WardConfig.unsignedChance)),
                 Row.ofFloat("Unsigned, End factor", "how much likelier there",
-                        () -> WardConfig.unsignedEndFactor, s -> WardConfig.unsignedEndFactor = pFloat(s, WardConfig.unsignedEndFactor)),
+                                        () -> WardConfig.unsignedEndFactor, s -> WardConfig.unsignedEndFactor = pFloat(s, WardConfig.unsignedEndFactor)),
                 Row.ofFloat("Unsigned loot", "what one is worth",
-                        () -> WardConfig.unsignedLoot, s -> WardConfig.unsignedLoot = pFloat(s, WardConfig.unsignedLoot)),
+                                        () -> WardConfig.unsignedLoot, s -> WardConfig.unsignedLoot = pFloat(s, WardConfig.unsignedLoot)),
                 Row.ofInt("Gauntlet after", "unsigned seals before threes",
-                        () -> WardConfig.gauntletAfter, s -> WardConfig.gauntletAfter = pInt(s, WardConfig.gauntletAfter)),
+                                        () -> WardConfig.gauntletAfter, s -> WardConfig.gauntletAfter = pInt(s, WardConfig.gauntletAfter)),
                 Row.ofBool("Cthulhu ward", "ultra-rare singular ward",
-                        () -> WardConfig.cthulhuWardsEnabled, v -> WardConfig.cthulhuWardsEnabled = v),
-                Row.ofFloat("Cthulhu chance", "singular ward rarity",
-                        () -> WardConfig.cthulhuWardChance, s -> WardConfig.cthulhuWardChance = pFloat(s, WardConfig.cthulhuWardChance)),
+                                        () -> WardConfig.cthulhuWardsEnabled, v -> WardConfig.cthulhuWardsEnabled = v),
+                Row.ofPercent("Cthulhu chance", "singular ward rarity",
+                                        () -> WardConfig.cthulhuWardChance, s -> WardConfig.cthulhuWardChance = pFloat(s, WardConfig.cthulhuWardChance)),
                 Row.ofInt("Cthulhu min value", "minimum chest value",
-                        () -> WardConfig.cthulhuWardMinValue, s -> WardConfig.cthulhuWardMinValue = pInt(s, WardConfig.cthulhuWardMinValue)),
+                                        () -> WardConfig.cthulhuWardMinValue, s -> WardConfig.cthulhuWardMinValue = pInt(s, WardConfig.cthulhuWardMinValue)),
                 Row.ofFloat("Cthulhu difficulty", "extra difficulty multiplier",
-                        () -> WardConfig.cthulhuWardDifficulty, s -> WardConfig.cthulhuWardDifficulty = pFloat(s, WardConfig.cthulhuWardDifficulty)),
+                                        () -> WardConfig.cthulhuWardDifficulty, s -> WardConfig.cthulhuWardDifficulty = pFloat(s, WardConfig.cthulhuWardDifficulty)),
                 Row.ofFloat("Cthulhu loot", "extra loot multiplier",
-                        () -> WardConfig.cthulhuWardLoot, s -> WardConfig.cthulhuWardLoot = pFloat(s, WardConfig.cthulhuWardLoot)),
+                                        () -> WardConfig.cthulhuWardLoot, s -> WardConfig.cthulhuWardLoot = pFloat(s, WardConfig.cthulhuWardLoot)),
                 Row.ofInt("Idol cooldown", "seconds between uses",
-                        () -> WardConfig.cthulhuIdolCooldownSeconds, s -> WardConfig.cthulhuIdolCooldownSeconds = pInt(s, WardConfig.cthulhuIdolCooldownSeconds)),
+                                        () -> WardConfig.cthulhuIdolCooldownSeconds, s -> WardConfig.cthulhuIdolCooldownSeconds = pInt(s, WardConfig.cthulhuIdolCooldownSeconds)),
                 Row.ofFloat("Idol freeze", "seconds of arrest",
-                        () -> WardConfig.cthulhuIdolFreezeSeconds, s -> WardConfig.cthulhuIdolFreezeSeconds = pFloat(s, WardConfig.cthulhuIdolFreezeSeconds)),
+                                        () -> WardConfig.cthulhuIdolFreezeSeconds, s -> WardConfig.cthulhuIdolFreezeSeconds = pFloat(s, WardConfig.cthulhuIdolFreezeSeconds)),
                 Row.ofBool("Eldritch wards", "rare elite chained wards",
-                        () -> WardConfig.eldritchWardsEnabled, v -> WardConfig.eldritchWardsEnabled = v),
-                Row.ofFloat("Eldritch chance", "chance for an elite ward",
-                        () -> WardConfig.eldritchWardChance, s -> WardConfig.eldritchWardChance = pFloat(s, WardConfig.eldritchWardChance)),
-                Row.ofInt("Eldritch stages", "locks in the elite chain",
-                        () -> WardConfig.eldritchWardStages, s -> WardConfig.eldritchWardStages = pInt(s, WardConfig.eldritchWardStages)),
+                                        () -> WardConfig.eldritchWardsEnabled, v -> WardConfig.eldritchWardsEnabled = v),
+                Row.ofPercent("Eldritch chance", "chance for an elite ward",
+                                        () -> WardConfig.eldritchWardChance, s -> WardConfig.eldritchWardChance = pFloat(s, WardConfig.eldritchWardChance)),
+                Row.ofInt("Eldritch stages", "minigames in the elite encounter",
+                                        () -> WardConfig.eldritchWardStages, s -> WardConfig.eldritchWardStages = pInt(s, WardConfig.eldritchWardStages)),
                 Row.ofFloat("Eldritch loot", "final payout multiplier",
-                        () -> WardConfig.eldritchWardLoot, s -> WardConfig.eldritchWardLoot = pFloat(s, WardConfig.eldritchWardLoot)),
-                Row.ofBool("Possessed wards", "rare single corrupted lock",
-                        () -> WardConfig.possessedWardsEnabled, v -> WardConfig.possessedWardsEnabled = v),
-                Row.ofFloat("Possessed chance", "very rare one-lock mutation",
-                        () -> WardConfig.possessedWardChance, s -> WardConfig.possessedWardChance = pFloat(s, WardConfig.possessedWardChance)),
+                                        () -> WardConfig.eldritchWardLoot, s -> WardConfig.eldritchWardLoot = pFloat(s, WardConfig.eldritchWardLoot)),
+                Row.ofBool("Possessed wards", "rare single corrupted minigame",
+                                        () -> WardConfig.possessedWardsEnabled, v -> WardConfig.possessedWardsEnabled = v),
+                Row.ofPercent("Possessed chance", "very rare one-minigame mutation",
+                                        () -> WardConfig.possessedWardChance, s -> WardConfig.possessedWardChance = pFloat(s, WardConfig.possessedWardChance)),
                 Row.ofFloat("Possessed loot", "reward multiplier",
-                        () -> WardConfig.possessedWardLoot, s -> WardConfig.possessedWardLoot = pFloat(s, WardConfig.possessedWardLoot)),
+                                        () -> WardConfig.possessedWardLoot, s -> WardConfig.possessedWardLoot = pFloat(s, WardConfig.possessedWardLoot)),
                 Row.ofBool("Ward afflictions", "persistent named ward afflictions",
-                        () -> WardConfig.wardAfflictionsEnabled, v -> WardConfig.wardAfflictionsEnabled = v),
-                Row.ofFloat("Affliction chance", "chance for a new ward affliction",
-                        () -> WardConfig.wardAfflictionChance, s -> WardConfig.wardAfflictionChance = pFloat(s, WardConfig.wardAfflictionChance)),
+                                        () -> WardConfig.wardAfflictionsEnabled, v -> WardConfig.wardAfflictionsEnabled = v),
+                Row.ofPercent("Affliction chance", "chance for a new ward affliction",
+                                        () -> WardConfig.wardAfflictionChance, s -> WardConfig.wardAfflictionChance = pFloat(s, WardConfig.wardAfflictionChance)),
                 Row.ofBool("Living wards", "old mutated wards may awaken",
-                        () -> WardConfig.livingWardsEnabled, v -> WardConfig.livingWardsEnabled = v),
-                Row.ofFloat("Living chance", "chance once mutation threshold is met",
-                        () -> WardConfig.livingWardChance, s -> WardConfig.livingWardChance = pFloat(s, WardConfig.livingWardChance)),
+                                        () -> WardConfig.livingWardsEnabled, v -> WardConfig.livingWardsEnabled = v),
+                Row.ofPercent("Living chance", "chance once mutation threshold is met",
+                                        () -> WardConfig.livingWardChance, s -> WardConfig.livingWardChance = pFloat(s, WardConfig.livingWardChance)),
                 Row.ofFloat("Living loot", "reward multiplier for living wards",
-                        () -> WardConfig.livingWardLoot, s -> WardConfig.livingWardLoot = pFloat(s, WardConfig.livingWardLoot)),
+                                        () -> WardConfig.livingWardLoot, s -> WardConfig.livingWardLoot = pFloat(s, WardConfig.livingWardLoot)))));
+
+        pages.add(new Page("Progression gates", List.of(
                 Row.ofInt("Affliction after", "ward wins before afflictions can roll",
-                        () -> WardConfig.afflictionAfterBeaten, s -> WardConfig.afflictionAfterBeaten = pInt(s, WardConfig.afflictionAfterBeaten)),
+                                        () -> WardConfig.afflictionAfterBeaten, s -> WardConfig.afflictionAfterBeaten = pInt(s, WardConfig.afflictionAfterBeaten)),
                 Row.ofInt("Possessed after", "ward wins before possessed wards can roll",
-                        () -> WardConfig.possessedAfterBeaten, s -> WardConfig.possessedAfterBeaten = pInt(s, WardConfig.possessedAfterBeaten)),
+                                        () -> WardConfig.possessedAfterBeaten, s -> WardConfig.possessedAfterBeaten = pInt(s, WardConfig.possessedAfterBeaten)),
                 Row.ofInt("Unsigned after", "ward wins before unsigned seals can roll",
-                        () -> WardConfig.unsignedAfterBeaten, s -> WardConfig.unsignedAfterBeaten = pInt(s, WardConfig.unsignedAfterBeaten)),
+                                        () -> WardConfig.unsignedAfterBeaten, s -> WardConfig.unsignedAfterBeaten = pInt(s, WardConfig.unsignedAfterBeaten)),
                 Row.ofInt("Eldritch after", "ward wins before mutation chains can roll",
-                        () -> WardConfig.eldritchAfterBeaten, s -> WardConfig.eldritchAfterBeaten = pInt(s, WardConfig.eldritchAfterBeaten)),
+                                        () -> WardConfig.eldritchAfterBeaten, s -> WardConfig.eldritchAfterBeaten = pInt(s, WardConfig.eldritchAfterBeaten)),
                 Row.ofInt("Cthulhu after", "ward wins before Cthulhu wards can roll",
-                        () -> WardConfig.cthulhuAfterBeaten, s -> WardConfig.cthulhuAfterBeaten = pInt(s, WardConfig.cthulhuAfterBeaten)),
+                                        () -> WardConfig.cthulhuAfterBeaten, s -> WardConfig.cthulhuAfterBeaten = pInt(s, WardConfig.cthulhuAfterBeaten)),
                 Row.ofInt("Fresh reroll after", "wins before reward may reroll chest table",
-                        () -> WardConfig.bonusFreshRollAfterBeaten, s -> WardConfig.bonusFreshRollAfterBeaten = pInt(s, WardConfig.bonusFreshRollAfterBeaten)),
+                                        () -> WardConfig.bonusFreshRollAfterBeaten, s -> WardConfig.bonusFreshRollAfterBeaten = pInt(s, WardConfig.bonusFreshRollAfterBeaten)),
                 Row.ofBool("Progression loot caps", "large-modpack reward curve limits early multipliers",
-                        () -> WardConfig.progressionLootCapsEnabled, v -> WardConfig.progressionLootCapsEnabled = v),
+                                        () -> WardConfig.progressionLootCapsEnabled, v -> WardConfig.progressionLootCapsEnabled = v),
                 Row.ofInt("Normal cards after", "resolved wards before ordinary post-ward card hands can appear",
-                        () -> WardConfig.normalCardsAfterBeaten, s -> WardConfig.normalCardsAfterBeaten = pInt(s, WardConfig.normalCardsAfterBeaten)),
-                Row.ofInt("Field cards after", "ward wins before hostile mobs can drop sealed cards",
-                        () -> WardConfig.fieldCardAfterBeaten, s -> WardConfig.fieldCardAfterBeaten = pInt(s, WardConfig.fieldCardAfterBeaten)),
-                Row.ofFloat("Field card drop", "eligible hostile kill chance; 0.0015 = 0.15%",
-                        () -> WardConfig.fieldCardDropChance, s -> WardConfig.fieldCardDropChance = pFloat(s, WardConfig.fieldCardDropChance)),
+                                        () -> WardConfig.normalCardsAfterBeaten, s -> WardConfig.normalCardsAfterBeaten = pInt(s, WardConfig.normalCardsAfterBeaten)),
+                Row.ofInt("Field cards after", "resolved wards before hostile mobs can drop Sealed Cards (default 20)",
+                                        () -> WardConfig.fieldCardAfterBeaten, s -> WardConfig.fieldCardAfterBeaten = pInt(s, WardConfig.fieldCardAfterBeaten)),
+                Row.ofPercent("Field card drop", "eligible hostile kill base chance; pity starts after 10 misses, kill 30 is guaranteed",
+                                        () -> WardConfig.fieldCardDropChance, s -> WardConfig.fieldCardDropChance = pFloat(s, WardConfig.fieldCardDropChance)),
                 Row.ofInt("Master cards after", "ward wins before private-law cards can appear",
-                        () -> WardConfig.masterCardsAfterBeaten, s -> WardConfig.masterCardsAfterBeaten = pInt(s, WardConfig.masterCardsAfterBeaten)),
+                                        () -> WardConfig.masterCardsAfterBeaten, s -> WardConfig.masterCardsAfterBeaten = pInt(s, WardConfig.masterCardsAfterBeaten)),
                 Row.ofInt("Contract cards after", "ward wins before objective Contract Hands can appear",
-                        () -> WardConfig.contractCardsAfterBeaten, s -> WardConfig.contractCardsAfterBeaten = pInt(s, WardConfig.contractCardsAfterBeaten)),
+                                        () -> WardConfig.contractCardsAfterBeaten, s -> WardConfig.contractCardsAfterBeaten = pInt(s, WardConfig.contractCardsAfterBeaten)),
                 Row.ofInt("Ritual cards after", "ward wins before mining/world Ritual Hands can appear",
-                        () -> WardConfig.ritualCardsAfterBeaten, s -> WardConfig.ritualCardsAfterBeaten = pInt(s, WardConfig.ritualCardsAfterBeaten)),
+                                        () -> WardConfig.ritualCardsAfterBeaten, s -> WardConfig.ritualCardsAfterBeaten = pInt(s, WardConfig.ritualCardsAfterBeaten)),
                 Row.ofInt("Covenant cards after", "ward wins before dark requirement Covenants can appear",
-                        () -> WardConfig.covenantCardsAfterBeaten, s -> WardConfig.covenantCardsAfterBeaten = pInt(s, WardConfig.covenantCardsAfterBeaten)),
+                                        () -> WardConfig.covenantCardsAfterBeaten, s -> WardConfig.covenantCardsAfterBeaten = pInt(s, WardConfig.covenantCardsAfterBeaten)),
                 Row.ofInt("Curse cards after", "ward wins before curse hands can appear",
-                        () -> WardConfig.curseCardsAfterBeaten, s -> WardConfig.curseCardsAfterBeaten = pInt(s, WardConfig.curseCardsAfterBeaten)),
+                                        () -> WardConfig.curseCardsAfterBeaten, s -> WardConfig.curseCardsAfterBeaten = pInt(s, WardConfig.curseCardsAfterBeaten)),
                 Row.ofInt("Epic cards after", "ward wins before epic cards can appear",
-                        () -> WardConfig.epicCardsAfterBeaten, s -> WardConfig.epicCardsAfterBeaten = pInt(s, WardConfig.epicCardsAfterBeaten)),
+                                        () -> WardConfig.epicCardsAfterBeaten, s -> WardConfig.epicCardsAfterBeaten = pInt(s, WardConfig.epicCardsAfterBeaten)),
                 Row.ofInt("Unique cards after", "ward wins before unique world laws can appear",
-                        () -> WardConfig.uniqueCardsAfterBeaten, s -> WardConfig.uniqueCardsAfterBeaten = pInt(s, WardConfig.uniqueCardsAfterBeaten)),
+                                        () -> WardConfig.uniqueCardsAfterBeaten, s -> WardConfig.uniqueCardsAfterBeaten = pInt(s, WardConfig.uniqueCardsAfterBeaten)),
                 Row.ofInt("Death cards after", "ward wins before Death Hands can exist",
-                        () -> WardConfig.deathCardsAfterBeaten, s -> WardConfig.deathCardsAfterBeaten = pInt(s, WardConfig.deathCardsAfterBeaten)),
+                                        () -> WardConfig.deathCardsAfterBeaten, s -> WardConfig.deathCardsAfterBeaten = pInt(s, WardConfig.deathCardsAfterBeaten)))));
+
+        pages.add(new Page("Mastery & relics", List.of(
                 Row.ofInt("Mercy after", "losses before mercy can appear",
-                        () -> WardConfig.mercyAfterLosses, s -> WardConfig.mercyAfterLosses = pInt(s, WardConfig.mercyAfterLosses)),
-                Row.ofFloat("Mercy chance", "chance on an eligible retry",
-                        () -> WardConfig.mercyChance, s -> WardConfig.mercyChance = pFloat(s, WardConfig.mercyChance)),
+                                        () -> WardConfig.mercyAfterLosses, s -> WardConfig.mercyAfterLosses = pInt(s, WardConfig.mercyAfterLosses)),
+                Row.ofPercent("Mercy chance", "chance on an eligible retry",
+                                        () -> WardConfig.mercyChance, s -> WardConfig.mercyChance = pFloat(s, WardConfig.mercyChance)),
                 Row.ofFloat("Mercy loot", "reward multiplier during mercy",
-                        () -> WardConfig.mercyLoot, s -> WardConfig.mercyLoot = pFloat(s, WardConfig.mercyLoot)),
-                Row.ofFloat("Perfect relic", "Ward Splinter chance on Perfect",
-                        () -> WardConfig.perfectRelicChance, s -> WardConfig.perfectRelicChance = pFloat(s, WardConfig.perfectRelicChance)),
-                Row.ofFloat("Eldritch relic", "Eldritch Shard chance on Perfect finale",
-                        () -> WardConfig.eldritchRelicChance, s -> WardConfig.eldritchRelicChance = pFloat(s, WardConfig.eldritchRelicChance)),
+                                        () -> WardConfig.mercyLoot, s -> WardConfig.mercyLoot = pFloat(s, WardConfig.mercyLoot)),
+                Row.ofPercent("Perfect relic", "Ward Splinter chance on Perfect",
+                                        () -> WardConfig.perfectRelicChance, s -> WardConfig.perfectRelicChance = pFloat(s, WardConfig.perfectRelicChance)),
+                Row.ofPercent("Eldritch relic", "Eldritch Shard chance on Perfect finale",
+                                        () -> WardConfig.eldritchRelicChance, s -> WardConfig.eldritchRelicChance = pFloat(s, WardConfig.eldritchRelicChance)),
                 Row.ofBool("Master rivalries", "houses react to rival mastery",
-                        () -> WardConfig.masterRivalriesEnabled, v -> WardConfig.masterRivalriesEnabled = v),
+                                        () -> WardConfig.masterRivalriesEnabled, v -> WardConfig.masterRivalriesEnabled = v),
                 Row.ofInt("Rivalry after", "rival familiarity threshold",
-                        () -> WardConfig.masterRivalryAfter, s -> WardConfig.masterRivalryAfter = pInt(s, WardConfig.masterRivalryAfter)),
+                                        () -> WardConfig.masterRivalryAfter, s -> WardConfig.masterRivalryAfter = pInt(s, WardConfig.masterRivalryAfter)),
                 Row.ofFloat("Rivalry difficulty", "reactive difficulty multiplier",
-                        () -> WardConfig.masterRivalryDifficulty, s -> WardConfig.masterRivalryDifficulty = pFloat(s, WardConfig.masterRivalryDifficulty)),
+                                        () -> WardConfig.masterRivalryDifficulty, s -> WardConfig.masterRivalryDifficulty = pFloat(s, WardConfig.masterRivalryDifficulty)),
                 Row.ofFloat("Rivalry loot", "reactive reward multiplier",
-                        () -> WardConfig.masterRivalryLoot, s -> WardConfig.masterRivalryLoot = pFloat(s, WardConfig.masterRivalryLoot)),
+                                        () -> WardConfig.masterRivalryLoot, s -> WardConfig.masterRivalryLoot = pFloat(s, WardConfig.masterRivalryLoot)))));
+
+        pages.add(new Page("Ward aging", List.of(
                 Row.ofFloat("Mutation difficulty", "per persistent mutation tier",
-                        () -> WardConfig.wardMutationDifficultyPerLevel, s -> WardConfig.wardMutationDifficultyPerLevel = pFloat(s, WardConfig.wardMutationDifficultyPerLevel)),
+                                        () -> WardConfig.wardMutationDifficultyPerLevel, s -> WardConfig.wardMutationDifficultyPerLevel = pFloat(s, WardConfig.wardMutationDifficultyPerLevel)),
                 Row.ofInt("Mutation I age", "visible ward age before mutation I",
-                        () -> WardConfig.mutationTier1Age, s -> WardConfig.mutationTier1Age = pInt(s, WardConfig.mutationTier1Age)),
+                                        () -> WardConfig.mutationTier1Age, s -> WardConfig.mutationTier1Age = pInt(s, WardConfig.mutationTier1Age)),
                 Row.ofInt("Mutation II age", "visible ward age before mutation II",
-                        () -> WardConfig.mutationTier2Age, s -> WardConfig.mutationTier2Age = pInt(s, WardConfig.mutationTier2Age)),
+                                        () -> WardConfig.mutationTier2Age, s -> WardConfig.mutationTier2Age = pInt(s, WardConfig.mutationTier2Age)),
                 Row.ofInt("Mutation III age", "visible ward age before mutation III",
-                        () -> WardConfig.mutationTier3Age, s -> WardConfig.mutationTier3Age = pInt(s, WardConfig.mutationTier3Age)),
+                                        () -> WardConfig.mutationTier3Age, s -> WardConfig.mutationTier3Age = pInt(s, WardConfig.mutationTier3Age)),
                 Row.ofInt("Mutation I after", "global ward wins before physical mutation I can exist",
-                        () -> WardConfig.mutationTier1AfterBeaten, s -> WardConfig.mutationTier1AfterBeaten = pInt(s, WardConfig.mutationTier1AfterBeaten)),
+                                        () -> WardConfig.mutationTier1AfterBeaten, s -> WardConfig.mutationTier1AfterBeaten = pInt(s, WardConfig.mutationTier1AfterBeaten)),
                 Row.ofInt("Mutation II after", "global ward wins before physical mutation II can exist",
-                        () -> WardConfig.mutationTier2AfterBeaten, s -> WardConfig.mutationTier2AfterBeaten = pInt(s, WardConfig.mutationTier2AfterBeaten)),
+                                        () -> WardConfig.mutationTier2AfterBeaten, s -> WardConfig.mutationTier2AfterBeaten = pInt(s, WardConfig.mutationTier2AfterBeaten)),
                 Row.ofInt("Mutation III after", "global ward wins before physical mutation III can exist",
-                        () -> WardConfig.mutationTier3AfterBeaten, s -> WardConfig.mutationTier3AfterBeaten = pInt(s, WardConfig.mutationTier3AfterBeaten)),
+                                        () -> WardConfig.mutationTier3AfterBeaten, s -> WardConfig.mutationTier3AfterBeaten = pInt(s, WardConfig.mutationTier3AfterBeaten)),
                 Row.ofBool("Post-win residue", "world-space aftermath after wins",
-                        () -> WardConfig.postWinResidueEnabled, v -> WardConfig.postWinResidueEnabled = v),
+                                        () -> WardConfig.postWinResidueEnabled, v -> WardConfig.postWinResidueEnabled = v),
                 Row.ofFloat("Old ward / scar", "extra loot per visible scar",
-                        () -> WardConfig.oldWardLootPerScar, s -> WardConfig.oldWardLootPerScar = pFloat(s, WardConfig.oldWardLootPerScar)),
+                                        () -> WardConfig.oldWardLootPerScar, s -> WardConfig.oldWardLootPerScar = pFloat(s, WardConfig.oldWardLootPerScar)),
                 Row.ofFloat("Old ward cap", "maximum age-based multiplier",
-                        () -> WardConfig.oldWardLootCap, s -> WardConfig.oldWardLootCap = pFloat(s, WardConfig.oldWardLootCap)))));
+                                        () -> WardConfig.oldWardLootCap, s -> WardConfig.oldWardLootCap = pFloat(s, WardConfig.oldWardLootCap)))));
 
         pages.add(new Page("Chains", List.of(
                 Row.ofBool("Chains enabled", "seals that come in sets",
                         () -> WardConfig.chainEnabled, v -> WardConfig.chainEnabled = v),
                 Row.ofInt("Chains after", "resolved wards before chains can begin",
                         () -> WardConfig.chainAfterBeaten, x -> WardConfig.chainAfterBeaten = pInt(x, WardConfig.chainAfterBeaten)),
-                Row.ofFloat("Chain chance", "per ward beaten",
+                Row.ofPercent("Chain chance", "per ward beaten",
                         () -> WardConfig.chainChance, s -> WardConfig.chainChance = pFloat(s, WardConfig.chainChance)),
                 Row.ofInt("Min links", "shortest set",
                         () -> WardConfig.chainMinLinks, s -> WardConfig.chainMinLinks = pInt(s, WardConfig.chainMinLinks)),
@@ -443,8 +446,8 @@ public class WardConfigScreen extends Screen {
                 Row.ofFloat("Loot per link", "each one worth more",
                         () -> WardConfig.chainLootPerLink, s -> WardConfig.chainLootPerLink = pFloat(s, WardConfig.chainLootPerLink)))));
 
-        pages.add(new Page("The attention", List.of(
-                Row.ofInt("Gauntlet stages", "locks in a row",
+        pages.add(new Page("Attention", List.of(
+                Row.ofInt("Gauntlet stages", "minigames in a row",
                         () -> WardConfig.gauntletStages, s -> WardConfig.gauntletStages = pInt(s, WardConfig.gauntletStages)),
                 Row.ofFloat("Gauntlet loot", "on top of unsigned",
                         () -> WardConfig.gauntletLoot, s -> WardConfig.gauntletLoot = pFloat(s, WardConfig.gauntletLoot)),
@@ -456,16 +459,16 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.attentionPerLoss, s -> WardConfig.attentionPerLoss = pInt(s, WardConfig.attentionPerLoss)),
                 Row.ofInt("Attention cap", "how far it can climb",
                         () -> WardConfig.attentionCap, s -> WardConfig.attentionCap = pInt(s, WardConfig.attentionCap)),
-                Row.ofFloat("Re-seal chance", "emptied chests close again",
+                Row.ofPercent("Re-seal chance", "emptied chests close again",
                         () -> WardConfig.attentionResealChance, s -> WardConfig.attentionResealChance = pFloat(s, WardConfig.attentionResealChance)),
-                Row.ofFloat("Horde on a win", "winning is not a reprieve",
+                Row.ofPercent("Horde on a win", "winning is not a reprieve",
                         () -> WardConfig.attentionHordeChance, s -> WardConfig.attentionHordeChance = pFloat(s, WardConfig.attentionHordeChance)))));
 
 
-        pages.add(new Page("Hands & debts", List.of(
+        pages.add(new Page("Cards & debts", List.of(
                 Row.ofBool("Master signatures", "bias one existing quirk slot",
                         () -> WardConfig.masterSignaturesEnabled, v -> WardConfig.masterSignaturesEnabled = v),
-                Row.ofFloat("Signature bias", "0 - 1, never adds a quirk",
+                Row.ofPercent("Signature bias", "bias probability; never adds a quirk",
                         () -> WardConfig.masterSignatureBiasChance, s -> WardConfig.masterSignatureBiasChance = pFloat(s, WardConfig.masterSignatureBiasChance)),
                 Row.ofInt("Reveal hand after", "familiarity threshold",
                         () -> WardConfig.masterSignatureRevealAfter, s -> WardConfig.masterSignatureRevealAfter = pInt(s, WardConfig.masterSignatureRevealAfter)),
@@ -473,7 +476,7 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.masterSignatureKnowAfter, s -> WardConfig.masterSignatureKnowAfter = pInt(s, WardConfig.masterSignatureKnowAfter)),
                 Row.ofBool("Forbidden bargains", "rare post-ward card choice",
                         () -> WardConfig.forbiddenBargainsEnabled, v -> WardConfig.forbiddenBargainsEnabled = v),
-                Row.ofFloat("Bargain chance", "per eligible ward",
+                Row.ofPercent("Bargain chance", "per eligible ward",
                         () -> WardConfig.forbiddenBargainChance, s -> WardConfig.forbiddenBargainChance = pFloat(s, WardConfig.forbiddenBargainChance)),
                 Row.ofInt("Bargain cards", "ordinary hands may deal 2 - 4",
                         () -> WardConfig.forbiddenBargainMaxOffers, s -> WardConfig.forbiddenBargainMaxOffers = pInt(s, WardConfig.forbiddenBargainMaxOffers)),
@@ -484,18 +487,18 @@ public class WardConfigScreen extends Screen {
                 Row.ofFloat("Watching Mark", "flat loot addition",
                         () -> WardConfig.bargainWatchingMarkReward, s -> WardConfig.bargainWatchingMarkReward = pFloat(s, WardConfig.bargainWatchingMarkReward)))));
 
-        pages.add(new Page("Advanced", List.of(
+        pages.add(new Page("Timing & bonuses", List.of(
                 Row.ofFloat("Ward clock, base", "seconds before value scaling",
                         () -> WardConfig.wardClockBaseSeconds, s -> WardConfig.wardClockBaseSeconds = pFloat(s, WardConfig.wardClockBaseSeconds)),
                 Row.ofFloat("Ward clock, value", "seconds added per chest worth",
                         () -> WardConfig.wardClockValueSeconds, s -> WardConfig.wardClockValueSeconds = pFloat(s, WardConfig.wardClockValueSeconds)),
-                Row.ofFloat("Clock difficulty", "time returned to harder locks",
+                Row.ofFloat("Clock difficulty", "time returned to harder minigames",
                         () -> WardConfig.wardClockDifficultyCompensation, s -> WardConfig.wardClockDifficultyCompensation = pFloat(s, WardConfig.wardClockDifficultyCompensation)),
                 Row.ofFloat("Clock minimum", "hard floor in seconds",
                         () -> WardConfig.wardClockMinimumSeconds, s -> WardConfig.wardClockMinimumSeconds = pFloat(s, WardConfig.wardClockMinimumSeconds)),
                 Row.ofFloat("Heart ward seconds", "extra time if the heart intervenes",
                         () -> WardConfig.heartWardSeconds, s -> WardConfig.heartWardSeconds = pFloat(s, WardConfig.heartWardSeconds)),
-                Row.ofFloat("Hurried time scale", "global hurried lock time multiplier",
+                Row.ofFloat("Hurried time scale", "global Hurried minigame time multiplier",
                         () -> WardConfig.hurriedTimeScale, s -> WardConfig.hurriedTimeScale = pFloat(s, WardConfig.hurriedTimeScale)),
                 Row.ofFloat("Life reward cap", "clean wins can add up to this much",
                         () -> WardConfig.successLifeBonusMax, s -> WardConfig.successLifeBonusMax = pFloat(s, WardConfig.successLifeBonusMax)),
@@ -515,19 +518,19 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.quirkOneThreshold, s -> WardConfig.quirkOneThreshold = pInt(s, WardConfig.quirkOneThreshold)),
                 Row.ofInt("Two quirks after", "value threshold for second quirk",
                         () -> WardConfig.quirkTwoThreshold, s -> WardConfig.quirkTwoThreshold = pInt(s, WardConfig.quirkTwoThreshold)),
-                Row.ofFloat("Low-value quirk chance", "0 - 1",
+                Row.ofPercent("Low-value quirk chance", "0 - 1",
                         () -> WardConfig.quirkLowValueChance, s -> WardConfig.quirkLowValueChance = pFloat(s, WardConfig.quirkLowValueChance)),
                 Row.ofInt("Two anomalies after", "value threshold for a second anomaly",
                         () -> WardConfig.anomalyTwoThreshold, s -> WardConfig.anomalyTwoThreshold = pInt(s, WardConfig.anomalyTwoThreshold)),
-                Row.ofFloat("Hurried chance", "0 - 1",
+                Row.ofPercent("Hurried chance", "0 - 1",
                         () -> WardConfig.anomalyHurriedChance, s -> WardConfig.anomalyHurriedChance = pFloat(s, WardConfig.anomalyHurriedChance)),
-                Row.ofFloat("Shrouded chance", "0 - 1",
+                Row.ofPercent("Shrouded chance", "0 - 1",
                         () -> WardConfig.anomalyShroudedChance, s -> WardConfig.anomalyShroudedChance = pFloat(s, WardConfig.anomalyShroudedChance)),
-                Row.ofFloat("Guttering chance", "0 - 1",
+                Row.ofPercent("Guttering chance", "0 - 1",
                         () -> WardConfig.anomalyGutteringChance, s -> WardConfig.anomalyGutteringChance = pFloat(s, WardConfig.anomalyGutteringChance)),
-                Row.ofFloat("Unlit chance", "0 - 1",
+                Row.ofPercent("Unlit chance", "0 - 1",
                         () -> WardConfig.anomalyUnlitChance, s -> WardConfig.anomalyUnlitChance = pFloat(s, WardConfig.anomalyUnlitChance)),
-                Row.ofFloat("Spent chance", "starts one stage down but costs a life",
+                Row.ofPercent("Spent chance", "starts one stage down but costs a life",
                         () -> WardConfig.anomalySpentChance, s -> WardConfig.anomalySpentChance = pFloat(s, WardConfig.anomalySpentChance)),
                 Row.ofFloat("Hurried minimum", "minimum hurried clock in seconds",
                         () -> WardConfig.hurriedMinSeconds, s -> WardConfig.hurriedMinSeconds = pFloat(s, WardConfig.hurriedMinSeconds)),
@@ -541,7 +544,7 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.eyeLootThreshold, s -> WardConfig.eyeLootThreshold = pFloat(s, WardConfig.eyeLootThreshold)),
                 Row.ofInt("Savant after wins", "resolved ward gate before End chests may drop it",
                         () -> WardConfig.eyeAfterBeaten, s -> WardConfig.eyeAfterBeaten = pInt(s, WardConfig.eyeAfterBeaten)),
-                Row.ofFloat("Lens true-name chance", "0 - 1",
+                Row.ofPercent("Lens true-name chance", "0 - 1",
                         () -> WardConfig.lensTrueNameChance, s -> WardConfig.lensTrueNameChance = pFloat(s, WardConfig.lensTrueNameChance)),
                 Row.ofInt("Slow ember seconds", "extra clock seconds added",
                         () -> WardConfig.emberSeconds, s -> WardConfig.emberSeconds = pInt(s, WardConfig.emberSeconds)),
@@ -549,12 +552,8 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.emberLootThreshold, s -> WardConfig.emberLootThreshold = pFloat(s, WardConfig.emberLootThreshold)),
                 Row.ofInt("Ember after wins", "resolved ward gate before Nether chests may drop it",
                         () -> WardConfig.emberAfterBeaten, s -> WardConfig.emberAfterBeaten = pInt(s, WardConfig.emberAfterBeaten)),
-                Row.ofFloat("Ember drop chance", "0 - 1",
+                Row.ofPercent("Ember drop chance", "0 - 1",
                         () -> WardConfig.emberDropChance, s -> WardConfig.emberDropChance = pFloat(s, WardConfig.emberDropChance)),
-                Row.ofFloat("Guardian wild chance", "hordes may pick eligible hostile mobs",
-                        () -> WardConfig.guardianWildChance, s -> WardConfig.guardianWildChance = pFloat(s, WardConfig.guardianWildChance)),
-                Row.ofInt("Horde size", "mobs in a sent horde",
-                        () -> WardConfig.hordeSize, s -> WardConfig.hordeSize = pInt(s, WardConfig.hordeSize)),
                 Row.ofFloat("Card hover lift", "visual lift in pixels",
                         () -> WardConfig.bargainCardHoverLift, s -> WardConfig.bargainCardHoverLift = pFloat(s, WardConfig.bargainCardHoverLift)),
                 Row.ofFloat("Card anim speed", "hover/settle animation speed",
@@ -565,9 +564,9 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.ambienceRange, s -> WardConfig.ambienceRange = pFloat(s, WardConfig.ambienceRange)))));
 
         pages.add(new Page("Director", List.of(
-                Row.ofBool("Anti-repetition", "de-weight recently played locks",
+                Row.ofBool("Anti-repetition", "de-weight recently played minigames",
                         () -> WardConfig.antiRepetitionEnabled, v -> WardConfig.antiRepetitionEnabled = v),
-                Row.ofInt("Recent window", "1 - 8 resolved locks remembered",
+                Row.ofInt("Recent window", "1 - 8 recent minigames remembered",
                         () -> WardConfig.antiRepetitionWindow, s -> WardConfig.antiRepetitionWindow = pInt(s, WardConfig.antiRepetitionWindow)),
                 Row.ofFloat("Newest weight", "0.2 = most recent is 20% as likely",
                         () -> WardConfig.antiRepetitionRecentWeight, s -> WardConfig.antiRepetitionRecentWeight = pFloat(s, WardConfig.antiRepetitionRecentWeight)),
@@ -587,13 +586,13 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.maxLootMultiplier, v -> WardConfig.maxLootMultiplier = pFloat(v, WardConfig.maxLootMultiplier)),
                 Row.ofBool("Performance grades", "Scraped / Clean / Perfect resolution grading",
                         () -> WardConfig.cleanWinsEnabled, v -> WardConfig.cleanWinsEnabled = v),
-                Row.ofFloat("Clean performance", "minimum 0 - 1",
+                Row.ofPercent("Clean performance", "minimum quality threshold; 50 - 100%",
                         () -> WardConfig.cleanWinPerformanceThreshold, v -> WardConfig.cleanWinPerformanceThreshold = pFloat(v, WardConfig.cleanWinPerformanceThreshold)),
-                Row.ofFloat("Perfect performance", "minimum 0 - 1",
+                Row.ofPercent("Perfect performance", "must be at least Clean; 50 - 100%",
                         () -> WardConfig.perfectWinPerformanceThreshold, v -> WardConfig.perfectWinPerformanceThreshold = pFloat(v, WardConfig.perfectWinPerformanceThreshold)),
-                Row.ofFloat("Clean time left", "fraction of ward clock",
+                Row.ofPercent("Clean time left", "minimum ward time remaining; up to 95%",
                         () -> WardConfig.cleanWinTimeRemaining, v -> WardConfig.cleanWinTimeRemaining = pFloat(v, WardConfig.cleanWinTimeRemaining)),
-                Row.ofFloat("Perfect time left", "fraction of ward clock",
+                Row.ofPercent("Perfect time left", "must be at least Clean; up to 95%",
                         () -> WardConfig.perfectWinTimeRemaining, v -> WardConfig.perfectWinTimeRemaining = pFloat(v, WardConfig.perfectWinTimeRemaining)),
                 Row.ofFloat("Scraped loot scale", "multiplier for a successful but rough resolution",
                         () -> WardConfig.scrapedWinLootScale, v -> WardConfig.scrapedWinLootScale = pFloat(v, WardConfig.scrapedWinLootScale)),
@@ -623,17 +622,17 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.deceptionLayerEnabled, v -> WardConfig.deceptionLayerEnabled = v),
                 Row.ofInt("Deception unlock", "resolved wards before false feedback can appear",
                         () -> WardConfig.deceptionUnlockAfter, v -> WardConfig.deceptionUnlockAfter = pInt(v, WardConfig.deceptionUnlockAfter)),
-                Row.ofFloat("Deception base", "base probability after unlock",
+                Row.ofPercent("Deception base", "base probability after unlock",
                         () -> WardConfig.deceptionBaseChance, v -> WardConfig.deceptionBaseChance = pFloat(v, WardConfig.deceptionBaseChance)),
-                Row.ofFloat("Deception cap", "maximum natural probability",
+                Row.ofPercent("Deception cap", "maximum natural probability",
                         () -> WardConfig.deceptionMaxChance, v -> WardConfig.deceptionMaxChance = pFloat(v, WardConfig.deceptionMaxChance)),
                 Row.ofBool("Hybrid rounds", "rare cross-discipline borrowed mechanisms",
                         () -> WardConfig.hybridRoundsEnabled, v -> WardConfig.hybridRoundsEnabled = v),
                 Row.ofInt("Hybrid unlock", "resolved wards before hybrid rounds can appear",
                         () -> WardConfig.hybridUnlockAfter, v -> WardConfig.hybridUnlockAfter = pInt(v, WardConfig.hybridUnlockAfter)),
-                Row.ofFloat("Hybrid base", "base probability after unlock",
+                Row.ofPercent("Hybrid base", "base probability after unlock",
                         () -> WardConfig.hybridBaseChance, v -> WardConfig.hybridBaseChance = pFloat(v, WardConfig.hybridBaseChance)),
-                Row.ofFloat("Hybrid cap", "maximum natural probability",
+                Row.ofPercent("Hybrid cap", "maximum natural probability",
                         () -> WardConfig.hybridMaxChance, v -> WardConfig.hybridMaxChance = pFloat(v, WardConfig.hybridMaxChance)),
                 Row.ofFloat("Hybrid loot bonus", "extra multiplier for clearing the interruption",
                         () -> WardConfig.hybridSuccessLootBonus, v -> WardConfig.hybridSuccessLootBonus = pFloat(v, WardConfig.hybridSuccessLootBonus)))));
@@ -655,7 +654,7 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.accessibilityGuiAnimationIntensity, v -> WardConfig.accessibilityGuiAnimationIntensity = pFloat(v, WardConfig.accessibilityGuiAnimationIntensity)),
                 Row.ofFloat("SFX volume", "0 - 1.5 for minigame UI sounds",
                         () -> WardConfig.accessibilitySfxVolume, v -> WardConfig.accessibilitySfxVolume = pFloat(v, WardConfig.accessibilitySfxVolume)),
-                Row.ofFloat("Parallax meter reveal", "meter appears only after this quality",
+                Row.ofPercent("Parallax meter reveal", "quality threshold for the meter; up to 95%",
                         () -> WardConfig.parallaxMeterRevealThreshold, v -> WardConfig.parallaxMeterRevealThreshold = pFloat(v, WardConfig.parallaxMeterRevealThreshold)))));
 
         pages.add(new Page("Dimension", List.of(
@@ -697,7 +696,7 @@ public class WardConfigScreen extends Screen {
                         () -> selectedTuning().difficultyScale, s -> selectedTuning().difficultyScale = pFloat(s, selectedTuning().difficultyScale)),
                 Row.ofFloat("Input window", "wider or narrower timing/target windows",
                         () -> selectedTuning().inputWindowScale, s -> selectedTuning().inputWindowScale = pFloat(s, selectedTuning().inputWindowScale)),
-                Row.ofFloat("Reward scale", "reward multiplier for this lock",
+                Row.ofFloat("Reward scale", "reward multiplier for this minigame",
                         () -> selectedTuning().rewardScale, s -> selectedTuning().rewardScale = pFloat(s, selectedTuning().rewardScale)))));
     }
 
@@ -872,204 +871,405 @@ public class WardConfigScreen extends Screen {
         }
     }
 
-    // ------------------------------------------------------------------ layout
+    // ------------------------------------------------------------------ layout / navigation
+
+    private int panelWidth() {
+        return Math.min(MAX_PANEL_W, Math.max(300, width - 24));
+    }
+
+    private int panelHeight() {
+        return Math.min(MAX_PANEL_H, Math.max(220, height - 24));
+    }
 
     private int panelX() {
-        return width / 2 - PANEL_W / 2;
+        return width / 2 - panelWidth() / 2;
     }
 
     private int panelY() {
-        return height / 2 - PANEL_H / 2;
-    }
-
-    private int leftX() {
-        return width / 2 - 16 - COL_W;
-    }
-
-    private int rightX() {
-        return width / 2 + 16;
+        return height / 2 - panelHeight() / 2;
     }
 
     private boolean useSingleColumnLayout() {
         String t = pages.get(page).title();
-        return "Dimension".equals(t) || "Guardians".equals(t) || "Item overrides".equals(t);
+        return panelWidth() < 520 || "Dimension".equals(t) || "Guardians".equals(t) || "Item overrides".equals(t);
+    }
+
+    private int rowsPerChunk() {
+        int spacing = rowSpacing();
+        int reserved = hasContextSelector() ? 194 : 170;
+        int perColumn = Math.max(1, Math.min(SINGLE_ROWS_PER_CHUNK, (panelHeight() - reserved) / spacing + 1));
+        if (useSingleColumnLayout()) return perColumn;
+        return Math.min(NORMAL_ROWS_PER_CHUNK, perColumn * 2);
+    }
+
+    private int chunkCount() {
+        int n = pages.get(page).rows().size();
+        int per = Math.max(1, rowsPerChunk());
+        return Math.max(1, (n + per - 1) / per);
+    }
+
+    private List<Row> visibleRows() {
+        List<Row> all = pages.get(page).rows();
+        int per = Math.max(1, rowsPerChunk());
+        settingsChunk = Math.max(0, Math.min(settingsChunk, chunkCount() - 1));
+        int from = Math.min(all.size(), settingsChunk * per);
+        int to = Math.min(all.size(), from + per);
+        return all.subList(from, to);
+    }
+
+    private int sidebarStep() {
+        if (pages.isEmpty()) return 16;
+        return Math.max(12, Math.min(16, (panelHeight() - 72) / pages.size()));
+    }
+
+    private boolean showSidebar() {
+        return panelWidth() >= 600 && sidebarStep() >= 13;
+    }
+
+    private int contentLeft() {
+        return panelX() + (showSidebar() ? 174 : 18);
+    }
+
+    private int contentRight() {
+        return panelX() + panelWidth() - 18;
+    }
+
+    private int contentCenter() {
+        return contentLeft() + (contentRight() - contentLeft()) / 2;
+    }
+
+    private int columnGap() {
+        return 24;
     }
 
     private int fieldWidth() {
-        return useSingleColumnLayout() ? PANEL_W - 40 : COL_W;
+        if (useSingleColumnLayout()) return contentRight() - contentLeft();
+        return (contentRight() - contentLeft() - columnGap()) / 2;
+    }
+
+    private int leftX() {
+        return contentLeft();
+    }
+
+    private int rightX() {
+        return contentLeft() + fieldWidth() + columnGap();
     }
 
     private int rowX(boolean rightColumn) {
-        return useSingleColumnLayout() ? panelX() + 20 : (rightColumn ? rightX() : leftX());
+        return useSingleColumnLayout() ? leftX() : (rightColumn ? rightX() : leftX());
     }
 
-    private int pageFieldLift() {
-        return onDimensionPage() ? 18 : 0;
+    private boolean hasContextSelector() {
+        return onTuningPage() || onDimensionPage();
+    }
+
+    private int navY() {
+        return panelY() + 29;
+    }
+
+    private int contextY() {
+        return panelY() + 53;
+    }
+
+    private int chunkY() {
+        return panelY() + (hasContextSelector() ? 77 : 53);
     }
 
     private int gridTop() {
-        // Three rows of tabs now that there are ten of them. The grid used to
-        // start at a fixed 76 and the third row of tabs was drawn straight over
-        // the first row of settings.
-        return panelY() + 32 + tabRows() * 22 + 10;
+        int top = panelY() + 78;
+        if (hasContextSelector()) top += 24;
+        if (chunkCount() > 1) top += 24;
+        return top;
     }
 
-    /** How many rows the tab strip needs. */
-    private int tabRows() {
-        return (pages.size() + 3) / 4;
+    private int rowSpacing() {
+        return panelHeight() < 360 ? 36 : 42;
     }
 
-    private int rowY(int i) {
-        return gridTop() + pageFieldLift() + i * ROW_H + 13;
+    private int rowY(int localIndex, int split) {
+        return gridTop() + (localIndex % split) * rowSpacing() + 21;
+    }
+
+    private void clearProblemForNavigation() {
+        if (!problem.startsWith("Invalid")) problem = "";
+    }
+
+    private void goToPage(int next) {
+        if (!commitVisibleRows()) return;
+        int n = pages.size();
+        page = (next % n + n) % n;
+        settingsChunk = 0;
+        clearProblemForNavigation();
+        init();
+    }
+
+    private void goToChunk(int next) {
+        if (!commitVisibleRows()) return;
+        int n = chunkCount();
+        settingsChunk = (next % n + n) % n;
+        clearProblemForNavigation();
+        init();
+    }
+
+    private boolean validNumber(Row r, String raw) {
+        String s = raw == null ? "" : raw.trim().replace(',', '.');
+        if (r.kind == Kind.PERCENT && s.endsWith("%")) s = s.substring(0, s.length() - 1).trim();
+        if (s.isEmpty()) return false;
+        try {
+            if (r.kind == Kind.INT) {
+                Integer.parseInt(s);
+                return true;
+            }
+            float value = Float.parseFloat(s);
+            if (!Float.isFinite(value)) return false;
+            if (r.kind == Kind.PERCENT && (value < 0f || value > 100f)) return false;
+            return true;
+        } catch (NumberFormatException ex) {
+            return false;
+        }
+    }
+
+    /**
+     * Commits the currently visible controls to the in-memory config only.
+     * Disk persistence happens only when Save is pressed. This means a player can
+     * edit several categories/chunks and press Save once; Cancel/ESC reloads the
+     * last saved JSON and discards all staged changes.
+     */
+    private boolean commitVisibleRows() {
+        for (Row r : visibleRows()) {
+            if ((r.kind == Kind.INT || r.kind == Kind.FLOAT || r.kind == Kind.PERCENT) && r.box != null
+                    && !validNumber(r, r.box.getValue())) {
+                problem = r.kind == Kind.PERCENT
+                        ? "Invalid percentage for '" + r.label + "' (use 0 - 100)."
+                        : "Invalid value for '" + r.label + "'.";
+                return false;
+            }
+        }
+
+        for (Row r : visibleRows()) {
+            if (r.kind == Kind.BOOL) {
+                r.writeBool.accept(r.value);
+            } else if (r.kind == Kind.TEXT && r.box != null) {
+                r.writeText.accept(r.box.getValue());
+            } else if (r.box != null) {
+                String raw = r.box.getValue().trim().replace(',', '.');
+                if (r.kind == Kind.PERCENT) {
+                    if (raw.endsWith("%")) raw = raw.substring(0, raw.length() - 1).trim();
+                    raw = Float.toString(Float.parseFloat(raw) / 100.0f);
+                }
+                r.writeNumber.accept(raw);
+            }
+        }
+        WardConfig.clampAll();
+        return true;
     }
 
     @Override
     protected void init() {
         clearWidgets();
-        problem = "";
+        settingsChunk = Math.max(0, Math.min(settingsChunk, chunkCount() - 1));
 
-        // tabs across the top, wrapping onto a second line when there are enough
-        int tabW = (PANEL_W - 16) / 4;
-        for (int i = 0; i < pages.size(); i++) {
-            final int which = i;
-            int tx = panelX() + 8 + (i % 4) * tabW;
-            int ty = panelY() + 26 + (i / 4) * 22;
-            Button tab = Button.builder(Component.literal(pages.get(i).title()), b -> {
-                page = which;
-                init();
-            }).bounds(tx, ty, tabW - 4, 20).build();
-            tab.active = i != page;
-            addRenderableWidget(tab);
+        int x = panelX(), y = panelY(), w = panelWidth();
+
+        // Category navigation replaces the old 22-tab wall. Long category names
+        // no longer truncate and the content area stays at a stable Y position.
+        addRenderableWidget(Button.builder(Component.literal("<"), b -> goToPage(page - 1))
+                .bounds(contentLeft(), navY(), 26, 20).build());
+        addRenderableWidget(Button.builder(Component.literal(">"), b -> goToPage(page + 1))
+                .bounds(contentRight() - 26, navY(), 26, 20).build());
+
+        if (showSidebar()) {
+            int sy = y + 39;
+            int step = sidebarStep();
+            for (int i = 0; i < pages.size(); i++) {
+                final int target = i;
+                Button categoryButton = Button.builder(Component.literal(pages.get(i).title()), b -> goToPage(target))
+                        .bounds(x + 10, sy + i * step, 150, Math.max(12, step - 1)).build();
+                categoryButton.active = i != page;
+                addRenderableWidget(categoryButton);
+            }
         }
 
         if (onTuningPage()) {
-            int ty = gridTop() - 23;
             addRenderableWidget(Button.builder(Component.literal("<"), b -> {
+                if (!commitVisibleRows()) return;
                 tuningIndex = (tuningIndex + MinigameType.values().length - 1) % MinigameType.values().length;
+                settingsChunk = 0;
+                problem = "";
                 init();
-            }).bounds(panelX() + 18, ty, 22, 20).build());
+            }).bounds(contentLeft(), contextY(), 26, 20).build());
             addRenderableWidget(Button.builder(Component.literal(">"), b -> {
+                if (!commitVisibleRows()) return;
                 tuningIndex = (tuningIndex + 1) % MinigameType.values().length;
+                settingsChunk = 0;
+                problem = "";
                 init();
-            }).bounds(panelX() + PANEL_W - 40, ty, 22, 20).build());
+            }).bounds(contentRight() - 26, contextY(), 26, 20).build());
         }
 
         if (onDimensionPage()) {
-            int ty = gridTop() - 23;
             addRenderableWidget(Button.builder(Component.literal("<"), b -> {
+                if (!commitVisibleRows()) return;
                 int n = Math.max(1, dimensionKeys().size());
                 dimensionIndex = (dimensionIndex + n - 1) % n;
+                settingsChunk = 0;
+                problem = "";
                 init();
-            }).bounds(panelX() + 18, ty, 22, 20).build());
+            }).bounds(contentLeft(), contextY(), 26, 20).build());
             addRenderableWidget(Button.builder(Component.literal(">"), b -> {
+                if (!commitVisibleRows()) return;
                 int n = Math.max(1, dimensionKeys().size());
                 dimensionIndex = (dimensionIndex + 1) % n;
+                settingsChunk = 0;
+                problem = "";
                 init();
-            }).bounds(panelX() + PANEL_W - 40, ty, 22, 20).build());
+            }).bounds(contentRight() - 26, contextY(), 26, 20).build());
         }
 
-        List<Row> rows = pages.get(page).rows();
+        if (chunkCount() > 1) {
+            addRenderableWidget(Button.builder(Component.literal("<"), b -> goToChunk(settingsChunk - 1))
+                    .bounds(contentLeft(), chunkY(), 26, 20).build());
+            addRenderableWidget(Button.builder(Component.literal(">"), b -> goToChunk(settingsChunk + 1))
+                    .bounds(contentRight() - 26, chunkY(), 26, 20).build());
+        }
+
+        List<Row> rows = visibleRows();
         int split = useSingleColumnLayout() ? rows.size() : Math.max(1, (rows.size() + 1) / 2);
         for (int i = 0; i < rows.size(); i++) {
             Row r = rows.get(i);
-            int x = rowX(i >= split);
-            int y = rowY(i % split);
+            int xField = rowX(!useSingleColumnLayout() && i >= split);
+            int yField = rowY(i, split);
 
             if (r.kind == Kind.BOOL) {
                 r.value = r.readBool.getAsBoolean();
                 r.toggle = Button.builder(toggleLabel(r.label, r.value), b -> {
                     r.value = !r.value;
                     b.setMessage(toggleLabel(r.label, r.value));
-                }).bounds(x, y - 1, fieldWidth(), 20).build();
+                }).bounds(xField, yField - 1, fieldWidth(), 20).build();
                 addRenderableWidget(r.toggle);
             } else {
-                EditBox box = new EditBox(font, x, y, fieldWidth(), 18, Component.literal(""));
-                box.setMaxLength(r.kind == Kind.TEXT ? 2048 : 12);
+                EditBox box = new EditBox(font, xField, yField, fieldWidth(), 18, Component.literal(r.label));
+                box.setMaxLength(r.kind == Kind.TEXT ? 2048 : 16);
                 box.setValue(r.initial());
                 r.box = box;
                 addRenderableWidget(box);
             }
         }
 
-        int buttonY = panelY() + PANEL_H - 30;
+        int buttonY = y + panelHeight() - 29;
+        int bw = 98;
         addRenderableWidget(Button.builder(Component.literal("Save"), b -> save())
-                .bounds(width / 2 - 108, buttonY, 104, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
-                .bounds(width / 2 + 4, buttonY, 104, 20).build());
+                .bounds(width / 2 - bw - 4, buttonY, bw, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> discardAndClose())
+                .bounds(width / 2 + 4, buttonY, bw, 20).build());
     }
 
     private Component toggleLabel(String name, boolean on) {
-        return Component.literal(name + ": " + (on ? "on" : "off"));
+        return Component.literal(name + ": " + (on ? "ON" : "OFF"));
     }
 
-    /**
-     * Writes back only the page in front of you.
-     *
-     * <p>The other pages have no live widgets - they are rebuilt on every tab
-     * change - so writing them would write the values they were constructed
-     * with, which is what they already hold. Saving one page at a time is
-     * therefore both correct and the only thing that can be correct here.
-     */
     private void save() {
-        for (Row r : pages.get(page).rows()) {
-            if (r.kind == Kind.BOOL) {
-                r.writeBool.accept(r.value);
-            } else if (r.kind == Kind.TEXT && r.box != null) {
-                r.writeText.accept(r.box.getValue());
-            } else if (r.box != null) {
-                r.writeNumber.accept(r.box.getValue());
-            }
-        }
+        if (!commitVisibleRows()) return;
         WardConfig.clampAll();
         WardConfig.save();
-        problem = "Saved. Values outside their limits were clamped.";
+        problem = "Saved to config/wardbound.json.";
         init();
     }
 
+    private void discardAndClose() {
+        WardConfig.load();
+        if (minecraft != null) minecraft.setScreen(parent);
+    }
+
+    @Override
+    public void onClose() {
+        discardAndClose();
+    }
+
+    @Override
+    public void removed() {
+        if (ACTIVE == this) ACTIVE = null;
+        super.removed();
+    }
+
     // ------------------------------------------------------------------ render
+
+    private String fit(String text, int maxWidth) {
+        if (text == null) return "";
+        if (font.width(text) <= maxWidth) return text;
+        String ellipsis = "...";
+        int target = Math.max(0, maxWidth - font.width(ellipsis));
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            String next = out.toString() + text.charAt(i);
+            if (font.width(next) > target) break;
+            out.append(text.charAt(i));
+        }
+        return out + ellipsis;
+    }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g);
 
-        int x = panelX(), y = panelY();
-        g.fill(x - 2, y - 2, x + PANEL_W + 2, y + PANEL_H + 2, COL_PANEL_EDGE);
-        g.fill(x, y, x + PANEL_W, y + PANEL_H, COL_BG);
-        g.fill(x, y, x + PANEL_W, y + 22, COL_HEADER);
-        g.fill(x, y + 21, x + PANEL_W, y + 22, COL_BRASS);
+        int x = panelX(), y = panelY(), w = panelWidth(), h = panelHeight();
+        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, COL_PANEL_EDGE);
+        g.fill(x, y, x + w, y + h, COL_BG);
+        g.fill(x, y, x + w, y + 22, COL_HEADER);
+        g.fill(x, y + 21, x + w, y + 22, COL_BRASS);
 
-        g.drawString(font, "Wardbound", x + 10, y + 7, COL_TEXT, false);
-        g.drawString(font, pages.get(page).title(), x + PANEL_W - 10
-                - font.width(pages.get(page).title()), y + 7, COL_BRASS_LIT, false);
+        g.drawString(font, "Wardbound Configuration", x + 10, y + 7, COL_TEXT, false);
+        String count = (page + 1) + "/" + pages.size();
+        g.drawString(font, count, x + w - 10 - font.width(count), y + 7, COL_FAINT, false);
+
+        if (showSidebar()) {
+            g.fill(x + 166, y + 24, x + 167, y + h - 35, COL_BRASS);
+            g.drawString(font, "Categories", x + 10, y + 27, COL_FAINT, false);
+        }
+
+        String category = pages.get(page).title();
+        String categoryLine = category + "  ·  category " + (page + 1) + " of " + pages.size();
+        String categoryShown = fit(categoryLine, contentRight() - contentLeft() - 70);
+        g.drawString(font, categoryShown, contentCenter() - font.width(categoryShown) / 2,
+                navY() + 6, COL_BRASS_LIT, false);
 
         if (onTuningPage()) {
-            String tuningLabel = "Tuning: " + niceGameName(selectedType());
-            g.drawString(font, tuningLabel, width / 2 - font.width(tuningLabel) / 2, gridTop() - 18, COL_BRASS_LIT, false);
+            String label = "Minigame: " + niceGameName(selectedType());
+            String shown = fit(label, contentRight() - contentLeft() - 70);
+            g.drawString(font, shown, contentCenter() - font.width(shown) / 2, contextY() + 6, COL_BRASS_LIT, false);
+        } else if (onDimensionPage()) {
+            String label = "Dimension: " + selectedDimensionKey();
+            String shown = fit(label, contentRight() - contentLeft() - 70);
+            g.drawString(font, shown, contentCenter() - font.width(shown) / 2, contextY() + 6, COL_BRASS_LIT, false);
         }
 
-        if (onDimensionPage()) {
-            String dimLabel = "Dimension: " + selectedDimensionKey();
-            g.drawString(font, dimLabel, width / 2 - font.width(dimLabel) / 2, gridTop() - 18, COL_BRASS_LIT, false);
+        if (chunkCount() > 1) {
+            int total = pages.get(page).rows().size();
+            int per = rowsPerChunk();
+            int from = settingsChunk * per + 1;
+            int to = Math.min(total, from + per - 1);
+            String chunk = "Settings " + from + "-" + to + " of " + total;
+            g.drawString(font, chunk, contentCenter() - font.width(chunk) / 2, chunkY() + 6, COL_NOTE, false);
         }
 
-        List<Row> rows = pages.get(page).rows();
+        List<Row> rows = visibleRows();
         int split = useSingleColumnLayout() ? rows.size() : Math.max(1, (rows.size() + 1) / 2);
         for (int i = 0; i < rows.size(); i++) {
             Row r = rows.get(i);
-            int cx = rowX(i >= split);
-            int cy = rowY(i % split);
+            int cx = rowX(!useSingleColumnLayout() && i >= split);
+            int cy = rowY(i, split);
             if (r.kind != Kind.BOOL) {
-                g.drawString(font, r.label, cx, cy - 22, COL_TEXT, false);
+                g.drawString(font, fit(r.label, fieldWidth()), cx, cy - 21, COL_TEXT, false);
             }
-            if (r.note != null) {
-                g.drawString(font, r.note, cx, cy - 11, COL_NOTE, false);
+            if (r.note != null && !r.note.isBlank()) {
+                g.drawString(font, fit(r.note, fieldWidth()), cx, cy - 10, COL_NOTE, false);
             }
         }
 
-        g.drawString(font, "Everything here also lives in config/wardbound.json, with notes.",
-                x + 10, y + PANEL_H - 44, COL_FAINT, false);
+        String footer = "Changes are staged until Save. Cancel / ESC discards them.";
+        g.drawString(font, fit(footer, w - 20), x + 10, y + h - 43, COL_FAINT, false);
         if (!problem.isEmpty()) {
-            g.drawString(font, problem, x + 10, y + PANEL_H - 56,
+            g.drawString(font, fit(problem, w - 20), x + 10, y + h - 54,
                     problem.startsWith("Saved") ? COL_NOTE : COL_BAD, false);
         }
 

@@ -75,6 +75,10 @@ public final class MasterStory {
     public static void evaluate(ServerPlayer player, LockData data, CardMaster master) {
         if (player == null || data == null || master == null) return;
         UUID id = player.getUUID();
+        // Master story is a late-game layer. Card-lineage counters may accumulate
+        // silently beforehand, but no Master chapter may start before the shared
+        // dealer gate has actually opened.
+        if (!CardMaster.phaseActive(data, id)) return;
         int current = chapter(data, id, master);
         int audience = data.uniqueInt(id, "dealer_audiences_" + master.id);
         int accepted = data.uniqueInt(id, "dealer_acceptances_" + master.id);
@@ -93,11 +97,15 @@ public final class MasterStory {
         if (target >= 5 && accepted >= 16 && relation >= 18 && lateGate(data, id, master, 6)) target = 6;
         if (target >= 6 && accepted >= 22 && relation >= 20 && conjunctions >= 6 && lateGate(data, id, master, 7)) target = 7;
 
-        for (int next = current + 1; next <= target; next++) {
+        // Conditions may already be far ahead when a Master finally gives its name.
+        // Never dump several chapters in one click: one meaningful event may expose
+        // at most one new chapter, preserving the late-game arc as an actual arc.
+        if (target > current) {
+            int next = current + 1;
             data.setUniqueInt(id, "dealer_story_" + master.id, next);
             WardHistory.discoverMasterChapter(player, master, next);
             WardHistory.recordSpecial(player, "WARD", master.title + " // " + chapterName(master, next));
-            WardHud.message(player, Component.literal(master.title + " // " + chapterName(master, next))
+            WardHud.messageTransient(player, Component.literal(master.title + " // " + chapterName(master, next))
                     .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC), false);
             dev.marrowseal.wardbound.item.CthulhuEyeItem.speakInsight(player,
                     "master_story_" + master.id + "_" + next,

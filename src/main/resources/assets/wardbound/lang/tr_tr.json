@@ -568,5 +568,9 @@
   "item.wardbound.canticle_for_the_sleeper": "Uyuyana Kantik",
   "item.wardbound.abyssal_vestige": "Uçurum Kalıntısı",
   "wardbound.adv.maestro_revealed": "Üçünün Ötesinde",
-  "wardbound.adv.maestro_revealed.desc": "Gambler, Curator ve Notary’yi sonuçlandır; onların yoluna hiç değmemiş bir yazarın partisyonunu bul."
+  "wardbound.adv.maestro_revealed.desc": "Gambler, Curator ve Notary’yi sonuçlandır; onların yoluna hiç değmemiş bir yazarın partisyonunu bul.",
+  "wardbound.ui.dialogue.back": "GERİ",
+  "wardbound.ui.dialogue.next": "İLERİ",
+  "wardbound.ui.dialogue.close": "KAPAT",
+  "wardbound.ui.dialogue.hint": "BOŞLUK / TEKERLEK"
 }

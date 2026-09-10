@@ -84,6 +84,7 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     private int phaseCount;
     private int[] route;
     private float globalTime;
+    private long phaseEntryGraceUntilNanos;
     private float glitchTimer;
     private float jitterX;
     private float jitterY;
@@ -199,6 +200,9 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     private float pressureHalf;
     private int pressureRounds;
     private int pressureRoundsNeeded;
+    private float pressureLeak;
+    private float pressureBurst;
+    private int pressurePumps;
 
     // ---------------------------------------------------------------- discipline echo: pulse / rhythm
     private final float[] pulseBeats = new float[7];
@@ -215,10 +219,12 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     // ---------------------------------------------------------------- discipline echo: constellation
     private final float[] constellationX = new float[7];
     private final float[] constellationY = new float[7];
-    private final int[] constellationPath = new int[6];
+    private final int[] constellationPath = new int[7];
     private boolean constellationPreview;
     private float constellationPreviewTimer;
     private int constellationInput;
+    private int constellationMistFlash = -1;
+    private float constellationMistFlashTimer;
 
     // ---------------------------------------------------------------- discipline echo: mirror
     private int mirrorTargetGlyph;
@@ -228,10 +234,13 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     private final boolean[] mirrorFlipX = new boolean[4];
     private final boolean[] mirrorFlipY = new boolean[4];
     private int mirrorAnswer;
+    private int mirrorRound;
+    private int mirrorRoundsNeeded;
 
     // ---------------------------------------------------------------- discipline echo: keyway
     private final float[] keywayCenter = new float[4];
     private final float[] keywayHalf = new float[4];
+    private final float[] keywayFalseCenter = new float[4];
     private float keywayMarker;
     private float keywayDir;
     private int keywayPin;
@@ -261,27 +270,34 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     private float yokeTargetB;
     private float yokeHalf;
     private int yokeMoves;
+    private int yokeRound;
+    private int yokeRoundsNeeded;
 
     // ---------------------------------------------------------------- discipline echo: rootway
     private final boolean[] rootOpen = new boolean[16 * 4];
     private final int[] rootRoute = new int[8];
     private int rootIndex;
     private int rootGoal;
+    private float rootDecisionTimer;
+    private float rootDecisionLimit;
 
     // ---------------------------------------------------------------- discipline echo: shardsong
     private final int[][] shardEdge = new int[4][4];
     private final int[] shardRot = new int[4];
     private int shardMoves;
+    private int shardIdeal;
 
     // ---------------------------------------------------------------- discipline echo: black orrery
     private final int[] orreryEcho = new int[3];
     private int orreryEchoMoves;
+    private int orreryEchoIdeal;
 
     // ---------------------------------------------------------------- discipline echo: last procession
     private final int[] processionEchoTarget = new int[4];
     private final int[] processionEchoCurrent = new int[4];
     private int processionEchoSelected = -1;
     private int processionEchoMoves;
+    private int processionEchoIdeal;
 
     public CthulhusGameScreen(OpenMinigamePacket msg) {
         super(Component.translatable("wardbound.title.cthulhus_game"), msg);
@@ -488,6 +504,10 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
             case RITUAL_PROCESSION -> setupProcessionEcho();
             default -> finishEncounter();
         }
+        // Phase titles used to consume live mechanic time. Memory previews could
+        // disappear behind the title, Rootway lost almost half its first decision
+        // window, and Pulse could miss a beat before the player had control.
+        phaseEntryGraceUntilNanos = System.nanoTime() + (banner ? 950_000_000L : 350_000_000L);
         if (banner) {
             showBanner(ritualName(), Painter.lighten(theme().accent, 0.22f), 900);
             Sfx.play(WardSounds.EYE_OPEN, 0.45f, 0.84f + phase * 0.045f);
@@ -645,12 +665,28 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     }
 
     private void setupLattice() {
+        int minDepth = isWeakPassage() ? 5 : 4;
         latticeMask = 0;
-        int scramble = 4 + phaseRng.nextInt(3) + (ritual() == RITUAL_SHARDSONG ? 2 : 0) + (isWeakPassage() ? 1 : 0);
-        for (int i = 0; i < scramble; i++) latticeMask ^= latticeCrossMask(phaseRng.nextInt(9));
-        if (latticeMask == 0) latticeMask ^= latticeCrossMask(phaseRng.nextInt(9));
+        latticeIdeal = 0;
+        for (int attempt = 0; attempt < 36 && latticeIdeal < minDepth; attempt++) {
+            latticeMask = 0;
+            int scramble = 5 + phaseRng.nextInt(4) + (ritual() == RITUAL_SHARDSONG ? 2 : 0) + (isWeakPassage() ? 1 : 0);
+            for (int i = 0; i < scramble; i++) latticeMask ^= latticeCrossMask(phaseRng.nextInt(9));
+            latticeIdeal = latticeDistance(latticeMask);
+        }
+        // All 3x3 Lights-Out states are solvable here. If unlucky random turns
+        // cancelled too heavily, choose a verified deep state instead of letting
+        // the final exam collapse into a one-click board.
+        if (latticeIdeal < minDepth) {
+            int start = phaseRng.nextInt(512);
+            for (int i = 0; i < 512; i++) {
+                int candidate = (start + i) & 511;
+                int d = latticeDistance(candidate);
+                if (d >= minDepth) { latticeMask = candidate; latticeIdeal = d; break; }
+            }
+        }
         latticeMoves = 0;
-        latticeIdeal = Math.max(1, latticeDistance(latticeMask));
+        latticeIdeal = Math.max(1, latticeIdeal);
     }
 
     private void setupEpitaph() {
@@ -712,10 +748,18 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         measureAmt[0]=8; measureAmt[1]=0; measureAmt[2]=0;
         measureSelected = -1;
         measureMoves = 0;
+        // Target 2 has a two-pour solution and made the final exam feel like a
+        // tutorial echo. Use only the deeper reachable quantities.
+        int[] candidates = {1, 4, 7};
+        measureTarget = candidates[phaseRng.nextInt(candidates.length)];
         if (isWeakPassage()) {
-            int d2 = measureDistance(2), d4 = measureDistance(4);
-            measureTarget = d4 >= d2 ? 4 : 2;
-        } else measureTarget = phaseRng.nextBoolean() ? 4 : 2;
+            int best = measureTarget, bestD = measureDistance(best);
+            for (int candidate : candidates) {
+                int d = measureDistance(candidate);
+                if (d > bestD) { best = candidate; bestD = d; }
+            }
+            measureTarget = best;
+        }
         measureIdeal = Math.max(1, measureDistance(measureTarget));
     }
 
@@ -776,21 +820,65 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     }
 
 
+    private static int cipherCode(int a, int b, int c) { return a * 36 + b * 6 + c; }
+
+    private int cipherDistance() {
+        int start = cipherCode(cipherPos[0], cipherPos[1], cipherPos[2]);
+        int goal = cipherCode(cipherTarget[0], cipherTarget[1], cipherTarget[2]);
+        if (start == goal) return 0;
+        int[] dist = new int[216];
+        java.util.Arrays.fill(dist, -1);
+        int[] queue = new int[216];
+        int head = 0, tail = 0;
+        dist[start] = 0; queue[tail++] = start;
+        while (head < tail) {
+            int state = queue[head++];
+            int[] v = {state / 36, (state / 6) % 6, state % 6};
+            for (int ring = 0; ring < 3; ring++) {
+                int[] n = v.clone();
+                int neighbour = (ring + 1) % 3;
+                n[ring] = (n[ring] + 1) % 6;
+                n[neighbour] = Math.floorMod(n[neighbour] - 1, 6);
+                int code = cipherCode(n[0], n[1], n[2]);
+                if (dist[code] >= 0) continue;
+                dist[code] = dist[state] + 1;
+                if (code == goal) return dist[code];
+                queue[tail++] = code;
+            }
+        }
+        return 12;
+    }
+
     private void setupCipher() {
-        cipherMoves = 0;
-        boolean solved = true;
-        for (int i = 0; i < 3; i++) {
-            cipherTarget[i] = phaseRng.nextInt(6);
-            cipherPos[i] = phaseRng.nextInt(6);
-            solved &= cipherPos[i] == cipherTarget[i];
-        }
-        if (solved) {
-            int j = phaseRng.nextInt(3);
-            cipherPos[j] = (cipherTarget[j] + 1) % 6;
-        }
+        for (int i = 0; i < 3; i++) cipherTarget[i] = phaseRng.nextInt(6);
+        int minDepth = isWeakPassage() ? 5 : 4;
         cipherIdeal = 0;
-        for (int i = 0; i < 3; i++) cipherIdeal += Math.floorMod(cipherTarget[i] - cipherPos[i], 6);
+        for (int attempt = 0; attempt < 48 && cipherIdeal < minDepth; attempt++) {
+            System.arraycopy(cipherTarget, 0, cipherPos, 0, 3);
+            int scramble = 7 + phaseRng.nextInt(6) + (isWeakPassage() ? 2 : 0);
+            for (int i = 0; i < scramble; i++) rotateCipherCoupled(phaseRng.nextInt(3));
+            cipherIdeal = cipherDistance();
+        }
+        // A rare cancellation streak should never create a tutorial-depth final
+        // exam. Continue through reachable states until an exact deep state is found.
+        if (cipherIdeal < minDepth) {
+            System.arraycopy(cipherTarget, 0, cipherPos, 0, 3);
+            for (int a = 0; a < 6 && cipherIdeal < minDepth; a++)
+                for (int b = 0; b < 6 && cipherIdeal < minDepth; b++)
+                    for (int c = 0; c < 6 && cipherIdeal < minDepth; c++) {
+                        cipherPos[0]=a; cipherPos[1]=b; cipherPos[2]=c;
+                        int d = cipherDistance();
+                        if (d >= minDepth && d < 12) cipherIdeal = d;
+                    }
+        }
+        cipherMoves = 0;
         cipherIdeal = Math.max(1, cipherIdeal);
+    }
+
+    private void rotateCipherCoupled(int ring) {
+        int neighbour = (ring + 1) % 3;
+        cipherPos[ring] = (cipherPos[ring] + 1) % 6;
+        cipherPos[neighbour] = Math.floorMod(cipherPos[neighbour] - 1, 6);
     }
 
     private boolean cipherSolved() {
@@ -801,15 +889,24 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     private void setupPressureEcho() {
         pressureValue = 0f;
         pressureRounds = 0;
-        pressureRoundsNeeded = 3 + (isWeakPassage() ? 1 : 0);
+        pressureRoundsNeeded = 4 + (isWeakPassage() ? 1 : 0);
         nextPressureBand();
     }
 
     private void nextPressureBand() {
-        pressureTarget = 0.38f + phaseRng.nextFloat() * 0.42f;
-        pressureHalf = Math.max(0.055f, (0.12f - pressureRounds * 0.012f - Math.max(0f, difficulty - 1f) * 0.018f)
+        pressureTarget = 0.34f + phaseRng.nextFloat() * 0.48f;
+        pressureHalf = Math.max(0.050f, (0.112f - pressureRounds * 0.010f - Math.max(0f, difficulty - 1f) * 0.016f)
                 * (isWeakPassage() ? 0.88f : 1f));
-        pressureValue = Math.max(0f, pressureTarget - 0.34f - phaseRng.nextFloat() * 0.12f);
+        pressureLeak = 0.032f + pressureRounds * 0.006f + Math.max(0f, difficulty - 1f) * 0.005f;
+        pressureBurst = Mth.clamp(pressureTarget + pressureHalf + 0.12f + phaseRng.nextFloat() * 0.045f, 0.70f, 0.985f);
+        pressurePumps = 0;
+        pressureValue = Math.max(0f, pressureTarget - 0.30f - phaseRng.nextFloat() * 0.10f);
+    }
+
+    private void stepPressureEcho(float dt) {
+        // The bellows bleeds continuously. This turns Pressure into an active
+        // control problem instead of a deterministic click-count followed by SEAL.
+        pressureValue = Math.max(0f, pressureValue - pressureLeak * dt);
     }
 
     private void setupPulseEcho() {
@@ -842,27 +939,47 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         java.util.Collections.shuffle(ids, phaseRng);
         for (int i = 0; i < constellationPath.length; i++) constellationPath[i] = ids.get(i);
         constellationInput = 0;
+        constellationMistFlash = -1;
+        constellationMistFlashTimer = 0f;
         constellationPreview = true;
         constellationPreviewTimer = Math.max(1.35f, 2.15f - masteryTier * 0.08f - (isWeakPassage() ? 0.22f : 0f));
     }
 
     private void setupMirrorEcho() {
-        mirrorTargetGlyph = phaseRng.nextInt(Sigils.TILE.length);
-        mirrorTargetFlipX = phaseRng.nextBoolean();
-        mirrorTargetFlipY = phaseRng.nextBoolean();
-        mirrorAnswer = phaseRng.nextInt(4);
-        for (int i = 0; i < 4; i++) {
-            if (i == mirrorAnswer) {
-                mirrorGlyph[i] = mirrorTargetGlyph;
-                mirrorFlipX[i] = mirrorTargetFlipX;
-                mirrorFlipY[i] = mirrorTargetFlipY;
-            } else {
-                mirrorGlyph[i] = phaseRng.nextFloat() < 0.55f ? mirrorTargetGlyph : phaseRng.nextInt(Sigils.TILE.length);
-                mirrorFlipX[i] = phaseRng.nextBoolean();
-                mirrorFlipY[i] = phaseRng.nextBoolean();
-                if (mirrorGlyph[i] == mirrorTargetGlyph && mirrorFlipX[i] == mirrorTargetFlipX && mirrorFlipY[i] == mirrorTargetFlipY)
-                    mirrorFlipX[i] = !mirrorFlipX[i];
+        mirrorRound = 0;
+        mirrorRoundsNeeded = 3 + (isWeakPassage() ? 1 : 0);
+        setupMirrorRound();
+    }
+
+    private void setupMirrorRound() {
+        int guard = 0;
+        do {
+            mirrorTargetGlyph = phaseRng.nextInt(Sigils.TILE.length);
+        } while (!Sigils.fullyAsymmetric(Sigils.TILE[mirrorTargetGlyph]) && ++guard < 60);
+        if (!Sigils.fullyAsymmetric(Sigils.TILE[mirrorTargetGlyph])) {
+            for (int i = 0; i < Sigils.TILE.length; i++) {
+                if (Sigils.fullyAsymmetric(Sigils.TILE[i])) { mirrorTargetGlyph = i; break; }
             }
+        }
+
+        int targetOrientation = phaseRng.nextInt(4);
+        mirrorTargetFlipX = (targetOrientation & 1) != 0;
+        mirrorTargetFlipY = (targetOrientation & 2) != 0;
+
+        // Four cards now contain the same asymmetric witness in all four possible
+        // reflections. The old mix of random glyphs produced obvious throwaway
+        // distractors and sometimes duplicated a wrong orientation. This is a
+        // reflection exam, not a "find the odd symbol" round.
+        int[] order = {0, 1, 2, 3};
+        for (int i = order.length - 1; i > 0; i--) {
+            int j = phaseRng.nextInt(i + 1);
+            int t = order[i]; order[i] = order[j]; order[j] = t;
+        }
+        for (int i = 0; i < 4; i++) {
+            mirrorGlyph[i] = mirrorTargetGlyph;
+            mirrorFlipX[i] = (order[i] & 1) != 0;
+            mirrorFlipY[i] = (order[i] & 2) != 0;
+            if (order[i] == targetOrientation) mirrorAnswer = i;
         }
     }
 
@@ -872,7 +989,18 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         keywayDir = keywayMarker < 0.5f ? 1f : -1f;
         for (int i = 0; i < 4; i++) {
             keywayCenter[i] = 0.20f + phaseRng.nextFloat() * 0.60f;
-            keywayHalf[i] = Math.max(0.045f, 0.095f - i * 0.008f - (isWeakPassage() ? 0.012f : 0f));
+            keywayHalf[i] = Math.max(0.040f, 0.084f - i * 0.007f - (isWeakPassage() ? 0.010f : 0f));
+            float falseCenter;
+            int guard = 0;
+            do {
+                falseCenter = 0.14f + phaseRng.nextFloat() * 0.72f;
+            } while (Math.abs(falseCenter - keywayCenter[i]) < 0.22f && ++guard < 16);
+            if (Math.abs(falseCenter - keywayCenter[i]) < 0.22f) {
+                falseCenter = keywayCenter[i] < 0.5f
+                        ? Math.min(0.90f, keywayCenter[i] + 0.30f)
+                        : Math.max(0.10f, keywayCenter[i] - 0.30f);
+            }
+            keywayFalseCenter[i] = falseCenter;
         }
     }
 
@@ -880,10 +1008,16 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         auguryAttempts = 0;
         auguryExact = 0;
         auguryMisplaced = 0;
-        for (int i = 0; i < 3; i++) {
-            augurySecret[i] = phaseRng.nextInt(4);
-            auguryGuess[i] = 0;
-        }
+        int minNonZero = isWeakPassage() ? 3 : 2;
+        int nonZero;
+        do {
+            nonZero = 0;
+            for (int i = 0; i < 3; i++) {
+                augurySecret[i] = phaseRng.nextInt(4);
+                if (augurySecret[i] != 0) nonZero++;
+                auguryGuess[i] = 0;
+            }
+        } while (nonZero < minNonZero);
     }
 
     private static int[] auguryJudge(int[] secret, int[] guess) {
@@ -911,24 +1045,34 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     }
 
     private void setupYokeEcho() {
+        yokeRoundsNeeded = isWeakPassage() ? 4 : 3;
+        yokeRound = 0;
+        yokeMoves = 0;
+        setupYokeRound();
+    }
+
+    private void setupYokeRound() {
         yokeA = 0.5f;
         yokeB = 0.5f;
         yokeTargetA = yokeA;
         yokeTargetB = yokeB;
-        float d = 0.075f;
-        int shapingMoves = 5 + phaseRng.nextInt(4) + (isWeakPassage() ? 2 : 0);
+        float d = 0.070f + yokeRound * 0.004f;
+        int shapingMoves = 6 + yokeRound * 2 + phaseRng.nextInt(3) + (isWeakPassage() ? 2 : 0);
         for (int i = 0; i < shapingMoves; i++) {
             switch (phaseRng.nextInt(4)) {
-                case 0 -> { yokeTargetA = Mth.clamp(yokeTargetA - d, 0f, 1f); yokeTargetB = Mth.clamp(yokeTargetB + d * 0.45f, 0f, 1f); }
-                case 1 -> { yokeTargetA = Mth.clamp(yokeTargetA + d, 0f, 1f); yokeTargetB = Mth.clamp(yokeTargetB - d * 0.45f, 0f, 1f); }
-                case 2 -> { yokeTargetB = Mth.clamp(yokeTargetB - d, 0f, 1f); yokeTargetA = Mth.clamp(yokeTargetA + d * 0.45f, 0f, 1f); }
-                default -> { yokeTargetB = Mth.clamp(yokeTargetB + d, 0f, 1f); yokeTargetA = Mth.clamp(yokeTargetA - d * 0.45f, 0f, 1f); }
+                case 0 -> { yokeTargetA = Mth.clamp(yokeTargetA - d, 0.08f, 0.92f); yokeTargetB = Mth.clamp(yokeTargetB + d * 0.52f, 0.08f, 0.92f); }
+                case 1 -> { yokeTargetA = Mth.clamp(yokeTargetA + d, 0.08f, 0.92f); yokeTargetB = Mth.clamp(yokeTargetB - d * 0.52f, 0.08f, 0.92f); }
+                case 2 -> { yokeTargetB = Mth.clamp(yokeTargetB - d, 0.08f, 0.92f); yokeTargetA = Mth.clamp(yokeTargetA + d * 0.52f, 0.08f, 0.92f); }
+                default -> { yokeTargetB = Mth.clamp(yokeTargetB + d, 0.08f, 0.92f); yokeTargetA = Mth.clamp(yokeTargetA - d * 0.52f, 0.08f, 0.92f); }
             }
         }
-        yokeA = 0.5f;
-        yokeB = 0.5f;
-        yokeHalf = Math.max(0.065f, 0.11f - (isWeakPassage() ? 0.018f : 0f));
-        yokeMoves = 0;
+        // Never generate a nearly-neutral answer; the final exam should require
+        // reading the coupled motion rather than clicking one obvious nudge.
+        if (Math.abs(yokeTargetA - 0.5f) + Math.abs(yokeTargetB - 0.5f) < 0.24f) {
+            yokeTargetA = Mth.clamp(yokeTargetA + (phaseRng.nextBoolean() ? 0.18f : -0.18f), 0.10f, 0.90f);
+            yokeTargetB = Mth.clamp(yokeTargetB + (phaseRng.nextBoolean() ? 0.16f : -0.16f), 0.10f, 0.90f);
+        }
+        yokeHalf = Math.max(0.042f, 0.075f - yokeRound * 0.006f - (isWeakPassage() ? 0.010f : 0f));
     }
 
     private static int rootDir(int a, int b) {
@@ -986,6 +1130,8 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         }
         rootIndex = 0;
         rootGoal = rootRoute[rootRoute.length - 1];
+        rootDecisionLimit = isWeakPassage() ? 1.90f : 2.35f;
+        rootDecisionTimer = rootDecisionLimit;
     }
 
     private void setupShardsongEcho() {
@@ -997,40 +1143,109 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         shardEdge[2][1] = shardEdge[3][3] = bottom;
         shardEdge[0][2] = shardEdge[2][0] = left;
         shardEdge[1][2] = shardEdge[3][0] = right;
-        shardMoves = 0;
-        boolean any = false;
-        for (int t = 0; t < 4; t++) {
-            shardRot[t] = phaseRng.nextInt(4);
-            any |= shardRot[t] != 0;
+        int minDepth = isWeakPassage() ? 7 : 5;
+        shardIdeal = 0;
+        for (int attempt = 0; attempt < 32 && shardIdeal < minDepth; attempt++) {
+            shardIdeal = 0;
+            for (int t = 0; t < 4; t++) {
+                shardRot[t] = phaseRng.nextInt(4);
+                shardIdeal += Math.floorMod(4 - shardRot[t], 4);
+            }
         }
-        if (!any) shardRot[phaseRng.nextInt(4)] = 1 + phaseRng.nextInt(3);
+        if (shardIdeal < minDepth) {
+            int[] fallback = isWeakPassage() ? new int[]{2,2,2,3} : new int[]{2,2,3,0};
+            System.arraycopy(fallback, 0, shardRot, 0, 4);
+            shardIdeal = 0;
+            for (int r : shardRot) shardIdeal += Math.floorMod(4 - r, 4);
+        }
+        shardMoves = 0;
+    }
+
+    private static int orreryCode(int a, int b, int c) { return a * 36 + b * 6 + c; }
+
+    private int orreryDistance() {
+        int start = orreryCode(orreryEcho[0], orreryEcho[1], orreryEcho[2]);
+        if (start == 0) return 0;
+        int[] dist = new int[216];
+        java.util.Arrays.fill(dist, -1);
+        int[] queue = new int[216];
+        int head = 0, tail = 0;
+        dist[start] = 0; queue[tail++] = start;
+        while (head < tail) {
+            int state = queue[head++];
+            int[] v = {state / 36, (state / 6) % 6, state % 6};
+            for (int ring = 0; ring < 3; ring++) for (int dir : new int[]{-1, 1}) {
+                int[] n = v.clone();
+                int next = (ring + 1) % 3;
+                n[ring] = Math.floorMod(n[ring] + dir, 6);
+                n[next] = Math.floorMod(n[next] + dir, 6);
+                int code = orreryCode(n[0], n[1], n[2]);
+                if (dist[code] >= 0) continue;
+                dist[code] = dist[state] + 1;
+                if (code == 0) return dist[code];
+                queue[tail++] = code;
+            }
+        }
+        return 12;
     }
 
     private void setupOrreryEcho() {
-        java.util.Arrays.fill(orreryEcho, 0);
-        int scramble = 4 + (isWeakPassage() ? 1 : 0);
-        for (int i = 0; i < scramble; i++) {
-            int ring = phaseRng.nextInt(3), dir = phaseRng.nextBoolean() ? 1 : -1;
-            orreryEcho[ring] = Math.floorMod(orreryEcho[ring] + dir, 6);
-            int next = (ring + 1) % 3;
-            orreryEcho[next] = Math.floorMod(orreryEcho[next] + dir, 6);
+        int minDepth = isWeakPassage() ? 4 : 3;
+        orreryEchoIdeal = 0;
+        for (int attempt = 0; attempt < 40 && orreryEchoIdeal < minDepth; attempt++) {
+            java.util.Arrays.fill(orreryEcho, 0);
+            int scramble = 5 + phaseRng.nextInt(5) + (isWeakPassage() ? 2 : 0);
+            for (int i = 0; i < scramble; i++) {
+                int ring = phaseRng.nextInt(3), dir = phaseRng.nextBoolean() ? 1 : -1;
+                orreryEcho[ring] = Math.floorMod(orreryEcho[ring] + dir, 6);
+                int next = (ring + 1) % 3;
+                orreryEcho[next] = Math.floorMod(orreryEcho[next] + dir, 6);
+            }
+            orreryEchoIdeal = orreryDistance();
         }
-        boolean solved = true; for (int v : orreryEcho) solved &= v == 0;
-        if (solved) { orreryEcho[0] = 1; orreryEcho[1] = 1; }
+        if (orreryEchoIdeal < minDepth) {
+            // A known reachable state at the maximum four-move depth.
+            orreryEcho[0] = 0; orreryEcho[1] = 1; orreryEcho[2] = 3;
+            orreryEchoIdeal = orreryDistance();
+        }
         orreryEchoMoves = 0;
+        orreryEchoIdeal = Math.max(1, orreryEchoIdeal);
+    }
+
+    private static int processionSwapDistance(int[] current, int[] target) {
+        int[] work = current.clone();
+        int moves = 0;
+        for (int i = 0; i < work.length; i++) {
+            if (work[i] == target[i]) continue;
+            int j = i + 1;
+            while (j < work.length && work[j] != target[i]) j++;
+            if (j >= work.length) return 8;
+            int t = work[i]; work[i] = work[j]; work[j] = t;
+            moves++;
+        }
+        return moves;
     }
 
     private void setupProcessionEcho() {
         java.util.ArrayList<Integer> ids = new java.util.ArrayList<>(java.util.List.of(0,1,2,3));
         java.util.Collections.shuffle(ids, phaseRng);
         for (int i = 0; i < 4; i++) processionEchoTarget[i] = ids.get(i);
-        System.arraycopy(processionEchoTarget, 0, processionEchoCurrent, 0, 4);
-        for (int i = 0; i < 3 + (isWeakPassage() ? 1 : 0); i++) {
-            int a = phaseRng.nextInt(4), b; do b = phaseRng.nextInt(4); while (b == a);
-            int x = processionEchoCurrent[a]; processionEchoCurrent[a] = processionEchoCurrent[b]; processionEchoCurrent[b] = x;
+        int minDepth = isWeakPassage() ? 3 : 2;
+        processionEchoIdeal = 0;
+        for (int attempt = 0; attempt < 32 && processionEchoIdeal < minDepth; attempt++) {
+            System.arraycopy(processionEchoTarget, 0, processionEchoCurrent, 0, 4);
+            int swaps = 3 + phaseRng.nextInt(3) + (isWeakPassage() ? 1 : 0);
+            for (int i = 0; i < swaps; i++) {
+                int a = phaseRng.nextInt(4), b; do b = phaseRng.nextInt(4); while (b == a);
+                int x = processionEchoCurrent[a]; processionEchoCurrent[a] = processionEchoCurrent[b]; processionEchoCurrent[b] = x;
+            }
+            processionEchoIdeal = processionSwapDistance(processionEchoCurrent, processionEchoTarget);
         }
-        if (java.util.Arrays.equals(processionEchoCurrent, processionEchoTarget)) {
-            int x = processionEchoCurrent[0]; processionEchoCurrent[0] = processionEchoCurrent[1]; processionEchoCurrent[1] = x;
+        if (processionEchoIdeal < minDepth) {
+            // Rotate the target by one: for four distinct witnesses this is always
+            // exactly three arbitrary swaps away from the verdict order.
+            for (int i = 0; i < 4; i++) processionEchoCurrent[i] = processionEchoTarget[(i + 1) % 4];
+            processionEchoIdeal = processionSwapDistance(processionEchoCurrent, processionEchoTarget);
         }
         processionEchoSelected = -1;
         processionEchoMoves = 0;
@@ -1049,8 +1264,14 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     }
 
     @Override
+    protected boolean presentationPauseActive() {
+        return !resolved && System.nanoTime() < phaseEntryGraceUntilNanos;
+    }
+
+    @Override
     protected void step(float dt) {
         globalTime += dt;
+        if (presentationPauseActive()) return;
         orbitPulse += dt;
         mawPulse += dt;
 
@@ -1088,6 +1309,7 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
                 veilAngleB = (veilAngleB - dt * veilSpeedB) % Mth.TWO_PI;
                 if (veilAngleB < 0f) veilAngleB += Mth.TWO_PI;
             }
+            case RITUAL_PRESSURE -> stepPressureEcho(dt);
             case RITUAL_PULSE_DISCIPLINE -> stepPulseEcho(dt);
             case RITUAL_BALANCE -> stepBalanceEcho(dt);
             case RITUAL_CONSTELLATION -> {
@@ -1095,6 +1317,7 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
                     constellationPreviewTimer -= dt;
                     if (constellationPreviewTimer <= 0f) constellationPreview = false;
                 }
+                if (constellationMistFlashTimer > 0f) constellationMistFlashTimer = Math.max(0f, constellationMistFlashTimer - dt);
             }
             case RITUAL_KEYWAY -> {
                 float speed = 0.72f + keywayPin * 0.08f + difficulty * 0.16f;
@@ -1103,6 +1326,7 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
                 else if (keywayMarker <= 0f) { keywayMarker = 0f; keywayDir = 1f; }
             }
             case RITUAL_VESSEL -> stepVesselEcho(dt);
+            case RITUAL_ROOTWAY -> stepRootwayEcho(dt);
             default -> { }
         }
     }
@@ -1138,6 +1362,18 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
             balanceTilt = Mth.clamp(balanceTilt, -0.55f, 0.55f);
             balanceVelocity *= -0.18f;
             balanceStable = 0f;
+        }
+    }
+
+    private void stepRootwayEcho(float dt) {
+        rootDecisionTimer -= dt;
+        if (rootDecisionTimer > 0f) return;
+        record(0f);
+        Sfx.markBad();
+        if (loseLife("The root withered while you hesitated")) {
+            rootIndex = 0;
+            rootDecisionTimer = rootDecisionLimit;
+            showBanner("THE ROOT STARTS AGAIN", theme().accent, 620);
         }
     }
 
@@ -1196,6 +1432,7 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     @Override
     protected boolean onClick(double mx, double my, int button) {
         if (button != 0) return false;
+        if (presentationPauseActive()) return true;
         return switch (mechanic()) {
             case RITUAL_ORBIT -> clickOrbit(mx, my);
             case RITUAL_PULSE -> { commitTiming(); yield true; }
@@ -1230,6 +1467,7 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     @Override
     protected boolean onKey(int key) {
         if (!isActionKey(key)) return false;
+        if (presentationPauseActive()) return true;
         if (mechanic() == RITUAL_PULSE) { commitTiming(); return true; }
         if (mechanic() == RITUAL_MAW) { commitMaw(); return true; }
         if (mechanic() == RITUAL_VEIL) { commitVeil(); return true; }
@@ -1529,7 +1767,7 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         for (int i = 0; i < 3; i++) {
             int cx = start + i * spacing;
             if (distSq(mx, my, cx, cy) <= 24 * 24) {
-                cipherPos[i] = (cipherPos[i] + 1) % 6;
+                rotateCipherCoupled(i);
                 cipherMoves++;
                 Sfx.mark(cipherMoves);
                 if (cipherSolved()) {
@@ -1543,13 +1781,27 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     }
 
     private boolean clickPressureEcho(double mx, double my) {
-        int bx = centerX() - 88, by = contentCenterY() - 14;
-        if (mx >= bx && mx <= bx + 106 && my >= by + 26 && my <= by + 62) {
-            pressureValue = Math.min(1f, pressureValue + 0.075f + difficulty * 0.004f);
+        int bx = centerX() - 128, by = contentCenterY() - 14;
+        // PUMP adds pressure, VENT bleeds it deliberately, SEAL commits the round.
+        // Continuous leakage means all three controls matter under time.
+        if (mx >= bx && mx <= bx + 84 && my >= by + 30 && my <= by + 58) {
+            float stroke = 0.070f + (pressurePumps % 3) * 0.014f + difficulty * 0.003f;
+            pressureValue = Math.min(1f, pressureValue + stroke);
+            pressurePumps++;
             Sfx.mark(Math.round(pressureValue * 10f));
+            if (pressureValue >= pressureBurst) {
+                record(0f);
+                Sfx.markBad();
+                if (loseLife("The bellows burst past the redline")) nextPressureBand();
+            }
             return true;
         }
-        if (mx >= bx + 120 && mx <= bx + 176 && my >= by + 26 && my <= by + 62) {
+        if (mx >= bx + 94 && mx <= bx + 178 && my >= by + 30 && my <= by + 58) {
+            pressureValue = Math.max(0f, pressureValue - (0.050f + pressureRounds * 0.003f));
+            Sfx.play(WardSounds.STONE_TURN, 0.26f, 0.76f);
+            return true;
+        }
+        if (mx >= bx + 188 && mx <= bx + 256 && my >= by + 30 && my <= by + 58) {
             float err = Math.abs(pressureValue - pressureTarget);
             if (err <= pressureHalf) {
                 record(1f - err / Math.max(0.0001f, pressureHalf));
@@ -1602,23 +1854,33 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
 
     private boolean clickConstellationEcho(double mx, double my) {
         if (constellationPreview) { showBanner("The stars are still testifying", theme().accent, 420); return true; }
-        int fx = left() + 42, fy = contentTop() + 52, fw = panelWidth() - 84, fh = 118;
+        int fx = left() + 34, fy = contentTop() + 42, fw = panelWidth() - 68, fh = 148;
         int clicked = -1;
         for (int i = 0; i < constellationX.length; i++) {
             int sx = fx + Math.round(constellationX[i] * fw), sy = fy + Math.round(constellationY[i] * fh);
-            if (distSq(mx, my, sx, sy) <= 11 * 11) { clicked = i; break; }
+            if (distSq(mx, my, sx, sy) <= 12 * 12) { clicked = i; break; }
         }
         if (clicked < 0) return false;
         int expected = constellationPath[constellationInput];
         if (clicked == expected) {
             record(1f);
             constellationInput++;
+            constellationMistFlash = -1;
             Sfx.mark(constellationInput);
             if (constellationInput >= constellationPath.length) advancePhase();
         } else {
             record(0f); Sfx.markBad();
-            loseLife("The constellation rejected the false star");
-            constellationInput = 0;
+            boolean alive = loseLife("The constellation rejected the false star");
+            constellationMistFlash = clicked;
+            constellationMistFlashTimer = 0.55f;
+            if (alive) {
+                // A miss used to replay the entire numbered route for free. That
+                // turned one life into an answer reveal. Recoil two witnessed
+                // stars instead: progress is punished, but memory remains the skill.
+                constellationInput = Math.max(0, constellationInput - 2);
+                constellationPreview = false;
+                showBanner("THE ROUTE RECOILS", theme().accent, 520);
+            }
         }
         return true;
     }
@@ -1628,8 +1890,23 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         for (int i = 0; i < 4; i++) {
             int x = sx + i * (size + gap);
             if (mx >= x && mx <= x + size && my >= cy - size / 2 && my <= cy + size / 2) {
-                if (i == mirrorAnswer) { record(1f); Sfx.play(WardSounds.EYE_CHOOSE, 0.40f, 1.02f); advancePhase(); }
-                else { record(0f); Sfx.markBad(); loseLife("The reflection was almost, but not exactly, the witness"); }
+                if (i == mirrorAnswer) {
+                    record(1f);
+                    mirrorRound++;
+                    Sfx.play(WardSounds.EYE_CHOOSE, 0.40f, 1.02f + mirrorRound * 0.03f);
+                    if (mirrorRound >= mirrorRoundsNeeded) advancePhase();
+                    else {
+                        showBanner("The mirror changes its lie", theme().accentLite, 520);
+                        setupMirrorRound();
+                    }
+                } else {
+                    record(0f);
+                    Sfx.markBad();
+                    if (loseLife("The reflection was almost, but not exactly, the witness")) {
+                        showBanner("The witness turns away", COL_BAD, 480);
+                        setupMirrorRound();
+                    }
+                }
                 return true;
             }
         }
@@ -1672,8 +1949,14 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
             } else {
                 record(0.25f + auguryExact * 0.20f + auguryMisplaced * 0.08f);
                 Sfx.markBad();
-                if (auguryAttempts >= (isWeakPassage() ? 4 : 5)) loseLife("The omen exhausted its patience");
-                showBanner(auguryExact + " exact · " + auguryMisplaced + " misplaced", theme().accent, 720);
+                if (auguryAttempts >= (isWeakPassage() ? 4 : 5)) {
+                    if (loseLife("The omen exhausted its patience")) {
+                        setupAuguryEcho();
+                        showBanner("THE OMEN REWRITES ITSELF", theme().accent, 720);
+                    }
+                } else {
+                    showBanner(auguryExact + " exact · " + auguryMisplaced + " misplaced", theme().accent, 720);
+                }
             }
             return true;
         }
@@ -1695,21 +1978,44 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     }
 
     private boolean clickYokeEcho(double mx, double my) {
-        int cx = centerX(), cy = contentCenterY() + 6;
-        int buttonY = cy + 58;
-        if (my < buttonY || my > buttonY + 24 || mx < cx - 120 || mx > cx + 120) return false;
-        float d = 0.075f;
-        if (mx < cx - 60) { yokeA = Mth.clamp(yokeA - d, 0f, 1f); yokeB = Mth.clamp(yokeB + d * 0.45f, 0f, 1f); }
-        else if (mx < cx) { yokeA = Mth.clamp(yokeA + d, 0f, 1f); yokeB = Mth.clamp(yokeB - d * 0.45f, 0f, 1f); }
-        else if (mx < cx + 60) { yokeB = Mth.clamp(yokeB - d, 0f, 1f); yokeA = Mth.clamp(yokeA + d * 0.45f, 0f, 1f); }
-        else { yokeB = Mth.clamp(yokeB + d, 0f, 1f); yokeA = Mth.clamp(yokeA - d * 0.45f, 0f, 1f); }
-        yokeMoves++;
-        Sfx.mark(yokeMoves);
-        float ea = Math.abs(yokeA - yokeTargetA), eb = Math.abs(yokeB - yokeTargetB);
-        if (ea <= yokeHalf && eb <= yokeHalf) {
-            record(Mth.clamp(1f - (ea + eb) / (yokeHalf * 2f), 0.5f, 1f));
-            advancePhase();
+        int cx = centerX(), cy = contentCenterY() + 4;
+        int buttonY = cy + 56;
+        int sealY = buttonY + 32;
+        boolean onValves = my >= buttonY && my <= buttonY + 26;
+        boolean onSeal = my >= sealY && my <= sealY + 24 && mx >= cx - 42 && mx <= cx + 42;
+        if (!onValves && !onSeal) return false;
+
+        if (onSeal) {
+            float ea = Math.abs(yokeA - yokeTargetA), eb = Math.abs(yokeB - yokeTargetB);
+            if (ea <= yokeHalf && eb <= yokeHalf) {
+                record(Mth.clamp(1f - (ea + eb) / (yokeHalf * 2f), 0.58f, 1f));
+                yokeRound++;
+                Sfx.mark(3 + yokeRound);
+                if (yokeRound >= yokeRoundsNeeded) advancePhase();
+                else { showBanner("The yoke changes its law", theme().accentLite, 560); setupYokeRound(); }
+            } else {
+                record(0.15f); Sfx.markBad(); loseLife("The yoke was sealed out of balance");
+            }
+            return true;
         }
+
+        // Four coupled valves. Each valve solves one axis while disturbing the
+        // other; the player must infer the coupling, then deliberately seal it.
+        if (mx >= cx - 132 && mx < cx - 72) {
+            yokeA = Mth.clamp(yokeA - 0.070f, 0f, 1f);
+            yokeB = Mth.clamp(yokeB + 0.036f, 0f, 1f);
+        } else if (mx >= cx - 66 && mx < cx - 6) {
+            yokeA = Mth.clamp(yokeA + 0.070f, 0f, 1f);
+            yokeB = Mth.clamp(yokeB - 0.036f, 0f, 1f);
+        } else if (mx >= cx + 6 && mx < cx + 66) {
+            yokeB = Mth.clamp(yokeB - 0.070f, 0f, 1f);
+            yokeA = Mth.clamp(yokeA + 0.036f, 0f, 1f);
+        } else if (mx >= cx + 72 && mx <= cx + 132) {
+            yokeB = Mth.clamp(yokeB + 0.070f, 0f, 1f);
+            yokeA = Mth.clamp(yokeA - 0.036f, 0f, 1f);
+        } else return false;
+        yokeMoves++;
+        Sfx.mark(1 + (yokeMoves % 3));
         return true;
     }
 
@@ -1722,15 +2028,26 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
                 int cell = r * 4 + c;
                 if (cell == cur) return true;
                 int dr = Math.abs(r - cur / 4), dc = Math.abs(c - cur % 4);
-                if (dr + dc != 1) { record(0f); loseLife("The root cannot jump dry stone"); return true; }
+                if (dr + dc != 1) {
+                    record(0f);
+                    if (loseLife("The root cannot jump dry stone")) rootDecisionTimer = rootDecisionLimit;
+                    return true;
+                }
                 int dir = rootDir(cur, cell);
-                if (!rootOpen[cur * 4 + dir]) { record(0f); loseLife("There is no living channel there"); return true; }
+                if (!rootOpen[cur * 4 + dir]) {
+                    record(0f);
+                    if (loseLife("There is no living channel there")) rootDecisionTimer = rootDecisionLimit;
+                    return true;
+                }
                 int expected = rootIndex + 1 < rootRoute.length ? rootRoute[rootIndex + 1] : -1;
                 if (cell == expected) {
                     record(1f); rootIndex++; Sfx.mark(rootIndex);
+                    rootDecisionTimer = Math.max(1.20f, rootDecisionLimit - rootIndex * 0.09f);
                     if (rootIndex >= rootRoute.length - 1) advancePhase();
                 } else {
-                    record(0.25f); Sfx.markBad(); loseLife("The branch is alive, but it is not the rootway");
+                    record(0.25f); Sfx.markBad();
+                    if (loseLife("The branch is alive, but it is not the rootway"))
+                        rootDecisionTimer = Math.max(1.20f, rootDecisionLimit - rootIndex * 0.09f);
                 }
                 return true;
             }
@@ -1748,7 +2065,7 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
                 shardMoves++;
                 Sfx.play(WardSounds.STONE_TURN, 0.30f, 0.92f + tile * 0.035f);
                 if (shardsSolved()) {
-                    record(Mth.clamp(1f - Math.max(0, shardMoves - 6) * 0.04f, 0.55f, 1f));
+                    record(Mth.clamp(shardIdeal / (float) Math.max(shardIdeal, shardMoves), 0.55f, 1f));
                     advancePhase();
                 }
                 return true;
@@ -1772,9 +2089,9 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         Sfx.play(WardSounds.STONE_TURN, .30f, .78f + ring * .08f);
         boolean solved = true; for (int v : orreryEcho) solved &= v == 0;
         if (solved) {
-            record(Mth.clamp(1f - Math.max(0, orreryEchoMoves - 4) * .06f, .52f, 1f));
+            record(Mth.clamp(orreryEchoIdeal / (float) Math.max(orreryEchoIdeal, orreryEchoMoves), .52f, 1f));
             advancePhase();
-        } else if (orreryEchoMoves >= (isWeakPassage() ? 10 : 9)) {
+        } else if (orreryEchoMoves >= orreryEchoIdeal + (isWeakPassage() ? 3 : 5)) {
             record(.2f); loseLife("The coupled meridian spends its last tooth"); setupOrreryEcho();
         }
         return true;
@@ -1794,9 +2111,9 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         processionEchoSelected = -1; processionEchoMoves++;
         Sfx.play(WardSounds.STONE_TURN, .30f, .92f);
         if (java.util.Arrays.equals(processionEchoCurrent, processionEchoTarget)) {
-            record(Mth.clamp(1f - Math.max(0, processionEchoMoves - 3) * .08f, .55f, 1f));
+            record(Mth.clamp(processionEchoIdeal / (float) Math.max(processionEchoIdeal, processionEchoMoves), .55f, 1f));
             advancePhase();
-        } else if (processionEchoMoves >= (isWeakPassage() ? 7 : 6)) {
+        } else if (processionEchoMoves >= processionEchoIdeal + (isWeakPassage() ? 2 : 4)) {
             record(.2f); loseLife("The witnesses refuse the remaining order"); setupProcessionEcho();
         }
         return true;
@@ -2222,6 +2539,9 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
             boolean hover = distSq(mouseX, mouseY, cx, cy) <= 24 * 24;
             p.ringThick(cx, cy, 23, 2, hover ? theme().accentLite : theme().frame);
             Sigils.drawCentered(p, Sigils.TILE[(i * 5 + cipherPos[i]) % Sigils.TILE.length], cx, cy, 1, theme().text, 0, 0);
+            int nx = start + ((i + 1) % 3) * spacing;
+            p.line(cx + (nx > cx ? 24 : -24), cy, nx + (nx > cx ? -24 : 24), cy, 1, Painter.withAlpha(theme().accent, 0x42));
+            smallCentered(g, "TURN / COUPLES NEXT", cx, cy - 37, Painter.withAlpha(theme().accentLite, hover ? 0xD0 : 0x80), 0.58f);
             p.ringThick(cx, cy + 37, 9, 1, Painter.withAlpha(theme().accent, 0x68));
             Sigils.drawCentered(p, Sigils.TILE[(i * 5 + cipherTarget[i]) % Sigils.TILE.length], cx, cy + 37, 1,
                     Painter.withAlpha(theme().accentLite, 0xA8), 0, 0);
@@ -2229,17 +2549,26 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     }
 
     private void renderPressureEcho(GuiGraphics g, int mouseX, int mouseY, int x, int y, int w, int h) {
-        int bx = centerX() - 88, by = contentCenterY() - 14, bw = 106;
+        int bx = centerX() - 128, by = contentCenterY() - 14, bw = 256;
         p.roundRect(bx, by, bw, 18, theme().well);
         int t1 = bx + Math.round((pressureTarget - pressureHalf) * bw), t2 = bx + Math.round((pressureTarget + pressureHalf) * bw);
         p.rect(t1, by + 2, t2, by + 16, Painter.withAlpha(COL_GOOD, 0x75));
+        int burstX = bx + Math.round(pressureBurst * bw);
+        p.rect(burstX, by + 2, bx + bw - 2, by + 16, Painter.withAlpha(COL_BAD, 0x30));
+        p.line(burstX, by - 4, burstX, by + 22, 1, Painter.withAlpha(COL_BAD, 0xB8));
         int px = bx + Math.round(pressureValue * bw);
         p.line(px, by - 5, px, by + 23, 2, theme().accentLite);
-        int pumpX = bx, sealX = bx + 120;
-        p.roundRect(pumpX, by + 30, 106, 28, Painter.withAlpha(theme().frame, 0x66));
-        p.roundRect(sealX, by + 30, 56, 28, Painter.withAlpha(theme().accent, 0x66));
-        smallCentered(g, "PUMP", pumpX + 53, by + 38, theme().text, 0.78f);
-        smallCentered(g, "SEAL", sealX + 28, by + 38, theme().text, 0.78f);
+        int[] cx = {bx, bx + 94, bx + 188};
+        int[] cw = {84, 84, 68};
+        String[] labels = {"PUMP", "VENT", "SEAL"};
+        for (int i = 0; i < 3; i++) {
+            boolean hover = mouseX >= cx[i] && mouseX <= cx[i] + cw[i] && mouseY >= by + 30 && mouseY <= by + 58;
+            p.roundRect(cx[i], by + 30, cw[i], 28, Painter.withAlpha(i == 2 ? theme().accent : theme().frame, 0x66));
+            p.roundOutline(cx[i], by + 30, cw[i], 28, hover ? theme().accentLite : theme().frameLite);
+            smallCentered(g, labels[i], cx[i] + cw[i] / 2, by + 38, theme().text, 0.72f);
+        }
+        smallCentered(g, "BLEED " + Math.round(pressureLeak * 100f) + "%/s · REDLINE " + Math.round(pressureBurst * 100f) + "% · VERDICT " + (pressureRounds + 1) + " / " + pressureRoundsNeeded,
+                centerX(), by - 21, theme().accentLite, 0.64f);
     }
 
     private void renderPulseEcho(GuiGraphics g, int x, int y, int w, int h) {
@@ -2272,22 +2601,34 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     }
 
     private void renderConstellationEcho(GuiGraphics g, int mouseX, int mouseY, int x, int y, int w, int h) {
-        int fx = left() + 42, fy = contentTop() + 52, fw = panelWidth() - 84, fh = 118;
-        if (constellationPreview) {
-            for (int i = 0; i < constellationPath.length - 1; i++) {
-                int a = constellationPath[i], b = constellationPath[i + 1];
-                p.line(fx + Math.round(constellationX[a] * fw), fy + Math.round(constellationY[a] * fh),
-                        fx + Math.round(constellationX[b] * fw), fy + Math.round(constellationY[b] * fh), 1, Painter.withAlpha(theme().accent, 0x85));
-            }
+        int fx = left() + 34, fy = contentTop() + 42, fw = panelWidth() - 68, fh = 148;
+        // Completed links remain on screen. Previously the route vanished after the
+        // preview, which made successful clicks look like missing rendering.
+        int visibleLinks = constellationPreview ? constellationPath.length - 1 : Math.max(0, constellationInput - 1);
+        for (int i = 0; i < visibleLinks; i++) {
+            int a = constellationPath[i], b = constellationPath[i + 1];
+            int col = constellationPreview ? Painter.withAlpha(theme().accent, 0x8A) : Painter.withAlpha(theme().accentLite, 0xC0);
+            p.line(fx + Math.round(constellationX[a] * fw), fy + Math.round(constellationY[a] * fh),
+                    fx + Math.round(constellationX[b] * fw), fy + Math.round(constellationY[b] * fh), 2, col);
         }
         for (int i = 0; i < constellationX.length; i++) {
             int sx = fx + Math.round(constellationX[i] * fw), sy = fy + Math.round(constellationY[i] * fh);
-            p.discPixel(sx, sy, 5, Painter.withAlpha(theme().accentLite, 0xB0));
+            boolean hover = distSq(mouseX, mouseY, sx, sy) <= 12 * 12;
+            boolean completed = false;
+            for (int j = 0; j < constellationInput; j++) if (constellationPath[j] == i) { completed = true; break; }
+            int col = completed ? theme().accentLite : Painter.withAlpha(theme().text, 0xC8);
+            if (i == constellationMistFlash && constellationMistFlashTimer > 0f) col = COL_BAD;
+            p.discPixel(sx, sy, hover ? 7 : 5, col);
+            p.ringThick(sx, sy, hover ? 11 : 9, 1, Painter.withAlpha(hover ? theme().accentLite : theme().frameLite, hover ? 0xD0 : 0x76));
             if (constellationPreview) {
                 for (int j = 0; j < constellationPath.length; j++) if (constellationPath[j] == i)
-                    smallCentered(g, Integer.toString(j + 1), sx, sy - 14, theme().text, 0.68f);
+                    smallCentered(g, Integer.toString(j + 1), sx, sy - 15, theme().text, 0.70f);
+            } else if (completed) {
+                smallCentered(g, "OK", sx, sy - 14, theme().accentLite, 0.58f);
             }
         }
+        smallCentered(g, constellationPreview ? "MEMORIZE THE WITNESS ROUTE" : "RETRACE  "+constellationInput+" / "+constellationPath.length,
+                centerX(), fy + fh + 14, constellationPreview ? theme().accentLite : theme().text, 0.74f);
     }
 
     private void renderMirrorEcho(GuiGraphics g, int mouseX, int mouseY, int x, int y, int w, int h) {
@@ -2295,22 +2636,51 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
         p.roundOutline(tcx - 24, tcy - 22, 48, 44, theme().accent);
         Sigils.drawCentered(p, Sigils.TILE[mirrorTargetGlyph], tcx, tcy, 2, theme().text, 0, 0);
         smallCentered(g, (mirrorTargetFlipX ? "↔" : "") + (mirrorTargetFlipY ? "↕" : "") + " witness transform", tcx, tcy + 27, theme().accentLite, 0.72f);
+        smallCentered(g, "MIRROR VERDICT  " + (mirrorRound + 1) + " / " + mirrorRoundsNeeded, tcx, tcy - 37, theme().accentLite, 0.68f);
         int size=42,gap=14,total=size*4+gap*3,sx=centerX()-total/2,cy=contentCenterY()+24;
+        String[] labels={"I","II","III","IV"};
         for (int i=0;i<4;i++) {
             int px=sx+i*(size+gap); boolean hover=mouseX>=px&&mouseX<=px+size&&mouseY>=cy-size/2&&mouseY<=cy+size/2;
             p.roundRect(px,cy-size/2,size,size,theme().well); p.roundOutline(px,cy-size/2,size,size,hover?theme().accentLite:theme().frame);
-            Sigils.drawCentered(p,Sigils.TILE[mirrorGlyph[i]],px+size/2,cy,1,theme().text,0,0);
-            smallCentered(g,(mirrorFlipX[i]?"↔":"")+(mirrorFlipY[i]?"↕":""),px+size/2,cy+25,theme().accentLite,0.68f);
+            Sigils.drawCenteredFlipped(p,Sigils.TILE[mirrorGlyph[i]],px+size/2,cy,1,theme().text,0,0,mirrorFlipX[i],mirrorFlipY[i]);
+            // Do not print the answer's axes beneath each card. With a guaranteed
+            // asymmetric target, the reflected drawing itself is sufficient and
+            // keeps Mirror a visual-reading test rather than an arrow-matching quiz.
+            smallCentered(g,labels[i],px+size/2,cy+25,theme().dim,0.58f);
         }
     }
 
     private void renderKeywayEcho(GuiGraphics g, int x, int y, int w, int h) {
-        int bx=x+34,bw=w-68,cy=contentCenterY()+8;
+        int bx=x+34,bw=w-68,cy=contentCenterY()+2;
         p.roundRect(bx,cy-10,bw,20,theme().well); p.roundOutline(bx,cy-10,bw,20,theme().frame);
-        float center=keywayCenter[Math.min(keywayPin,3)], half=keywayHalf[Math.min(keywayPin,3)];
-        p.rect(bx+Math.round((center-half)*bw),cy-8,bx+Math.round((center+half)*bw),cy+8,Painter.withAlpha(COL_GOOD,0x70));
-        int mx=bx+Math.round(keywayMarker*bw); p.line(mx,cy-18,mx,cy+18,2,theme().accentLite);
-        smallCentered(g,"PIN "+(Math.min(keywayPin,3)+1)+" / 4",centerX(),cy+34,theme().text,0.84f);
+        int pin=Math.min(keywayPin,3);
+        float center=keywayCenter[pin];
+        float falseCenter=keywayFalseCenter[pin];
+        float trueSignal=Mth.clamp(1f-Math.abs(keywayMarker-center)/0.22f,0f,1f);
+        float falseSignal=Mth.clamp((1f-Math.abs(keywayMarker-falseCenter)/0.16f)*0.68f,0f,0.68f);
+        float signal=Math.max(trueSignal,falseSignal);
+
+        // The final-exam keyway hides the shear line. The player must read the
+        // lock's resistance: a false set plateaus, while the real gate can peak.
+        int mx=bx+Math.round(keywayMarker*bw);
+        p.line(mx,cy-18,mx,cy+18,2,theme().accentLite);
+        if (trueSignal > 0.78f) {
+            int halo = 4 + Math.round((trueSignal-0.78f)*18f);
+            p.roundOutline(mx-halo,cy-halo,halo*2,halo*2,Painter.withAlpha(COL_GOOD,0x50+Math.round(trueSignal*0x50)));
+        }
+
+        int meterW=Math.min(226,bw), meterX=centerX()-meterW/2, meterY=cy+38;
+        p.roundRect(meterX,meterY,meterW,9,theme().well);
+        p.roundOutline(meterX,meterY,meterW,9,theme().frame);
+        int fill=Math.round((meterW-4)*signal);
+        if (fill>0) p.rect(meterX+2,meterY+2,meterX+2+fill,meterY+7,
+                Painter.withAlpha(trueSignal>=0.70f?COL_GOOD:theme().accentLite,0xC0));
+        smallCentered(g,"TENSION  "+Math.round(signal*100f)+"%",centerX(),meterY+15,theme().text,0.72f);
+        if (falseSignal>trueSignal && falseSignal>0.44f)
+            smallCentered(g,"HOLLOW GIVE",centerX(),meterY+28,theme().dim,0.64f);
+        else if (trueSignal>0.82f)
+            smallCentered(g,"DEEP GATE",centerX(),meterY+28,theme().accentLite,0.64f);
+        smallCentered(g,"TUMBLER "+(pin+1)+" / 4",centerX(),cy-39,theme().text,0.84f);
     }
 
     private void renderAuguryEcho(GuiGraphics g, int mouseX, int mouseY, int x, int y, int w, int h) {
@@ -2347,28 +2717,45 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
     }
 
     private void renderYokeEcho(GuiGraphics g, int mouseX, int mouseY, int x, int y, int w, int h) {
-        int cx=centerX(), cy=contentCenterY()+6;
-        int lx=cx-78, rx=cx+78, top=cy-55, bh=100;
+        int cx=centerX(), cy=contentCenterY()+4;
+        int lx=cx-80, rx=cx+80, top=cy-58, bh=96;
+        p.line(lx, cy-10, rx, cy-10, 1, Painter.withAlpha(theme().accent, 0x52));
         for(int i=0;i<2;i++) {
             int px=i==0?lx:rx; float val=i==0?yokeA:yokeB, target=i==0?yokeTargetA:yokeTargetB;
-            p.roundOutline(px-12,top,24,bh,theme().frame);
+            p.roundRect(px-14,top,28,bh,Painter.withAlpha(theme().well,0xE0));
+            p.roundOutline(px-14,top,28,bh,theme().frame);
             int t1=top+Math.round((1f-(target+yokeHalf))*bh),t2=top+Math.round((1f-(target-yokeHalf))*bh);
-            p.rect(px-10,t1,px+10,t2,Painter.withAlpha(COL_GOOD,0x58));
-            int vy=top+Math.round((1f-val)*bh); p.line(px-16,vy,px+16,vy,2,theme().accentLite);
+            p.rect(px-11,t1,px+11,t2,Painter.withAlpha(COL_GOOD,0x62));
+            int vy=top+Math.round((1f-val)*bh);
+            p.line(px-18,vy,px+18,vy,3,theme().accentLite);
+            p.discPixel(px,vy,4,theme().accentLite);
         }
-        smallCentered(g,"A",lx,top+bh+8,theme().text,0.74f); smallCentered(g,"B",rx,top+bh+8,theme().text,0.74f);
-        int buttonY=cy+58;
-        String[] labels={"A−","A+","B−","B+"};
+        smallCentered(g,"YOKE I",lx,top+bh+7,theme().text,0.70f);
+        smallCentered(g,"YOKE II",rx,top+bh+7,theme().text,0.70f);
+        smallCentered(g,"COUPLED VERDICT  "+(yokeRound+1)+" / "+yokeRoundsNeeded,cx,top-15,theme().accentLite,0.76f);
+        int buttonY=cy+56;
+        int[] bx={cx-132,cx-66,cx+6,cx+72};
+        String[] labels={"I <","I >","< II","> II"};
         for(int i=0;i<4;i++) {
-            int bx=cx-120+i*60;
-            p.roundRect(bx,buttonY,56,24,Painter.withAlpha(theme().frame,0x58));
-            p.roundOutline(bx,buttonY,56,24,theme().frameLite);
-            smallCentered(g,labels[i],bx+28,buttonY+7,theme().text,0.72f);
+            boolean hover=mouseX>=bx[i]&&mouseX<=bx[i]+60&&mouseY>=buttonY&&mouseY<=buttonY+26;
+            p.roundRect(bx[i],buttonY,60,26,Painter.withAlpha(theme().frame,0x58));
+            p.roundOutline(bx[i],buttonY,60,26,hover?theme().accentLite:theme().frameLite);
+            smallCentered(g,labels[i],bx[i]+30,buttonY+8,theme().text,0.72f);
         }
+        int sealY=buttonY+32;
+        boolean sealHover=mouseX>=cx-42&&mouseX<=cx+42&&mouseY>=sealY&&mouseY<=sealY+24;
+        p.roundRect(cx-42,sealY,84,24,Painter.withAlpha(theme().accent,0x62));
+        p.roundOutline(cx-42,sealY,84,24,sealHover?theme().accentLite:theme().accent);
+        smallCentered(g,"BIND YOKE",cx,sealY+7,theme().text,0.72f);
     }
 
     private void renderRootwayEcho(GuiGraphics g,int mouseX,int mouseY,int x,int y,int w,int h){
         int size=28,gap=5,board=size*4+gap*3,sx=centerX()-board/2,sy=contentCenterY()-board/2+8,cur=rootRoute[rootIndex];
+        int timerW = board, timerX = sx, timerY = sy - 18;
+        p.roundRect(timerX,timerY,timerW,6,theme().well);
+        int timerFill = Math.round(timerW * Mth.clamp(rootDecisionTimer / Math.max(0.001f, rootDecisionLimit), 0f, 1f));
+        if(timerFill>0) p.rect(timerX+1,timerY+1,timerX+Math.max(1,timerFill-1),timerY+5,
+                Painter.withAlpha(rootDecisionTimer < 0.65f ? COL_BAD : theme().accentLite,0xC0));
         for(int r=0;r<4;r++) for(int c=0;c<4;c++){
             int cell=r*4+c,px=sx+c*(size+gap),py=sy+r*(size+gap); boolean hover=mouseX>=px&&mouseX<=px+size&&mouseY>=py&&mouseY<=py+size;
             p.roundRect(px,py,size,size,cell==cur?Painter.withAlpha(theme().accent,0x72):theme().well); p.roundOutline(px,py,size,size,cell==rootGoal?theme().accentLite:(hover?theme().frameLite:theme().frame));
@@ -2412,8 +2799,8 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
             int v=processionEchoCurrent[i];Sigils.drawCentered(p,Sigils.TILE[(v*9+2)%Sigils.TILE.length],px+size/2,sy+18,1,theme().text,0,0);smallCentered(g,n[v],px+size/2,sy+33,theme().accentLite,.66f);
         }
         int a=processionEchoTarget[0],b=processionEchoTarget[1],c=processionEchoTarget[2],d=processionEchoTarget[3];
-        smallCentered(g,n[a]+" stands directly before "+n[b],centerX(),sy+66,theme().text,.60f);
-        smallCentered(g,n[b]+" stands directly before "+n[c],centerX(),sy+80,theme().text,.60f);
+        smallCentered(g,n[a]+" stands somewhere before "+n[c],centerX(),sy+66,theme().text,.60f);
+        smallCentered(g,n[b]+" follows "+n[a]+" directly",centerX(),sy+80,theme().text,.60f);
         smallCentered(g,n[d]+" closes the procession",centerX(),sy+94,theme().text,.60f);
     }
 
@@ -2434,16 +2821,16 @@ public final class CthulhusGameScreen extends BaseMinigameScreen {
             case RITUAL_RUNEBRAID -> "Swap adjacent strands into the ghost order";
             case RITUAL_RESONANCE -> "Match the two waveforms and click the spectrum";
             case RITUAL_CIPHER -> "Rotate every ring index onto its witness mark";
-            case RITUAL_PRESSURE -> "Pump the vessel, then seal inside the green pressure band";
+            case RITUAL_PRESSURE -> "Pump, vent and compensate for leakage; seal each verdict inside the green band";
             case RITUAL_PULSE_DISCIPLINE -> "Strike each approaching choir-beat on the fixed line";
             case RITUAL_BALANCE -> "Counter the drifting beam until it stays centered";
             case RITUAL_CONSTELLATION -> constellationPreview ? "Witness the star route" : "Repeat the route in order";
-            case RITUAL_MIRROR_DISCIPLINE -> "Choose the exact glyph and reflection transform";
-            case RITUAL_KEYWAY -> "Set the active tumbler inside its shear window";
+            case RITUAL_MIRROR_DISCIPLINE -> "Survive the mirror verdicts: choose the exact glyph and both reflection axes";
+            case RITUAL_KEYWAY -> "Read the tension response: false sets plateau; the true gate peaks. Set all four tumblers";
             case RITUAL_AUGURY -> "Cycle three omen wheels; submit and read exact/misplaced clues";
             case RITUAL_VESSEL -> vesselReveal ? "Remember the marked vessel" : vesselShufflesLeft > 0 ? "Track the marked vessel" : "Choose where the mark ended";
             case RITUAL_YOKE -> "Use the four coupling zones until both weights enter their bands";
-            case RITUAL_ROOTWAY -> "Rotate channels before the root arrives and guide it to the eye";
+            case RITUAL_ROOTWAY -> "Read the living channels and move before the root withers; dead-end branches lie";
             case RITUAL_SHARDSONG -> "Rotate the four shards until all edge runes agree";
             case RITUAL_ORRERY -> "Turn a ring; its neighbour turns with it. Align all three meridians";
             case RITUAL_PROCESSION -> "Swap the four witnesses into the only order allowed by the testimony";

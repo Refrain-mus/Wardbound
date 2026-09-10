@@ -77,10 +77,7 @@ public class CipherScreen extends BaseMinigameScreen {
         // Teach the plate in layers. A first-time Cipher is three rings with no quirk stack;
         // after a few successful solves it becomes the familiar four-ring lock, and only a
         // practiced player can roll the fivefold form from an ordinary chest.
-        boolean richPlate = familiarity >= 4 || value >= 68 || difficulty > 1.18f;
-        boolean fivefold = advancedNarrativeWard() || (masteryTier >= 2 && richPlate
-                && (masteryTier >= 3 || seedVariance(73) < 0.58f));
-        ringCount = masteryTier <= 0 && !advancedNarrativeWard() ? 3 : (fivefold ? 5 : 4);
+        ringCount = plannedRingCount();
         modifierLabels.add(ringCount == 5 ? "fivefold cipher" : ringCount == 4 ? "fourfold cipher" : "threefold cipher");
 
         rng = new Random(seed ^ 0x5EED);
@@ -130,12 +127,28 @@ public class CipherScreen extends BaseMinigameScreen {
     }
 
     /**
+     * Compute the intended ring count without reading subclass fields.
+     *
+     * <p>BaseMinigameScreen asks {@link #timeBudget()} from its constructor.
+     * Reading {@code ringCount} there used to see Java's temporary default of
+     * zero, so every Cipher initially received the three-ring clock even when
+     * the actual plate became four- or fivefold a few instructions later.</p>
+     */
+    private int plannedRingCount() {
+        boolean richPlate = familiarity >= 4 || value >= 68 || difficulty > 1.18f;
+        boolean fivefold = advancedNarrativeWard() || (masteryTier >= 2 && richPlate
+                && (masteryTier >= 3 || seedVariance(73) < 0.58f));
+        return masteryTier <= 0 && !advancedNarrativeWard() ? 3 : (fivefold ? 5 : 4);
+    }
+
+    /**
      * Still the shortest lock in the mod, and now it has teeth of its own rather
      * than borrowing all of them from the clock.
      */
     @Override
     protected float timeBudget() {
-        return super.timeBudget() * (ringCount >= 5 ? 0.62f : ringCount == 4 ? 0.56f : 0.64f);
+        int planned = plannedRingCount();
+        return super.timeBudget() * (planned >= 5 ? 0.62f : planned == 4 ? 0.56f : 0.64f);
     }
 
     @Override

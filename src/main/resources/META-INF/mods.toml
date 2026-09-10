@@ -4,7 +4,7 @@ license="All Rights Reserved"
 
 [[mods]]
 modId="wardbound"
-version="1.0"
+version="1.0.2"
 displayName="Wardbound"
 description='''
 Wardbound turns structure loot containers into progression-driven ward encounters.

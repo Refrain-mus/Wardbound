@@ -183,6 +183,20 @@ public class WitnessLedgerScreen extends Screen {
         });
     }
 
+    /** Keep EditBox focus synchronized with Screen's focused child so charTyped reaches it. */
+    private void focusSearchBox() {
+        boolean searchable = tab == TAB_LOOT || tab == TAB_CHRONICLE || (tab == TAB_GRIMOIRE && openCardId < 0);
+        if (searchBox == null || !searchable) return;
+        this.setFocused(searchBox);
+        searchBox.setFocused(true);
+    }
+
+    private void blurSearchBox() {
+        if (searchBox == null) return;
+        searchBox.setFocused(false);
+        if (this.getFocused() == searchBox) this.setFocused(null);
+    }
+
     @Override
     public void tick() {
         if (pressTicks > 0) pressTicks--;
@@ -1069,6 +1083,9 @@ public class WitnessLedgerScreen extends Screen {
         float uiScale = ledgerScale();
         mouseX /= uiScale;
         mouseY /= uiScale;
+        // A click outside the edit box returns keyboard navigation to the ledger.
+        // Clicking the edit box below immediately focuses it again.
+        if (searchBox != null && searchBox.isFocused()) blurSearchBox();
         int left = panelLeft();
         int top = panelTop();
         int right = left + PANEL_W;
@@ -1145,7 +1162,7 @@ public class WitnessLedgerScreen extends Screen {
 
         if ((tab == TAB_LOOT || tab == TAB_CHRONICLE || (tab == TAB_GRIMOIRE && openCardId < 0)) && searchBox != null
                 && searchBox.mouseClicked(mouseX, mouseY, button)) {
-            searchBox.setFocused(true);
+            focusSearchBox();
             return true;
         }
 
@@ -1245,7 +1262,7 @@ public class WitnessLedgerScreen extends Screen {
             detailScrollGrimoire = 0;
             updateSearchBoxLayout(false);
             if (searchBox != null) {
-                searchBox.setFocused(false);
+                blurSearchBox();
                 searchBox.setValue(SESSION_SEARCH[tab] == null ? "" : SESSION_SEARCH[tab]);
             }
             scroll = Math.max(0, SESSION_SCROLL[tab]);
@@ -1327,10 +1344,10 @@ public class WitnessLedgerScreen extends Screen {
         if (Screen.hasControlDown() && keyCode == 70) { // Ctrl+F
             if (tab != TAB_LOOT && tab != TAB_CHRONICLE && tab != TAB_GRIMOIRE) switchToTab(TAB_GRIMOIRE);
             if (openCardId >= 0) { openCardId = -1; cardSynergyMode = false; updateSearchBoxLayout(false); }
-            if (searchBox != null) { searchBox.setVisible(true); searchBox.setFocused(true); }
+            if (searchBox != null) { searchBox.setVisible(true); focusSearchBox(); }
             return true;
         }
-        if (searchBox != null && searchBox.isFocused() && super.keyPressed(keyCode, scanCode, modifiers)) return true;
+        if (searchBox != null && searchBox.isFocused() && searchBox.keyPressed(keyCode, scanCode, modifiers)) return true;
         if (tab == TAB_GRIMOIRE && openCardId >= 0) {
             if (keyCode == 83) { cardSynergyMode = !cardSynergyMode; detailScrollGrimoire = 0; triggerPageFlip(); return true; }
             if (keyCode == 259) { // backspace
@@ -1361,6 +1378,7 @@ public class WitnessLedgerScreen extends Screen {
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
+        if (searchBox != null && searchBox.isFocused() && searchBox.charTyped(codePoint, modifiers)) return true;
         return super.charTyped(codePoint, modifiers);
     }
 

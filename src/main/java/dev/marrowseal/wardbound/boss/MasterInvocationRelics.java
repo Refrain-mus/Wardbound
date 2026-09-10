@@ -134,6 +134,35 @@ public final class MasterInvocationRelics {
         item.setInvulnerable(true);
         item.setUnlimitedLifetime();
         item.clearFire();
+        // Manual drops keep normal gravity so ImportantRelicItem's void rescue can
+        // still recover them. Controlled full-inventory deliveries use the helper
+        // below to create a stationary, glowing fallback at the player's feet.
+    }
+
+
+    /**
+     * Give a progression key normally; if inventory is full, materialize it in a
+     * controlled hover at the player's feet. Unlike the global EntityJoin hook this
+     * never changes the physics of a relic the player deliberately throws later.
+     */
+    public static boolean giveOrProtectedDrop(ServerPlayer player, ItemStack stack) {
+        if (player == null || stack == null || stack.isEmpty()) return false;
+        if (player.getInventory().add(stack)) {
+            player.getInventory().setChanged();
+            player.containerMenu.broadcastChanges();
+            return true;
+        }
+        ItemEntity entity = player.drop(stack, false);
+        if (entity == null) return false;
+        entity.setInvulnerable(true);
+        entity.setUnlimitedLifetime();
+        entity.clearFire();
+        entity.setNoGravity(true);
+        entity.setDeltaMovement(0, 0, 0);
+        entity.setGlowingTag(true);
+        entity.setTarget(player.getUUID());
+        entity.setNoPickUpDelay();
+        return true;
     }
 
     private static MasterArenaManager.Kind kindFor(ItemStack stack) {

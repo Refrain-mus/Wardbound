@@ -33,7 +33,18 @@ public final class AttentionSystem {
         return Stage.KNOWN;
     }
 
-    public static Stage current(LockData data, UUID player) { return stage(data.attention(player)); }
+    public static Stage current(LockData data, UUID player) {
+        if (data == null || player == null) return Stage.UNNOTICED;
+        if (!CardMaster.phaseActive(data, player)) {
+            // Migration/robustness guard: older builds could accumulate Attention
+            // before the late dealer layer existed. Do not let it wake up later.
+            if (data.attention(player) != 0) data.setAttention(player, 0);
+            if (data.uniqueInt(player, "attention_highest_stage") != 0)
+                data.setUniqueInt(player, "attention_highest_stage", 0);
+            return Stage.UNNOTICED;
+        }
+        return stage(data.attention(player));
+    }
 
     public static int threatBonus(Stage stage) {
         return switch (stage) {
@@ -141,6 +152,12 @@ public final class AttentionSystem {
     public static void set(ServerPlayer player, LockData data, int value, String reason) {
         if (player == null || data == null) return;
         UUID id = player.getUUID();
+        if (!CardMaster.phaseActive(data, id)) {
+            if (data.attention(id) != 0) data.setAttention(id, 0);
+            if (data.uniqueInt(id, "attention_highest_stage") != 0)
+                data.setUniqueInt(id, "attention_highest_stage", 0);
+            return;
+        }
         Stage before = current(data, id);
         int clamped = Mth.clamp(value, 0, WardConfig.attentionCap);
         data.setAttention(id, clamped);
@@ -162,8 +179,9 @@ public final class AttentionSystem {
     }
 
     public static String detail(LockData data, UUID id) {
+        Stage current = current(data, id);
+        if (current == Stage.UNNOTICED) return current.title;
         int value = data.attention(id);
-        Stage stage = stage(value);
-        return stage.title + (value > 0 ? " · pressure " + value + "/" + WardConfig.attentionCap : "");
+        return current.title + " · pressure " + value + "/" + WardConfig.attentionCap;
     }
 }

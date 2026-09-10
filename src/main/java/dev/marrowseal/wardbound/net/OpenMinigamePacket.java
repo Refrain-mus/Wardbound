@@ -109,6 +109,8 @@ public class OpenMinigamePacket {
     public final int measureClause;
     /** Server-authoritative global ward progression; gates client-authored expert variants. */
     public final int resolvedWards;
+    /** True only after both halves of the late Master phase gate are satisfied. */
+    public final boolean masterPhase;
 
     public OpenMinigamePacket(BlockPos pos, int value, int gameId, int lives, int maxLives,
                               long seed, int progress, float difficulty, float lootMultiplier,
@@ -145,6 +147,32 @@ public class OpenMinigamePacket {
                               int deceptionMode, int hybridMode, boolean hybridCompleted, int savedRapidMistakes, int savedHybridOutcome,
                               boolean savedHybridActive, float savedHybridTimer, int savedHybridStep, float savedHybridGauge,
                               int measureStage, int measureClause, int resolvedWards) {
+        this(pos, value, gameId, lives, maxLives, seed, progress, difficulty, lootMultiplier, dimensionId, streak, charm,
+                familiarity, unsigned, extraSeconds, timeScale, speedScale, inputWindowScale, scarCount, scarFlags,
+                eldritch, eldritchStage, eldritchTotal, possessed, rivalry, mutationLevel, affliction, living, mercy,
+                resumed, savedClockLeft, savedElapsedSeconds, savedMistakes, savedHurriedClock, spentApplied,
+                cardMinigameMask, masteryTier, corruptionVariant, examWeakGame, examStrongGame,
+                deceptionMode, hybridMode, hybridCompleted, savedRapidMistakes, savedHybridOutcome,
+                savedHybridActive, savedHybridTimer, savedHybridStep, savedHybridGauge,
+                measureStage, measureClause, resolvedWards, false);
+    }
+
+    public OpenMinigamePacket(BlockPos pos, int value, int gameId, int lives, int maxLives,
+                              long seed, int progress, float difficulty, float lootMultiplier,
+                              String dimensionId, int streak, int charm,
+                              int familiarity, boolean unsigned, int extraSeconds,
+                              float timeScale, float speedScale, float inputWindowScale,
+                              int scarCount, int scarFlags,
+                              boolean eldritch, int eldritchStage, int eldritchTotal,
+                              boolean possessed, boolean rivalry, int mutationLevel,
+                              int affliction, boolean living, boolean mercy,
+                              boolean resumed, float savedClockLeft, float savedElapsedSeconds,
+                              int savedMistakes, float savedHurriedClock, boolean spentApplied,
+                              int cardMinigameMask, int masteryTier, int corruptionVariant, int examWeakGame, int examStrongGame,
+                              int deceptionMode, int hybridMode, boolean hybridCompleted, int savedRapidMistakes, int savedHybridOutcome,
+                              boolean savedHybridActive, float savedHybridTimer, int savedHybridStep, float savedHybridGauge,
+                              int measureStage, int measureClause, int resolvedWards, boolean masterPhase) {
+
         this.pos = pos;
         this.value = value;
         this.gameId = gameId;
@@ -197,6 +225,7 @@ public class OpenMinigamePacket {
         this.measureStage = Math.max(0, Math.min(3, measureStage));
         this.measureClause = Math.max(0, Math.min(3, measureClause));
         this.resolvedWards = Math.max(0, resolvedWards);
+        this.masterPhase = masterPhase;
     }
 
     public static void encode(OpenMinigamePacket msg, FriendlyByteBuf buf) {
@@ -252,6 +281,7 @@ public class OpenMinigamePacket {
         buf.writeVarInt(msg.measureStage);
         buf.writeVarInt(msg.measureClause);
         buf.writeVarInt(msg.resolvedWards);
+        buf.writeBoolean(msg.masterPhase);
     }
 
     public static OpenMinigamePacket decode(FriendlyByteBuf buf) {
@@ -307,7 +337,8 @@ public class OpenMinigamePacket {
                 buf.readFloat(),
                 buf.readVarInt(),
                 buf.readVarInt(),
-                buf.readVarInt());
+                buf.readVarInt(),
+                buf.readBoolean());
     }
 
     public static void handle(OpenMinigamePacket msg, Supplier<NetworkEvent.Context> ctx) {

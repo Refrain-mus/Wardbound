@@ -86,7 +86,7 @@ public final class AncientSmithProgression {
         int defeated = SilasProgression.defeatedMasters(data, player.getUUID());
         long pending = data.uniqueLong(player.getUUID(), PENDING);
         int wards = data.totalBeaten(player.getUUID());
-        return "Ancient Smith // masters " + defeated + "/2 // wards " + wards + "/" + WardConfig.eldritchAfterBeaten
+        return "Ancient Smith // Master defeats toward unlock " + Math.min(defeated, 2) + "/2 (" + defeated + "/3 tracked defeated) // wards " + wards + "/" + WardConfig.eldritchAfterBeaten
                 + " // pending " + (pending == Long.MIN_VALUE ? "no" : "yes")
                 + " // scene " + (active(player) ? "active" : "idle") + " // Nhal-Sûl delivered " + complete(player);
     }

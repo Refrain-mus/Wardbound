@@ -16,13 +16,13 @@
     "background": "minecraft:textures/block/dark_oak_planks.png"
   },
   "criteria": {
-    "begin": {
-      "trigger": "minecraft:tick"
+    "done": {
+      "trigger": "minecraft:impossible"
     }
   },
   "requirements": [
     [
-      "begin"
+      "done"
     ]
   ]
 }

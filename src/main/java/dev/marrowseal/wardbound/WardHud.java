@@ -26,15 +26,34 @@ public final class WardHud {
         send(serverPlayer, component == null ? "" : component.getString(), infer(component));
     }
 
+    /** Show short-lived UI feedback without writing a second copy into the Witness Ledger. */
+    public static void messageTransient(Player player, Component component, boolean ignoredActionBar) {
+        if (!(player instanceof ServerPlayer serverPlayer)) return;
+        sendInternal(serverPlayer, component == null ? "" : component.getString(), infer(component),
+                WardHudPacket.DEFAULT_DURATION_MS, false);
+    }
+
     public static void send(ServerPlayer player, String text, Mood mood) {
         send(player, text, mood, WardHudPacket.DEFAULT_DURATION_MS);
     }
 
     public static void send(ServerPlayer player, String text, Mood mood, int durationMs) {
+        sendInternal(player, text, mood, durationMs, true);
+    }
+
+    public static void sendTransient(ServerPlayer player, String text, Mood mood) {
+        sendInternal(player, text, mood, WardHudPacket.DEFAULT_DURATION_MS, false);
+    }
+
+    public static void sendTransient(ServerPlayer player, String text, Mood mood, int durationMs) {
+        sendInternal(player, text, mood, durationMs, false);
+    }
+
+    private static void sendInternal(ServerPlayer player, String text, Mood mood, int durationMs, boolean recordHistory) {
         if (player == null || text == null || text.isBlank()) return;
         Wardbound.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                 new WardHudPacket(text, mood.ordinal(), durationMs));
-        WardHistory.recordHud(player, text, mood);
+        if (recordHistory) WardHistory.recordHud(player, text, mood);
     }
 
     private static Mood infer(Component component) {

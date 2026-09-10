@@ -89,7 +89,9 @@ public class RelicDropItem extends Item {
             return false;
         }
 
-        boolean splinter = kind == Kind.SPLINTER;
+        ItemStack activationStack = stack.copy();
+        activationStack.setCount(1);
+
         if (kind == Kind.SPLINTER) {
             player.addEffect(new MobEffectInstance(WardEffects.WARD_SPLINTER_ATTUNEMENT.get(),
                     ATTUNEMENT_DURATION, 0, false, false, true));
@@ -108,6 +110,10 @@ public class RelicDropItem extends Item {
         }
 
         if (!player.getAbilities().instabuild) stack.shrink(1);
+        // Exact vanilla Totem-style presentation, but with the shard that was actually consumed.
+        dev.marrowseal.wardbound.Wardbound.CHANNEL.send(
+                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                new dev.marrowseal.wardbound.net.ShardActivationPacket(activationStack));
 
         ServerLevel level = (ServerLevel) player.level();
         double x = player.getX();

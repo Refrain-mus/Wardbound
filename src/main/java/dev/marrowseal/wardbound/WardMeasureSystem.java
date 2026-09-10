@@ -32,7 +32,12 @@ public final class WardMeasureSystem {
     private static final String KEY_FOLDS = "house_measure_folds";
 
     public static boolean unlocked(LockData data, UUID id) {
-        return data != null && id != null && data.totalBeaten(id) >= UNLOCK_AFTER;
+        // House Measures explicitly belong to the post-reveal Master layer. A player
+        // who advances wards while ignoring field cards must not expose the three-hand
+        // cadence ahead of the shared Master Phase gate.
+        return data != null && id != null
+                && data.totalBeaten(id) >= UNLOCK_AFTER
+                && CardMaster.phaseActive(data, id);
     }
 
     public static int stage(LockData data, UUID id) {

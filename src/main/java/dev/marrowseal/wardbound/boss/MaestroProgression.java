@@ -58,8 +58,7 @@ public final class MaestroProgression {
         if (contains(player, WardItems.SCORE_BEYOND_THE_MARGIN.get())) return;
 
         ItemStack score = new ItemStack(WardItems.SCORE_BEYOND_THE_MARGIN.get());
-        if (!player.getInventory().add(score)) player.drop(score, false);
-        player.getInventory().setChanged();
+        if (!MasterInvocationRelics.giveOrProtectedDrop(player, score)) return;
 
         if (d.uniqueInt(player.getUUID(), "maestro_score_revealed") == 0) {
             d.setUniqueInt(player.getUUID(), "maestro_score_revealed", 1);

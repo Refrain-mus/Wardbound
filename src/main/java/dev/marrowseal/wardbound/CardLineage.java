@@ -64,7 +64,14 @@ public final class CardLineage {
         }
 
         int milestone = after >= 60 ? 60 : after >= 30 ? 30 : after >= 12 ? 12 : 0;
-        if (milestone > 0 && before < milestone) {
+        // Lineage exists from the beginning because ordinary card choices should
+        // matter later, but it must not spoil a Master before that identity has
+        // been earned. Once known, the next matching signature can surface the
+        // highest resonance milestone accumulated in silence.
+        String announcedKey = "card_lineage_announced_" + master.id;
+        int announced = Math.max(0, data.uniqueInt(id, announcedKey));
+        if (milestone > 0 && master.known(data, id) && announced < milestone) {
+            data.setUniqueInt(id, announcedKey, milestone);
             WardHistory.recordSpecial(player, "WARD", master.title + " resonance " + milestone
                     + " // repeated card choices have become a readable pattern.");
             dev.marrowseal.wardbound.item.CthulhuEyeItem.speakInsight(player,

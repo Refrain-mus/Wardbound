@@ -110,6 +110,11 @@ public class MirrorScreen extends BaseMinigameScreen {
         do {
             targetGlyph = rng.nextInt(Sigils.TILE.length);
         } while (!Sigils.fullyAsymmetric(Sigils.TILE[targetGlyph]) && ++guard < 60);
+        if (!Sigils.fullyAsymmetric(Sigils.TILE[targetGlyph])) {
+            for (int i = 0; i < Sigils.TILE.length; i++) {
+                if (Sigils.fullyAsymmetric(Sigils.TILE[i])) { targetGlyph = i; break; }
+            }
+        }
 
         // the four cards are the four orientations, shuffled, so exactly one can match the lid
         int[] order = {0, 1, 2, 3};
