@@ -1,6 +1,7 @@
 package dev.marrowseal.wardbound.ancientsmith;
 
 import dev.marrowseal.wardbound.LockData;
+import dev.marrowseal.wardbound.WardConfig;
 import dev.marrowseal.wardbound.WardHistory;
 import dev.marrowseal.wardbound.WardHud;
 import dev.marrowseal.wardbound.Wardbound;
@@ -54,7 +55,10 @@ public final class AncientSmithProgression {
     public static boolean eligible(ServerPlayer player) {
         if (player == null || player.getServer() == null) return false;
         LockData data = LockData.get(player.getServer());
-        return SilasProgression.defeatedMasters(data, player.getUUID()) >= 2 && data.uniqueInt(player.getUUID(), COMPLETE) == 0;
+        UUID id = player.getUUID();
+        return SilasProgression.defeatedMasters(data, id) >= 2
+                && data.totalBeaten(id) >= WardConfig.eldritchAfterBeaten
+                && data.uniqueInt(id, COMPLETE) == 0;
     }
 
     public static boolean complete(ServerPlayer player) {
@@ -81,7 +85,9 @@ public final class AncientSmithProgression {
         LockData data = LockData.get(player.getServer());
         int defeated = SilasProgression.defeatedMasters(data, player.getUUID());
         long pending = data.uniqueLong(player.getUUID(), PENDING);
-        return "Ancient Smith // masters " + defeated + "/2 // pending " + (pending == Long.MIN_VALUE ? "no" : "yes")
+        int wards = data.totalBeaten(player.getUUID());
+        return "Ancient Smith // masters " + defeated + "/2 // wards " + wards + "/" + WardConfig.eldritchAfterBeaten
+                + " // pending " + (pending == Long.MIN_VALUE ? "no" : "yes")
                 + " // scene " + (active(player) ? "active" : "idle") + " // Nhal-Sûl delivered " + complete(player);
     }
 
@@ -96,7 +102,7 @@ public final class AncientSmithProgression {
         if (player.level().dimension().equals(REALM) || player.level().dimension().equals(MasterArenaManager.REALM) || active(player) || complete(player)) return;
         LockData data = LockData.get(player.getServer());
         UUID id = player.getUUID();
-        if (SilasProgression.defeatedMasters(data, id) < 2) {
+        if (SilasProgression.defeatedMasters(data, id) < 2 || data.totalBeaten(id) < WardConfig.eldritchAfterBeaten) {
             if (data.uniqueLong(id, PENDING) != Long.MIN_VALUE) data.setUniqueLong(id, PENDING, Long.MIN_VALUE);
             return;
         }

@@ -12,8 +12,7 @@ import net.minecraft.world.level.Level;
 import java.util.List;
 
 /** Maestro's posthumous notation. It will only open from the End. */
-public final class CanticleForSleeperItem extends Item {
-    @Override public boolean isFoil(ItemStack stack) { return true; }
+public final class CanticleForSleeperItem extends ImportantRelicItem {
     @Override public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
         ImportantRelicHeldFx.tick(level, entity, stack, isSelected, 0.08f, 0.80f, 0.86f, 0.04f, 0.44f, 0.50f);
         super.inventoryTick(stack, level, entity, slotId, isSelected);

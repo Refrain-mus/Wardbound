@@ -17,7 +17,7 @@ import net.minecraftforge.network.PacketDistributor;
 
 import java.util.List;
 
-public class HousebreakersAceItem extends Item {
+public class HousebreakersAceItem extends ImportantRelicItem {
     public HousebreakersAceItem(Properties p) { super(p); }
 
     @Override

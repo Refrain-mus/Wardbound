@@ -221,7 +221,7 @@ public final class ThirdWaveCardEffects {
             if(nearest!=null){
                 nearest.addEffect(new MobEffectInstance(MobEffects.GLOWING,20*10,0,false,true,true));
                 nearest.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,20*10,0,false,true,true));
-                data.setUniqueInt(id,"third_silent_bell_target",nearest.getId()); data.setUniqueLong(id,"third_silent_bell_until",now+20*10L);
+                rememberTarget(data,id,"third_silent_bell",nearest); data.setUniqueLong(id,"third_silent_bell_until",now+20*10L);
                 level.sendParticles(ParticleTypes.END_ROD,nearest.getX(),nearest.getY()+nearest.getBbHeight()*.6,nearest.getZ(),12,.4,.6,.4,.02);
             }
             data.setUniqueLong(id,"third_silent_bell_next",now+20L*30L);
@@ -322,7 +322,7 @@ public final class ThirdWaveCardEffects {
         if(event.getSource().getEntity() instanceof ServerPlayer attacker && attacker.getServer()!=null && !INTERNAL.contains(attacker.getUUID())){
             LockData data=LockData.get(attacker.getServer());UUID id=attacker.getUUID();long now=attacker.level().getGameTime();
             boolean projectile=event.getSource().getDirectEntity() instanceof Projectile; boolean melee=!projectile && event.getSource().getDirectEntity()==attacker;
-            if(data.hasUnique(id,lawKey(ForbiddenBargain.WITNESS_MARK))){int target=data.uniqueInt(id,"third_witness_target");long until=data.uniqueLong(id,"third_witness_until");if(target==victim.getId()&&until>now)event.setAmount(event.getAmount()*1.35F);else if(until>now)event.setAmount(event.getAmount()*.90F);}
+            if(data.hasUnique(id,lawKey(ForbiddenBargain.WITNESS_MARK))){long until=data.uniqueLong(id,"third_witness_until");if(until>now&&matchesTarget(data,id,"third_witness",victim))event.setAmount(event.getAmount()*1.35F);else if(until>now)event.setAmount(event.getAmount()*.90F);}
             if(data.hasUnique(id,lawKey(ForbiddenBargain.BLACKOUT_CLAUSE))){int light=attacker.serverLevel().getMaxLocalRawBrightness(attacker.blockPosition());event.setAmount(event.getAmount()*(light<=3?1.30F:light>=12?.92F:1F));}
             if(melee && data.hasUnique(id,lawKey(ForbiddenBargain.DEAD_MANS_MARGIN)) && attacker.getHealth()<=attacker.getMaxHealth()*.25F){event.setAmount(event.getAmount()*1.65F);Vec3 d=victim.position().subtract(attacker.position()).multiply(1,0,1);if(d.lengthSqr()>.01){d=d.normalize();victim.push(d.x*.75,.18,d.z*.75);}}
             if(melee && data.hasUnique(id,lawKey(ForbiddenBargain.BLOOD_TELEGRAM))){float echo=Math.min(8f,event.getAmount()*.25F);int n=0;for(LivingEntity other:attacker.serverLevel().getEntitiesOfClass(LivingEntity.class,victim.getBoundingBox().inflate(12),e->e!=victim&&e.isAlive()&&e.getType()==victim.getType())){internalHurt(id,other,attacker.serverLevel(),echo);if(++n>=4)break;}}
@@ -331,12 +331,12 @@ public final class ThirdWaveCardEffects {
             if(projectile && data.hasUnique(id,lawKey(ForbiddenBargain.PALE_RECOIL))){event.setAmount(event.getAmount()*1.70F);attacker.hurt(attacker.damageSources().magic(),1.0F);Vec3 back=attacker.getLookAngle().multiply(-.32,0,-.32);attacker.setDeltaMovement(attacker.getDeltaMovement().add(back));attacker.hurtMarked=true;}
             if(melee && data.hasUnique(id,lawKey(ForbiddenBargain.AFTERIMAGE_DEBT)) && data.uniqueInt(id,"third_afterimage_charge")>0){data.setUniqueInt(id,"third_afterimage_charge",0);PENDING.add(new PendingStrike(id,attacker.level().dimension(),victim.getUUID(),now+8,Math.max(1f,event.getAmount()*.40F)));}
             if(data.hasUnique(id,lawKey(ForbiddenBargain.DEBT_OF_DISTANCE))){double dist=attacker.distanceTo(victim);if(dist<=2.5)event.setAmount(event.getAmount()*.80F);else if(dist>=6)event.setAmount(event.getAmount()*(1F+(float)Math.min(.60,(dist-6)*.04)));}
-            if(active(data,id,ForbiddenBargain.RED_PURSUIT,now)){data.setUniqueInt(id,"third_red_pursuit_target",victim.getId());data.setUniqueLong(id,"third_red_pursuit_until",now+20L*5L);}
+            if(active(data,id,ForbiddenBargain.RED_PURSUIT,now)){rememberTarget(data,id,"third_red_pursuit",victim);data.setUniqueLong(id,"third_red_pursuit_until",now+20L*5L);}
         }
 
         if(victim instanceof ServerPlayer player && player.getServer()!=null){
             LockData data=LockData.get(player.getServer());UUID id=player.getUUID();long now=player.level().getGameTime();ServerLevel level=player.serverLevel();
-            if(data.hasUnique(id,lawKey(ForbiddenBargain.WITNESS_MARK)) && event.getSource().getEntity() instanceof LivingEntity attacker && attacker!=player){data.setUniqueInt(id,"third_witness_target",attacker.getId());data.setUniqueLong(id,"third_witness_until",now+20L*20L);attacker.addEffect(new MobEffectInstance(MobEffects.GLOWING,20*20,0,false,true,true));}
+            if(data.hasUnique(id,lawKey(ForbiddenBargain.WITNESS_MARK)) && event.getSource().getEntity() instanceof LivingEntity attacker && attacker!=player){rememberTarget(data,id,"third_witness",attacker);data.setUniqueLong(id,"third_witness_until",now+20L*20L);attacker.addEffect(new MobEffectInstance(MobEffects.GLOWING,20*20,0,false,true,true));}
             if(data.hasUnique(id,"third_chorus_debt") && event.getAmount()>=8F && player.getRandom().nextFloat()<.65F) chorusStep(player,level);
             if(data.hasUnique(id,lawKey(ForbiddenBargain.LAST_FOOTPRINT)) && player.getHealth()<=player.getMaxHealth()*.35F && now>=data.uniqueLong(id,"third_footprint_next")){
                 ArrayDeque<Footprint> q=FOOTPRINTS.get(id);
@@ -389,12 +389,12 @@ public final class ThirdWaveCardEffects {
         LockData data=LockData.get(player.getServer());UUID id=player.getUUID();long now=player.level().getGameTime();ServerLevel level=player.serverLevel();LivingEntity dead=event.getEntity();
         if(active(data,id,ForbiddenBargain.AIRBORNE_LEDGER,now) && !player.onGround())data.setUniqueInt(id,"third_airborne_charge",Math.min(3,data.uniqueInt(id,"third_airborne_charge")+1));
         if(active(data,id,ForbiddenBargain.QUIET_EXECUTION,now) && player.isShiftKeyDown()){player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY,20*6,0,false,true,true));player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,20*4,1,false,true,true));}
-        if(active(data,id,ForbiddenBargain.RED_PURSUIT,now) && data.uniqueInt(id,"third_red_pursuit_target")==dead.getId() && data.uniqueLong(id,"third_red_pursuit_until")>=now){player.heal(4F);player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,20*5,0,false,true,true));data.setUniqueInt(id,"third_red_pursuit_target",-1);}
+        if(active(data,id,ForbiddenBargain.RED_PURSUIT,now) && matchesTarget(data,id,"third_red_pursuit",dead) && data.uniqueLong(id,"third_red_pursuit_until")>=now){player.heal(4F);player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,20*5,0,false,true,true));clearTarget(data,id,"third_red_pursuit");}
         if(data.hasUnique(id,lawKey(ForbiddenBargain.BLACKOUT_CLAUSE)) && level.getMaxLocalRawBrightness(player.blockPosition())<=3){player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY,20*5,0,false,true,true));player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED,20*4,1,false,true,true));}
         if(data.hasUnique(id,lawKey(ForbiddenBargain.STOLEN_COUNTENANCE))){for(MobEffectInstance effect:dead.getActiveEffects()){if(effect.getEffect().getCategory()==MobEffectCategory.BENEFICIAL){player.addEffect(new MobEffectInstance(effect.getEffect(),Math.min(20*30,effect.getDuration()),Math.min(2,effect.getAmplifier()),false,true,true));break;}}}
         if(data.hasUnique(id,lawKey(ForbiddenBargain.HOUSE_ALWAYS_WINS))){int n=data.uniqueInt(id,"third_house_count")+1;if(n==7){ExperienceOrb.award(level,player.position(),18);player.addEffect(new MobEffectInstance(MobEffects.LUCK,20*30,1,false,true,true));}else if(n>=8){n=0;player.getFoodData().setFoodLevel(Math.max(0,player.getFoodData().getFoodLevel()-6));player.removeEffect(MobEffects.ABSORPTION);player.addEffect(new MobEffectInstance(MobEffects.UNLUCK,20*20,0,false,true,true));}data.setUniqueInt(id,"third_house_count",n);}
         if(data.hasUnique(id,lawKey(ForbiddenBargain.CROW_TOLL))){int n=data.uniqueInt(id,"third_crow_toll")+1;if(n>=12){n=0;for(Projectile p:level.getEntitiesOfClass(Projectile.class,player.getBoundingBox().inflate(8),p->p.isAlive()))p.discard();player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,20*30,1,false,true,true));level.playSound(null,player.blockPosition(),SoundEvents.BELL_RESONATE,SoundSource.PLAYERS,.8f,.58f);}data.setUniqueInt(id,"third_crow_toll",n);}
-        if(data.hasUnique(id,lawKey(ForbiddenBargain.BELL_WITHOUT_SOUND)) && data.uniqueInt(id,"third_silent_bell_target")==dead.getId() && data.uniqueLong(id,"third_silent_bell_until")>=now)ExperienceOrb.award(level,player.position(),7);
+        if(data.hasUnique(id,lawKey(ForbiddenBargain.BELL_WITHOUT_SOUND)) && matchesTarget(data,id,"third_silent_bell",dead) && data.uniqueLong(id,"third_silent_bell_until")>=now)ExperienceOrb.award(level,player.position(),7);
         if(data.hasUnique(id,lawKey(ForbiddenBargain.FIFTH_TOLL))){int n=data.uniqueInt(id,"third_fifth_toll")+1;if(n>=5){n=0;visualLightning(level,player,dead.position());for(Mob mob:level.getEntitiesOfClass(Mob.class,dead.getBoundingBox().inflate(6),m->m instanceof Enemy&&m!=dead))internalHurt(id,mob,level,6F);player.hurt(level.damageSources().magic(),2F);}data.setUniqueInt(id,"third_fifth_toll",n);}
         if(data.hasUnique(id,lawKey(ForbiddenBargain.FINAL_AUCTION))){int n=data.uniqueInt(id,"third_final_auction")+1;if(n>=40){n=0;auctionLot(player);}data.setUniqueInt(id,"third_final_auction",n);}
     }
@@ -445,6 +445,20 @@ public final class ThirdWaveCardEffects {
         UUID id=event.getEntity().getUUID();
         PENDING.removeIf(p->p.owner.equals(id));
         INTERNAL.remove(id);
+    }
+
+    private static void rememberTarget(LockData data, UUID owner, String key, LivingEntity target){
+        if(data==null||owner==null||target==null)return;
+        data.setUniqueString(owner,key+"_uuid",target.getUUID().toString());
+        data.setUniqueString(owner,key+"_dim",target.level().dimension().location().toString());
+    }
+    private static boolean matchesTarget(LockData data, UUID owner, String key, LivingEntity target){
+        if(data==null||owner==null||target==null)return false;
+        String uuid=data.uniqueString(owner,key+"_uuid"),dim=data.uniqueString(owner,key+"_dim");
+        return target.getUUID().toString().equals(uuid)&&target.level().dimension().location().toString().equals(dim);
+    }
+    private static void clearTarget(LockData data, UUID owner, String key){
+        data.setUniqueString(owner,key+"_uuid","");data.setUniqueString(owner,key+"_dim","");
     }
 
     private static boolean isTimed(ForbiddenBargain card){return card==ForbiddenBargain.AIRBORNE_LEDGER||card==ForbiddenBargain.QUIET_EXECUTION||card==ForbiddenBargain.RED_PURSUIT||card==ForbiddenBargain.STILL_POINT_BLACK;}

@@ -4,7 +4,7 @@ This pass deliberately does **not** add a separate card game or a separate famil
 It connects Wardbound's two existing loops.
 
 ## House Measure
-After 90 resolved wards, eligible ordinary signed wards form a three-step cadence:
+After 220 resolved wards, eligible ordinary signed wards form a three-step cadence:
 1. Opening
 2. Pressure
 3. Verdict

@@ -8,8 +8,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import java.util.List;
-public final class UnsignedVerdictItem extends Item{
- @Override public boolean isFoil(ItemStack stack){return true;}
+public final class UnsignedVerdictItem extends ImportantRelicItem{
  @Override public void inventoryTick(ItemStack stack,Level level,net.minecraft.world.entity.Entity entity,int slotId,boolean isSelected){ImportantRelicHeldFx.tick(level,entity,stack,isSelected,0.86f,0.26f,0.30f,0.90f,0.74f,0.34f);super.inventoryTick(stack,level,entity,slotId,isSelected);}
  public static final int COOLDOWN=20*80;
  public UnsignedVerdictItem(Properties p){super(p);}

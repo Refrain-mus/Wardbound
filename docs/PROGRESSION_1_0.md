@@ -4,13 +4,16 @@ Wardbound 1.0 uses a long-form progression because the card catalogue, minigame 
 
 ## Headline ward gates
 
-- 15 resolved wards: ordinary post-chest card hands
+- 15 resolved wards: ordinary post-ward card hands
 - 40: physical Sealed Cards can begin dropping from eligible hostile kills
 - 90: Master/private cards
 - 110: Contracts
 - 180: Curses
-- 240: Rituals
+- 220: House Measure / Cut cadence
+- 240: Rituals and first corrupted-minigame eligibility (with Mastery II)
 - 340: Epics
+- 360: minigame deception layer
+- 520: hybrid minigame rounds / Revision II band
 - 430: Covenants
 - 600: Uniques
 - 650: Eldritch ward tier
@@ -19,9 +22,9 @@ Wardbound 1.0 uses a long-form progression because the card catalogue, minigame 
 
 Individual card emergence shelves are spread across roughly 0-1500 resolved wards. Broad rarity gates and per-card emergence both apply.
 
-## Chest card-table frequency
+## Post-ward card-table frequency
 
-The default post-chest bargain chance is 10.5%, but it does not reach full frequency immediately:
+The default post-ward bargain chance is 10.5%. Eligible hands are attached to the ordinary ward that was just resolved, but the chance does not reach full frequency immediately:
 
 - 15-89 wards: 35% of the configured chance
 - 90-219: 55%
@@ -37,6 +40,8 @@ The default eligible hostile-kill drop chance is 0.40%. Pity begins after 110 mi
 ## Chest/ward synchronization
 
 The rest of the chest ecosystem is stretched with the same curve: afflictions, possessed/unsigned wards, mutation tiers, deception/hybrid layers, Eldritch wards, Cthulhu-tier wards, global difficulty tiers, and the positive loot ceiling no longer finish their progression in the first few hundred resolved wards.
+
+Card revisions now obey those long-form shelves as well: Revision I requires 240 wards, Revision II 520, and Palimpsest/Revision III 850 in addition to the normal repeated-signature requirement. Maestro's cosmic path cannot reveal before the Death-law band, and the Cthulhu Head Canticle cannot open before the 1200-ward Cthulhu band.
 
 ## Debug presets
 

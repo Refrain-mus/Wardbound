@@ -49,6 +49,7 @@ import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.event.level.ChunkEvent;
@@ -115,6 +116,8 @@ public final class ChestValuator {
     public static final String TAG_BARGAIN_MODE = "WardBargainMode";
     /** Number of refreshes already spent on this chest; intentionally capped at one. */
     public static final String TAG_BARGAIN_REFRESHED = "WardBargainRefreshed";
+    /** Progression loot ceiling snapshotted when this physical ward resolved. */
+    public static final String TAG_BARGAIN_CAP = "WardBargainCap";
     private static final String LOOSE_OFFERS = "WardboundLooseCardOffers";
     private static final String LOOSE_MODE = "WardboundLooseCardMode";
     private static final String LOOSE_SEED = "WardboundLooseCardSeed";
@@ -142,7 +145,6 @@ public final class ChestValuator {
     public static final String TAG_GAUNTLET = "WardGauntlet";
     public static final String TAG_AFFLICTION = "WardAffliction";
     public static final String TAG_LIVING = "WardLiving";
-    public static final String TAG_MERCY = "WardMercy";
     public static final String TAG_RELIC_GRADE = "WardRelicGrade";
     /** Stages left on a rare Eldritch Ward. */
     public static final String TAG_ELDRITCH = "WardEldritch";
@@ -811,7 +813,7 @@ public final class ChestValuator {
     /**
      * Opens a ward using only the exact stack from the hand that performed the
      * interaction. The stack is consulted only when a brand-new ward state is
-     * created; resumed wards keep the aid that was already bound to them.
+     * created; an already-bound ward keeps the aid committed at creation time.
      */
     private static void openMinigame(ServerPlayer player, BlockPos pos,
                                      RandomizableContainerBlockEntity container,
@@ -826,11 +828,27 @@ public final class ChestValuator {
         if (!claimWardAttempt(player, container)) return;
 
         int value = container.getPersistentData().getInt(TAG_VALUE);
-        bindPendingShardAttunement(player, container);
 
         CompoundTag state;
         if (data.has(uuid, dimId, pos)) {
             state = data.getOrCreate(uuid, dimId, pos);
+            // Migration guard for pre-hardening saves. Older builds persisted a
+            // client-resumable snapshot after ESC. The current lifecycle never
+            // resumes a live puzzle, so an old snapshot is authoritatively
+            // converted into the same abandonment failure as a vanished screen.
+            if (state.getBoolean("resume") && !state.getBoolean("attemptIssued")) {
+                int legacyLives = Math.max(1, state.getInt("lives"));
+                state.putInt("issuedLives", legacyLives);
+                state.putInt("issuedMaxLives", legacyLives);
+                state.putBoolean("attemptIssued", true);
+                data.put(uuid, dimId, pos, state);
+                resolveFailure(player, pos, state.getLong("seed"), legacyLives, 0f,
+                        Math.max(0f, state.getFloat("elapsedSeconds")),
+                        Math.max(1, state.getInt("mistakes") + 1), 0, "ABANDONED_LEGACY",
+                        Math.max(0, state.getInt("rapidMistakes")),
+                        state.getBoolean("hybridActive") ? 2 : state.getInt("hybridOutcome"));
+                return;
+            }
             // A prior screen was issued but never produced a result (disconnect,
             // forced screen replacement, crash). Reopening cannot become a free reset.
             if (state.getBoolean("attemptIssued")) {
@@ -857,7 +875,10 @@ public final class ChestValuator {
         // How many times this particular container has already beaten you.
         int spite = container.getPersistentData().getInt(TAG_SPITE);
         String verdict = data.verdict(uuid);
-        boolean watched = Sealmakers.house(state.getLong("seed")).equals(data.watcher(uuid));
+        boolean watchingMarkProvenanceAllowed = !state.getBoolean("watchingMarkForced")
+                || state.getBoolean("watchingMarkBound");
+        boolean watched = watchingMarkProvenanceAllowed
+                && Sealmakers.house(state.getLong("seed")).equals(data.watcher(uuid));
 
         int chainLink = container.getPersistentData().getInt(TAG_CHAIN_LINK);
 
@@ -866,6 +887,7 @@ public final class ChestValuator {
         // what makes it worth having over a bigger number on one house's work.
         int maxLives = settings.lives + charm.bonusLives()
                 + ("favour".equals(verdict) ? 1 : 0)
+                + (state.getBoolean("mercy") ? 1 : 0)
                 + state.getInt("cardLifeDelta");
         if (state.getBoolean("borrowedBreath")) maxLives = Math.max(1, maxLives - 1);
         if (state.getBoolean("cardForceOneLife")) maxLives = 1;
@@ -957,19 +979,21 @@ public final class ChestValuator {
             // not merely when a physical ward rolls one that a very fast clear may outrun.
             data.put(uuid, dimId, pos, state);
         }
-        boolean resumed = state.getBoolean("resume");
-        float savedClockLeft = resumed ? state.getFloat("clockLeft") : 0f;
-        float savedElapsed = resumed ? state.getFloat("elapsedSeconds") : 0f;
-        int savedMistakes = resumed ? state.getInt("mistakes") : 0;
-        int savedRapidMistakes = resumed ? state.getInt("rapidMistakes") : 0;
-        float savedHurriedClock = resumed ? state.getFloat("hurriedClock") : 1f;
+        // Resume fields remain in OpenMinigamePacket only to preserve its wire
+        // layout. Live server state never supplies resumable client snapshots.
+        boolean resumed = false;
+        float savedClockLeft = 0f;
+        float savedElapsed = 0f;
+        int savedMistakes = 0;
+        int savedRapidMistakes = 0;
+        float savedHurriedClock = 1f;
         boolean spentApplied = state.getBoolean("spentApplied");
         boolean hybridCompleted = state.getBoolean("hybridCompleted");
-        int savedHybridOutcome = resumed ? state.getInt("hybridOutcome") : 0;
-        boolean savedHybridActive = resumed && state.getBoolean("hybridActive") && !hybridCompleted;
-        float savedHybridTimer = savedHybridActive ? state.getFloat("hybridTimer") : 0f;
-        int savedHybridStep = savedHybridActive ? state.getInt("hybridStep") : 0;
-        float savedHybridGauge = savedHybridActive ? state.getFloat("hybridGauge") : 0f;
+        int savedHybridOutcome = 0;
+        boolean savedHybridActive = false;
+        float savedHybridTimer = 0f;
+        int savedHybridStep = 0;
+        float savedHybridGauge = 0f;
 
         OpenMinigamePacket pkt = new OpenMinigamePacket(
                 pos,
@@ -1034,11 +1058,10 @@ public final class ChestValuator {
                 state.getInt("cardMinigameMask"), masteryTier, corruptionSlot, examWeak.ordinal(), examStrong.ordinal(),
                 state.getInt("deceptionMode"), state.getInt("hybridMode"), hybridCompleted, savedRapidMistakes, savedHybridOutcome,
                 savedHybridActive, savedHybridTimer, savedHybridStep, savedHybridGauge,
-                state.getInt("measureStage"), state.getInt("measureClause"));
+                state.getInt("measureStage"), state.getInt("measureClause"), data.totalBeaten(uuid));
 
-        // SPENT is a one-time anomaly tax. Mark it server-side as soon as the
-        // attempt is issued so ESC/reopen cannot charge another life even if the
-        // client closes before it can send a progress snapshot.
+        // SPENT is a one-time anomaly tax. Mark it server-side at issuance; an
+        // unresolved screen can only fail from here, never reopen as a fresh try.
         if (!spentApplied) state.putBoolean("spentApplied", true);
         // Server-side commitment marker closes the disconnect/crash loophole. A
         // legitimate result clears it before any next stage is issued.
@@ -1049,14 +1072,6 @@ public final class ChestValuator {
         Wardbound.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), pkt);
     }
 
-    /**
-     * A fresh lock for this player and this chest, with a charm bound to it if
-     * they are carrying one.
-     *
-     * <p>Binding here rather than at the end is the whole design of the charms:
-     * you commit before you know anything about the lock, and the charge is
-     * spent either way. See {@link Charm}.
-     */
     /**
      * Lets one house's work find you.
      *
@@ -1099,6 +1114,47 @@ public final class ChestValuator {
             if (Sealmakers.house(candidate).equals(house)) return candidate;
         }
         return seed;
+    }
+
+    /**
+     * Special encounters keep their own progression economy. They may still use
+     * ordinary minigames internally, but they must not consume "next ordinary
+     * ward" promises or advance ordinary-only cadence systems.
+     */
+    private static boolean isSpecialEncounterWard(CompoundTag persistent) {
+        if (persistent == null) return false;
+        return persistent.getBoolean(TAG_CTHULHU)
+                || persistent.getBoolean(TAG_UNSIGNED)
+                || persistent.getBoolean(TAG_POSSESSED)
+                || persistent.getInt(TAG_ELDRITCH) > 0
+                || persistent.getInt(TAG_GAUNTLET) > 0
+                || persistent.getInt(TAG_CHAIN_LINK) > 0;
+    }
+
+    /** A normal physical ward: not special, not an internal re-seal/depth loop. */
+    private static boolean isOrdinaryPhysicalWard(CompoundTag persistent) {
+        return persistent != null
+                && !isSpecialEncounterWard(persistent)
+                && persistent.getInt(TAG_DEPTH) == 0;
+    }
+
+    /**
+     * Fresh states persist this classification so success/failure resolution is
+     * based on what was actually issued, even if container tags are cleared later.
+     * Old in-progress saves fall back to the physical container classification.
+     */
+    private static boolean isOrdinaryAttempt(CompoundTag state, CompoundTag persistent) {
+        return state != null && state.contains("ordinaryWard")
+                ? state.getBoolean("ordinaryWard")
+                : isOrdinaryPhysicalWard(persistent);
+    }
+
+    /** Pale Margin is global to every minigame, including special/internal stages. */
+    private static void applyPermanentMinigameMargins(LockData data, UUID playerId, CompoundTag state) {
+        if (data != null && playerId != null && state != null
+                && data.hasUnique(playerId, "minigame_seconds_perm")) {
+            state.putInt("seconds", state.getInt("seconds") + 2);
+        }
     }
 
     private static CompoundTag newState(ServerPlayer player, DimSettings settings, BlockPos pos,
@@ -1157,21 +1213,27 @@ public final class ChestValuator {
 
         long lockSeed = pos.hashCode() * 31L
                 ^ player.getUUID().getLeastSignificantBits() ^ System.nanoTime();
+        boolean watchingMarkForced = false;
+        String watchingMarkHouse = "";
 
-        // Chains keep their own maker. A Watching Mark waits through a chain or
-        // unsigned seal and is collected by the next ordinary signed ward.
+        // Chains keep their own maker. A Watching Mark may provisionally bind the
+        // maker of a signed ward, but it is not consumed until the finished
+        // encounter classification proves this is an ordinary physical ward.
         if (server != null && container.getPersistentData().getInt(TAG_CHAIN_LINK) > 0) {
             lockSeed = Chain.seedFor(LockData.get(server).chain(player.getUUID()), lockSeed);
         } else if (server != null && !unsigned) {
             LockData debts = LockData.get(server);
-            if (debts.hasWatchingMark(player.getUUID())) {
-                String house = debts.watcher(player.getUUID());
-                lockSeed = forceHouse(lockSeed, house);
-                debts.consumeWatchingMark(player.getUUID());
-                dev.marrowseal.wardbound.WardHud.message(player, Component.literal(
-                                "The mark is collected. " + house + " made this one for you.")
-                        .withStyle(ChatFormatting.DARK_PURPLE), false);
+            CompoundTag persistent = container.getPersistentData();
+            boolean alreadySpecialOrDepth = isSpecialEncounterWard(persistent) || persistent.getInt(TAG_DEPTH) > 0;
+            if (debts.hasWatchingMark(player.getUUID()) && !alreadySpecialOrDepth) {
+                watchingMarkHouse = debts.watcher(player.getUUID());
+                lockSeed = forceHouse(lockSeed, watchingMarkHouse);
+                watchingMarkForced = Sealmakers.house(lockSeed).equals(watchingMarkHouse);
+                state.putBoolean("watchingMarkForced", watchingMarkForced);
             } else {
+                // Special/depth wards keep their native maker seed. A pending
+                // Watching Mark waits for a later ordinary signed ward instead
+                // of altering an encounter it is not allowed to consume.
                 lockSeed = attend(player, lockSeed);
             }
         } else {
@@ -1250,7 +1312,10 @@ public final class ChestValuator {
         // sequences. It makes the retry easier but pays a little less.
         if (container.getPersistentData().getInt(TAG_SPITE) >= WardConfig.mercyAfterLosses
                 && !container.getPersistentData().getBoolean(TAG_UNSIGNED)
+                && !container.getPersistentData().getBoolean(TAG_CTHULHU)
                 && container.getPersistentData().getInt(TAG_CHAIN_LINK) == 0
+                && container.getPersistentData().getInt(TAG_DEPTH) == 0
+                && container.getPersistentData().getInt(TAG_GAUNTLET) == 0
                 && container.getPersistentData().getInt(TAG_ELDRITCH) == 0
                 && !container.getPersistentData().getBoolean(TAG_POSSESSED)
                 && RNG.nextFloat() < WardConfig.mercyChance) {
@@ -1297,22 +1362,107 @@ public final class ChestValuator {
                 state.putFloat("cardLootBonus", state.getFloat("cardLootBonus") + 0.05f);
                 WardHud.message(player, Component.literal(makerName + " leaves one answer visible. That is not the same thing as mercy.")
                         .withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.ITALIC), false);
-            } else if (relationNow <= -12 && totalBeaten >= WardConfig.possessedAfterBeaten
+            } else if (relationNow <= -12
+                    && !state.getBoolean("mercy")
+                    && container.getPersistentData().getInt(TAG_DEPTH) == 0
+                    && totalBeaten >= WardConfig.possessedAfterBeaten
                     && RNG.nextFloat() < 0.08f
                     && container.getPersistentData().getInt(TAG_ELDRITCH) == 0) {
                 container.getPersistentData().putBoolean(TAG_POSSESSED, true);
+                WardHistory.discoverAnomaly(player, "possessed");
                 WardHud.message(player, Component.literal(makerName + " appears to have made this one with you in mind.")
                         .withStyle(ChatFormatting.DARK_RED, ChatFormatting.ITALIC), false);
             }
         }
 
-        // The charm is chosen only now, because which one applies depends on
-        // whose seal this is: a sealwright's key is the strongest charm in the
-        // mod on its own house's work and nothing at all on anyone else's.
-        Charm charm = cthulhuWard ? Charm.NONE
-                : Charm.fromInteractionStack(interactionStack, Sealmakers.house(lockSeed));
         int favourBonus = server != null
                 && "favour".equals(LockData.get(server).verdict(player.getUUID())) ? 1 : 0;
+
+        // Finalize special encounter classification before charging any item or
+        // consuming any "next ordinary ward" promise. This ordering is important:
+        // once an item/debt is charged it cannot be reconstructed safely if this
+        // same physical seal later upgrades itself into a special encounter.
+
+        // The gauntlet is an unsigned endgame sequence and explicitly refuses
+        // carried aids. Bind it before charm/Ember/Shim selection so "nothing you
+        // are carrying will help" is mechanically true, not only presentation.
+        boolean gauntletWard = false;
+        if (container.getPersistentData().getBoolean(TAG_UNSIGNED) && server != null) {
+            LockData ld = LockData.get(server);
+            if (ld.unsignedBeaten(player.getUUID()) >= WardConfig.gauntletAfter) {
+                container.getPersistentData().putInt(TAG_GAUNTLET, WardConfig.gauntletStages);
+                WardHistory.discoverAnomaly(player, "gauntlet");
+                gauntletWard = true;
+                dev.marrowseal.wardbound.WardHud.message(player, Component.literal(
+                                "Three of them, one after another, and nothing you are carrying "
+                                        + "will help.")
+                        .withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.BOLD), false);
+            }
+        }
+
+        // Rare elite wards: a premium multi-seal collapse even on signed work.
+        // Classification happens before item binding because Eldritch encounters
+        // already refuse charms; Ember/Shim now follow that same special-rule
+        // boundary instead of being consumed on stage one by accident.
+        if (WardConfig.eldritchWardsEnabled
+                && totalBeaten >= WardConfig.eldritchAfterBeaten
+                && !container.getPersistentData().getBoolean(TAG_CTHULHU)
+                && !container.getPersistentData().getBoolean(TAG_POSSESSED)
+                && !state.getBoolean("mercy")
+                && !container.getPersistentData().getBoolean(TAG_UNSIGNED)
+                && container.getPersistentData().getInt(TAG_GAUNTLET) == 0
+                && container.getPersistentData().getInt(TAG_CHAIN_LINK) == 0
+                && container.getPersistentData().getInt(TAG_DEPTH) == 0
+                && RNG.nextFloat() < WardConfig.eldritchWardChance) {
+            container.getPersistentData().putInt(TAG_ELDRITCH, WardConfig.eldritchWardStages);
+            container.getPersistentData().putInt(TAG_ELDRITCH + "Total", WardConfig.eldritchWardStages);
+            container.getPersistentData().putLong(TAG_ELDRITCH_USED, 1L << state.getInt("game"));
+            WardHistory.discoverAnomaly(player, "eldritch");
+            dev.marrowseal.wardbound.WardHud.message(player, Component.literal(
+                            "The seal twitches, splits, and begins to rewrite itself.")
+                    .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD), false);
+        }
+        boolean eldritchWard = container.getPersistentData().getInt(TAG_ELDRITCH) > 0;
+
+        // A possessed ward is a single corrupted lock: rarer than ordinary quirks,
+        // but much smaller than an Eldritch chain. It never overlaps an Eldritch Ward.
+        if (WardConfig.possessedWardsEnabled
+                && totalBeaten >= WardConfig.possessedAfterBeaten
+                && !container.getPersistentData().getBoolean(TAG_CTHULHU)
+                && !container.getPersistentData().getBoolean(TAG_POSSESSED)
+                && !state.getBoolean("mercy")
+                && container.getPersistentData().getInt(TAG_ELDRITCH) == 0
+                && !container.getPersistentData().getBoolean(TAG_UNSIGNED)
+                && container.getPersistentData().getInt(TAG_CHAIN_LINK) == 0
+                && container.getPersistentData().getInt(TAG_DEPTH) == 0
+                && RNG.nextFloat() < Math.min(1f, WardConfig.possessedWardChance * directorWeirdness)) {
+            container.getPersistentData().putBoolean(TAG_POSSESSED, true);
+            WardHistory.discoverAnomaly(player, "possessed");
+            dev.marrowseal.wardbound.WardHud.message(player, Component.literal(
+                            "Something inside the seal moves before you touch it.")
+                    .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC), false);
+        }
+
+        boolean ordinaryWard = isOrdinaryPhysicalWard(container.getPersistentData());
+        state.putBoolean("ordinaryWard", ordinaryWard);
+
+        // Watching Mark is a promise about the next ordinary signed ward. A
+        // special transformation may still have provisionally inherited its
+        // maker seed, but it must not spend the mark.
+        if (server != null && ordinaryWard && watchingMarkForced) {
+            LockData debts = LockData.get(server);
+            debts.consumeWatchingMark(player.getUUID());
+            state.putBoolean("watchingMarkBound", true);
+            dev.marrowseal.wardbound.WardHud.message(player, Component.literal(
+                            "The mark is collected. " + watchingMarkHouse + " made this one for you.")
+                    .withStyle(ChatFormatting.DARK_PURPLE), false);
+        }
+
+        // The charm is chosen only after special classification. Cthulhu,
+        // gauntlets and Eldritch chains refuse ordinary carried shortcuts.
+        boolean refuseOrdinaryAids = cthulhuWard || gauntletWard || eldritchWard;
+        Charm charm = refuseOrdinaryAids ? Charm.NONE
+                : Charm.fromInteractionStack(interactionStack, Sealmakers.house(lockSeed));
         state.putInt("lives", settings.lives + charm.bonusLives() + favourBonus
                 + (state.getBoolean("mercy") ? 1 : 0));
         state.putString("charm", charm.id);
@@ -1320,7 +1470,7 @@ public final class ChestValuator {
         // The ember is set down beside the lock and left burning. Charged at
         // binding like everything else, so it cannot be produced halfway through
         // a ward that is running out.
-        ItemStack ember = cthulhuWard ? ItemStack.EMPTY
+        ItemStack ember = refuseOrdinaryAids ? ItemStack.EMPTY
                 : RelicItem.fromInteractionStack(interactionStack, RelicItem.Kind.EMBER);
         if (!ember.isEmpty()) {
             state.putInt("seconds", WardConfig.emberSeconds);
@@ -1333,9 +1483,8 @@ public final class ChestValuator {
 
         // The shim is slid in before anything else happens, so the lock is built
         // one stage down. Every screen already restores from a progress value,
-        // which is why this works on all fifteen of them without any of them
-        // knowing the item exists.
-        ItemStack shim = cthulhuWard ? ItemStack.EMPTY
+        // which is why this works on all ordinary/possessed single-stage locks.
+        ItemStack shim = refuseOrdinaryAids ? ItemStack.EMPTY
                 : RelicItem.fromInteractionStack(interactionStack, RelicItem.Kind.SHIM);
         if (!shim.isEmpty()) {
             state.putInt("progress", 1);
@@ -1358,78 +1507,9 @@ public final class ChestValuator {
                     .withStyle(ChatFormatting.GOLD));
         }
 
-        // Rare elite wards: a premium three-seal collapse even on signed work.
-        // They are deliberately separate from unsigned gauntlets: rarer, slightly
-        // shorter on reward, but available anywhere and themed as a mutating ward.
-        if (WardConfig.eldritchWardsEnabled
-                && totalBeaten >= WardConfig.eldritchAfterBeaten
-                && !container.getPersistentData().getBoolean(TAG_CTHULHU)
-                && !container.getPersistentData().getBoolean(TAG_POSSESSED)
-                && !state.getBoolean("mercy")
-                && !container.getPersistentData().getBoolean(TAG_UNSIGNED)
-                && container.getPersistentData().getInt(TAG_GAUNTLET) == 0
-                && container.getPersistentData().getInt(TAG_CHAIN_LINK) == 0
-                && container.getPersistentData().getInt(TAG_DEPTH) == 0
-                && RNG.nextFloat() < WardConfig.eldritchWardChance) {
-            container.getPersistentData().putInt(TAG_ELDRITCH, WardConfig.eldritchWardStages);
-            container.getPersistentData().putInt(TAG_ELDRITCH + "Total", WardConfig.eldritchWardStages);
-            container.getPersistentData().putLong(TAG_ELDRITCH_USED, 1L << state.getInt("game"));
-            WardHistory.discoverAnomaly(player, "eldritch");
-            charm = Charm.NONE;
-            state.putString("charm", Charm.NONE.id);
-            state.putInt("lives", settings.lives + favourBonus);
-            dev.marrowseal.wardbound.WardHud.message(player, Component.literal(
-                            "The seal twitches, splits, and begins to rewrite itself.")
-                    .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD), false);
-        }
-
-        // A possessed ward is a single corrupted lock: rarer than ordinary quirks,
-        // but much smaller than an Eldritch chain. It never overlaps an Eldritch Ward.
-        if (WardConfig.possessedWardsEnabled
-                && totalBeaten >= WardConfig.possessedAfterBeaten
-                && !container.getPersistentData().getBoolean(TAG_CTHULHU)
-                && !container.getPersistentData().getBoolean(TAG_POSSESSED)
-                && !state.getBoolean("mercy")
-                && container.getPersistentData().getInt(TAG_ELDRITCH) == 0
-                && !container.getPersistentData().getBoolean(TAG_UNSIGNED)
-                && container.getPersistentData().getInt(TAG_CHAIN_LINK) == 0
-                && container.getPersistentData().getInt(TAG_DEPTH) == 0
-                && RNG.nextFloat() < Math.min(1f, WardConfig.possessedWardChance * directorWeirdness)) {
-            container.getPersistentData().putBoolean(TAG_POSSESSED, true);
-            WardHistory.discoverAnomaly(player, "possessed");
-            dev.marrowseal.wardbound.WardHud.message(player, Component.literal(
-                            "Something inside the seal moves before you touch it.")
-                    .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC), false);
-        }
-
-        // The gauntlet.
-        //
-        // Break enough unsigned seals and the next one is not a lock, it is
-        // three, run back to back on one container with a single pool of lives
-        // and no charm allowed. It is the end of the mod and it is built
-        // entirely out of the mod: no new screen, no new mechanic, just every
-        // lock in the set with nothing between them and nothing to lean on.
-        //
-        // Charms are refused rather than merely discouraged. A run that can be
-        // bought is not a test of anything, and the whole point of this is to
-        // ask whether you can actually play the fifteen locks you have spent a
-        // save learning.
-        if (container.getPersistentData().getBoolean(TAG_UNSIGNED) && server != null) {
-            LockData ld = LockData.get(server);
-            if (ld.unsignedBeaten(player.getUUID()) >= WardConfig.gauntletAfter) {
-                container.getPersistentData().putInt(TAG_GAUNTLET, WardConfig.gauntletStages);
-                WardHistory.discoverAnomaly(player, "gauntlet");
-                charm = Charm.NONE;
-                state.putString("charm", Charm.NONE.id);
-                state.putInt("lives", settings.lives + favourBonus);
-                dev.marrowseal.wardbound.WardHud.message(player, Component.literal(
-                                "Three of them, one after another, and nothing you are carrying "
-                                        + "will help.")
-                        .withStyle(ChatFormatting.DARK_AQUA, ChatFormatting.BOLD), false);
-            }
-        }
-
-        if (server != null && container.getPersistentData().getInt(TAG_GAUNTLET) == 0) {
+        // Borrowed Breath is also explicitly "next ordinary ward". Do not collect
+        // it on Cthulhu, unsigned/gauntlet, possessed, Eldritch, chain or depth.
+        if (server != null && ordinaryWard) {
             LockData debts = LockData.get(server);
             if (debts.consumeBorrowedBreath(player.getUUID())) {
                 state.putBoolean("borrowedBreath", true);
@@ -1444,24 +1524,15 @@ public final class ChestValuator {
         // Singular encounters, chains, reseals and depth loops stay outside the cadence so
         // the three-step structure reads as a recurring table rule instead of random noise.
         if (server != null
-                && WardMeasureSystem.unlocked(LockData.get(server), player.getUUID())
-                && !container.getPersistentData().getBoolean(TAG_CTHULHU)
-                && !container.getPersistentData().getBoolean(TAG_UNSIGNED)
-                && !container.getPersistentData().getBoolean(TAG_POSSESSED)
-                && container.getPersistentData().getInt(TAG_ELDRITCH) == 0
-                && container.getPersistentData().getInt(TAG_GAUNTLET) == 0
-                && container.getPersistentData().getInt(TAG_CHAIN_LINK) == 0
-                && container.getPersistentData().getInt(TAG_DEPTH) == 0) {
+                && ordinaryWard
+                && WardMeasureSystem.unlocked(LockData.get(server), player.getUUID())) {
             WardMeasureSystem.prepare(player, LockData.get(server), state, lockSeed);
         }
 
         // Card wagers bind only to an ordinary ward. Singular/chain endgame
         // locks do not consume a stored wager; it waits for the next ordinary
         // seal so a rare special ward cannot silently eat a two-ward promise.
-        if (server != null
-                && !container.getPersistentData().getBoolean(TAG_CTHULHU)
-                && container.getPersistentData().getInt(TAG_ELDRITCH) == 0
-                && container.getPersistentData().getInt(TAG_GAUNTLET) == 0) {
+        if (server != null && ordinaryWard) {
             LockData cardData = LockData.get(server);
             LockData.CardWardTerms cardTerms = cardData.consumeCardWardTerms(player.getUUID());
             if (!cardTerms.empty()) {
@@ -1489,14 +1560,17 @@ public final class ChestValuator {
                                 "A card comes due: " + String.join("  ·  ", due) + ".")
                         .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC), false);
             }
-            int minigameSeconds = 0;
-            if (cardData.hasUnique(player.getUUID(), "minigame_seconds_perm")) minigameSeconds += 2;
             int chain = Math.max(0, cardData.uniqueInt(player.getUUID(), "minigame_seconds_chain"));
             if (chain > 0) {
-                minigameSeconds += 3;
+                state.putInt("seconds", state.getInt("seconds") + 3);
                 cardData.setUniqueInt(player.getUUID(), "minigame_seconds_chain", chain - 1);
             }
-            if (minigameSeconds > 0) state.putInt("seconds", state.getInt("seconds") + minigameSeconds);
+        }
+
+        // Pale Margin is not an ordinary-ward wager; it is a permanent rule scar.
+        // Apply it after all per-ward time changes so every issued minigame sees it.
+        if (server != null) {
+            applyPermanentMinigameMargins(LockData.get(server), player.getUUID(), state);
         }
 
         if (charm != Charm.NONE) {
@@ -1514,44 +1588,8 @@ public final class ChestValuator {
         return state;
     }
 
-    public static void saveProgress(ServerPlayer player, BlockPos pos, int lives, int progress,
-                                    long seed, float clockLeft, float elapsedSeconds,
-                                    int mistakes, float hurriedClock, int rapidMistakes, boolean hybridCompleted, int hybridOutcome,
-                                    boolean hybridActive, float hybridTimer, int hybridStep, float hybridGauge) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        String dimId = player.level().dimension().location().toString();
-        LockData data = LockData.get(server);
-
-        // Never resurrect. A save for a chest with no live lock means the lock is
-        // already finished and this packet is just arriving late.
-        if (!data.has(player.getUUID(), dimId, pos)) return;
-
-        CompoundTag state = data.getOrCreate(player.getUUID(), dimId, pos);
-
-        // And never write across locks. If the chest has been re-sealed since
-        // this screen opened, its seed has changed and this progress describes a
-        // game that no longer exists.
-        if (state.getLong("seed") != seed) return;
-
-        state.putInt("lives", lives);
-        state.putInt("progress", progress);
-        state.putBoolean("resume", true);
-        state.putFloat("clockLeft", Math.max(0f, clockLeft));
-        state.putFloat("elapsedSeconds", Math.max(0f, Math.min(3600f, elapsedSeconds)));
-        state.putInt("mistakes", Math.max(0, Math.min(999, mistakes)));
-        state.putFloat("hurriedClock", Math.max(0f, Math.min(1f, hurriedClock)));
-        state.putInt("rapidMistakes", Math.max(0, Math.min(999, rapidMistakes)));
-        state.putBoolean("hybridCompleted", hybridCompleted);
-        state.putInt("hybridOutcome", Math.max(0, Math.min(2, hybridOutcome)));
-        state.putBoolean("hybridActive", hybridActive && !hybridCompleted);
-        state.putFloat("hybridTimer", Math.max(0f, Math.min(30f, hybridTimer)));
-        state.putInt("hybridStep", Math.max(0, Math.min(15, hybridStep)));
-        state.putFloat("hybridGauge", Math.max(0f, Math.min(1.2f, hybridGauge)));
-        if (hybridActive || hybridCompleted || hybridOutcome != 0)
-            HybridRound.recordEncounter(player, data, HybridRound.byOrdinal(state.getInt("hybridMode")));
-        data.put(player.getUUID(), dimId, pos, state);
-    }
+    // SaveProgressPacket intentionally has no server mutation path. Ward screens
+    // are fail-on-close and may never resurrect or rewrite an issued attempt.
 
     // ------------------------------------------------------------------ results
 
@@ -1647,6 +1685,8 @@ public final class ChestValuator {
         boolean possessed = persistent.getBoolean(TAG_POSSESSED);
         boolean living = persistent.getBoolean(TAG_LIVING);
         boolean cthulhu = persistent.getBoolean(TAG_CTHULHU);
+        boolean ordinaryAtSuccess = isOrdinaryAttempt(liveResultState, persistent);
+        boolean specialEncounterAtSuccess = isSpecialEncounterWard(persistent);
         boolean splinterBrace = persistent.getBoolean(TAG_SPLINTER_BRACE);
         boolean shardOvercharge = persistent.getBoolean(TAG_SHARD_OVERCHARGE);
         int affliction = persistent.getInt(TAG_AFFLICTION);
@@ -1656,7 +1696,10 @@ public final class ChestValuator {
         boolean rivalry = !wasUnsigned && runData != null
                 && rivalryActive(runData, player.getUUID(), lockSeed);
         String verdict = runData == null ? "" : runData.verdict(player.getUUID());
+        boolean watchingMarkProvenanceAllowed = !liveResultState.getBoolean("watchingMarkForced")
+                || liveResultState.getBoolean("watchingMarkBound");
         boolean watched = runData != null && lockSeed != 0L
+                && watchingMarkProvenanceAllowed
                 && Sealmakers.house(lockSeed).equals(runData.watcher(player.getUUID()));
         boolean contempt = watched && "contempt".equals(verdict);
         RewardBreakdown.PerformanceGrade performanceGrade = RewardBreakdown.PerformanceGrade.of(
@@ -1671,7 +1714,8 @@ public final class ChestValuator {
         MinigameMastery.record(player, runData, game, true, performanceGrade, performance, timeRemainingRatio, mistakes, corruptionAtSuccess);
         MinigameSkillProfile.record(player, runData, game, true, performance, timeRemainingRatio,
                 mistakes, rapidMistakes, maxLives, hybridOutcome);
-        FifthWaveCardEffects.onWardResolved(player, runData, game, true, performanceGrade);
+        if (ordinaryAtSuccess)
+            FifthWaveCardEffects.onWardResolved(player, runData, game, true, performanceGrade);
         if (hybridOutcome != 0)
             HybridRound.recordEncounter(player, runData, HybridRound.byOrdinal(liveResultState.getInt("hybridMode")));
         RewardBreakdown reward = RewardBreakdown.success(game, settings, priorRun, charm, tier, depth,
@@ -1715,11 +1759,13 @@ public final class ChestValuator {
                 next.putInt("lives", Math.max(1, livesLeft));
                 next.putInt("progress", 0);
                 next.putString("charm", Charm.NONE.id);
+                next.putBoolean("ordinaryWard", false);
                 next.putLong("seed", lockSeed * 41L + eldritchLeft * 11939L ^ serverLevel.getGameTime());
                 long usedGames = persistent.getLong(TAG_ELDRITCH_USED) | (1L << game.ordinal());
                 MinigameType nextGame = directedEldritchGame(player, settings, next.getLong("seed"), game, usedGames);
                 next.putInt("game", nextGame.ordinal());
                 persistent.putLong(TAG_ELDRITCH_USED, usedGames | (1L << nextGame.ordinal()));
+                applyPermanentMinigameMargins(runData, player.getUUID(), next);
                 runData.put(player.getUUID(), dimId, pos, next);
                 persistent.putInt(TAG_LAST_GAME, game.ordinal());
             }
@@ -1766,9 +1812,11 @@ public final class ChestValuator {
                 next.putInt("lives", Math.max(1, livesLeft));
                 next.putInt("progress", 0);
                 next.putString("charm", Charm.NONE.id);
+                next.putBoolean("ordinaryWard", false);
                 next.putLong("seed", lockSeed * 31L + stagesLeft * 7919L
                         ^ serverLevel.getGameTime());
                 next.putInt("game", directedGame(player, settings, next.getLong("seed"), game).ordinal());
+                applyPermanentMinigameMargins(runData, player.getUUID(), next);
                 runData.put(player.getUUID(), dimId, pos, next);
                 persistent.putInt(TAG_LAST_GAME, game.ordinal());
             }
@@ -1813,6 +1861,16 @@ public final class ChestValuator {
                             : "All three again. That is " + done + ".")
                     .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD), false);
         }
+
+        // The physical ward is now authoritatively resolved. Commit progression here,
+        // after all internal Eldritch/Gauntlet stages have returned but before any
+        // post-resolution table/chain logic asks whether a threshold has been crossed.
+        // Reward math above deliberately used resolvedForLoot (the pre-resolution count),
+        // so crossing a milestone cannot retroactively increase this ward's payout.
+        int totalBeforeResolution = runData == null ? resolvedForLoot : runData.totalBeaten(player.getUUID());
+        int totalAfterResolution = totalBeforeResolution;
+        if (runData != null && lockSeed != 0L)
+            totalAfterResolution = runData.bumpTotal(player.getUUID());
 
         if (hybridOutcome == 1) WardAdvancements.hybridCleared(player);
 
@@ -1913,19 +1971,21 @@ public final class ChestValuator {
         // a much stronger chance to leave an Eldritch shard.
         if (performanceGrade == RewardBreakdown.PerformanceGrade.PERFECT) {
             if (eldritchFinal && RNG.nextFloat() < WardConfig.eldritchRelicChance) persistent.putInt(TAG_RELIC_GRADE, 2);
-            else if (!eldritchActive && !cthulhu && RNG.nextFloat() < WardConfig.perfectRelicChance) persistent.putInt(TAG_RELIC_GRADE, 1);
+            else if (ordinaryAtSuccess && RNG.nextFloat() < WardConfig.perfectRelicChance) persistent.putInt(TAG_RELIC_GRADE, 1);
         }
 
         // A completed ordinary ward advances the three-round House Measure before
         // a post-ward hand is generated. If Verdict earns a Cut, that leverage is
         // therefore visible immediately on the hand produced by the same resolution.
-        if (runData != null) WardMeasureSystem.recordSuccess(player, runData, liveResultState, performanceGrade);
+        if (runData != null && ordinaryAtSuccess)
+            WardMeasureSystem.recordSuccess(player, runData, liveResultState, performanceGrade);
 
         BargainDeal bargainDeal = BargainDeal.empty();
-        float bargainProgression = CardBalance.bargainProgression(resolvedForLoot);
+        float bargainProgression = CardBalance.bargainProgression(totalAfterResolution);
         boolean canBargain = WardConfig.forbiddenBargainsEnabled
                 && runData != null
-                && resolvedForLoot >= WardConfig.normalCardsAfterBeaten
+                && ordinaryAtSuccess
+                && totalAfterResolution >= WardConfig.normalCardsAfterBeaten
                 && depth == 0
                 && stagesLeft == 0
                 && !eldritchFinal
@@ -1948,8 +2008,7 @@ public final class ChestValuator {
         // Forbidden bargains and the ordinary re-seal offer never stack. The
         // former is a rare debt; the latter is the familiar greed loop.
         boolean tempting = !bargaining
-                && !eldritchFinal
-                && !cthulhu
+                && !specialEncounterAtSuccess
                 && WardConfig.temptEnabled && depth < WardConfig.temptMaxDepth
                 && RNG.nextFloat() < WardConfig.temptChance;
         if (bargaining) {
@@ -1961,6 +2020,11 @@ public final class ChestValuator {
             persistent.putLong(TAG_BARGAIN_SEED, lockSeed);
             persistent.putInt(TAG_BARGAIN_MODE, bargainDeal.mode());
             persistent.putInt(TAG_BARGAIN_REFRESHED, 0);
+            // Keep this ward's reward ceiling stable even though progression has
+            // already advanced for post-resolution unlock checks. A card signed
+            // now may add loot, but it cannot retroactively make the just-cleared
+            // ward use the next progression band's cap.
+            persistent.putFloat(TAG_BARGAIN_CAP, progressionCap);
             container.setChanged();
             releaseWardAttempt(container, player.getUUID());
             runData.clear(player.getUUID(), dimId, pos);
@@ -1985,7 +2049,6 @@ public final class ChestValuator {
         if (runData != null && lockSeed != 0L) {
             String house = Sealmakers.house(lockSeed);
             int known = runData.bumpFamiliarity(player.getUUID(), house);
-            int totalBefore = runData.totalBeaten(player.getUUID());
             // A beaten link moves the trail on; anything else may start one.
             if (persistent.getInt(TAG_CHAIN_LINK) > 0) {
                 persistent.remove(TAG_CHAIN_LINK);
@@ -1997,11 +2060,13 @@ public final class ChestValuator {
                 Chain.maybeBegin(player, runData, dimId, pos, lockSeed);
             }
 
-            int totalAfter = runData.bumpTotal(player.getUUID());
-            WardAdvancements.progression(player, totalAfter);
+            // Progression-gated post-Master content must also unlock when the ward threshold is
+            // crossed during this session, not only on login or on the Master victory tick.
+            dev.marrowseal.wardbound.boss.MaestroProgression.unlockIfReady(player);
+            WardAdvancements.progression(player, totalAfterResolution);
             WardAdvancements.makerKnown(player, known);
-            announceTier(player, tierOf(totalBefore), tierOf(totalAfter));
-            announceWardProgressionUnlock(player, totalBefore, totalAfter);
+            announceTier(player, tierOf(totalBeforeResolution), tierOf(totalAfterResolution));
+            announceWardProgressionUnlock(player, totalBeforeResolution, totalAfterResolution);
             String watcher = runData.watcher(player.getUUID());
 
             if (known == 3 || known == 7 || known == WardConfig.masterSignatureKnowAfter) {
@@ -2027,8 +2092,8 @@ public final class ChestValuator {
 
             // Said twice in a playthrough and never again. The point lands once,
             // and a mod that keeps telling you it is being mysterious is not.
-            if (house.equals(watcher) && (totalAfter == 60 || totalAfter == 140)) {
-                dev.marrowseal.wardbound.WardHud.message(player, Component.literal(totalAfter == 60
+            if (house.equals(watcher) && (totalAfterResolution == 60 || totalAfterResolution == 140)) {
+                dev.marrowseal.wardbound.WardHud.message(player, Component.literal(totalAfterResolution == 60
                                 ? "You have opened a great many of " + house + "'s seals. "
                                         + "You do not recall this many being made."
                                 : "Every hand tires. " + house + "'s does not.")
@@ -2324,7 +2389,8 @@ public final class ChestValuator {
         float masterChance = Math.max(0.03f, Math.min(0.15f, 0.055f + relation * 0.0025f));
         if (resolved >= WardConfig.masterCardsAfterBeaten && master != null && out.size() < wanted && random.nextFloat() < masterChance) out.add(master);
 
-        if (resolved >= 55 && !afterRefresh && out.size() < wanted && random.nextFloat() < 0.055f) out.add(ForbiddenBargain.REFRESH_HAND);
+        if (!afterRefresh && out.size() < wanted && ForbiddenBargain.REFRESH_HAND.available(data, player, watcherEligible)
+                && random.nextFloat() < 0.055f) out.add(ForbiddenBargain.REFRESH_HAND);
 
         List<ForbiddenBargain> preferred = new ArrayList<>();
         if (archetype == BargainArchetype.WORLD) preferred.addAll(world);
@@ -2462,6 +2528,16 @@ public final class ChestValuator {
         deal = appendHandUtilitySlots(data, id, deal, seed ^ 0x71A4B11L, true);
         if (deal.cards().isEmpty()) return false;
 
+        // Rivalry interference is a queued event, not a fee for merely trying to
+        // open a Sealed Card. Consume it only when the resulting hand actually
+        // contains the rivalry's requested shelf. This matters before, for example,
+        // the Notary's Contract shelf unlocks: an ordinary fallback hand must not
+        // silently erase a counter-offer the player never got to see.
+        MasterStory.Interference pendingInterference = MasterStory.peekInterference(data, id, dealer);
+        boolean interferenceRepresented = pendingInterference != null
+                && deal.cards().stream().anyMatch(c -> c.kind == pendingInterference.kind());
+        if (interferenceRepresented) MasterStory.consumeInterference(data, id, dealer);
+
         if (data.uniqueInt(id, "dealer_fourth") > 0)
             data.setUniqueInt(id, "dealer_fourth", Math.max(0, data.uniqueInt(id, "dealer_fourth") - 1));
 
@@ -2496,7 +2572,7 @@ public final class ChestValuator {
         Random random = new Random(seed ^ dealer.id.hashCode());
         float roll = random.nextFloat();
         int resolved = data.totalBeaten(player);
-        MasterStory.Interference interference = MasterStory.consumeInterference(data, player, dealer);
+        MasterStory.Interference interference = MasterStory.peekInterference(data, player, dealer);
         ForbiddenBargain.Kind targetKind = interference != null && isLooseKindUnlocked(interference.kind(), resolved)
                 ? interference.kind() : chooseLooseTargetKind(dealer, data, player, resolved, roll);
         List<ForbiddenBargain> fresh = new ArrayList<>();
@@ -2782,9 +2858,9 @@ public final class ChestValuator {
         return new BargainDeal(cards, deal.mode());
     }
 
-    /** Every third real hand after mid progression receives one extra legal offer. */
+    /** Every third real hand after the configured bonus-offer shelf receives one extra legal offer. */
     private static boolean progressionExtraOffer(LockData data, UUID player) {
-        if (data == null || player == null || data.totalBeaten(player) < 450) return false;
+        if (data == null || player == null || data.totalBeaten(player) < WardConfig.bonusFreshRollAfterBeaten) return false;
         int n = data.uniqueInt(player, "mid_progression_extra_hand") + 1;
         if (n >= 3) {
             data.setUniqueInt(player, "mid_progression_extra_hand", 0);
@@ -2984,16 +3060,30 @@ public final class ChestValuator {
             variants[n] = CardEvolution.nextVariantLevel(data, player.getUUID(), card);
             n++;
         }
-        if (n == 0) return;
+        if (n == 0) {
+            // Old saves can retain offer ids that no longer exist after a card
+            // registry/progression rewrite. Never let that stale array soft-lock
+            // every future Sealed Card for this player. The consumed historical
+            // card cannot be reconstructed safely, so retire only the dead hand.
+            clearLooseCard(player);
+            WardHud.message(player, Component.literal("The old sealed hand has faded; no readable law remains.")
+                    .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC), false);
+            return;
+        }
         if (n != ids.length) {
             ids = java.util.Arrays.copyOf(ids, n);
             rewards = java.util.Arrays.copyOf(rewards, n);
             variants = java.util.Arrays.copyOf(variants, n);
+            // Keep the server-side offer set identical to what the client can
+            // actually see. This also migrates old hands containing removed ids.
+            pd.putIntArray(LOOSE_OFFERS, ids);
         }
         BlockPos pos = BlockPos.of(pd.getLong(LOOSE_POS));
+        int mode = pd.getInt(LOOSE_MODE);
+        boolean forcedChoice = mode == BARGAIN_CURSE || mode == BARGAIN_DEATH;
         Wardbound.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                new OpenBargainPacket(pos, ids, rewards, variants, 0f, pd.getLong(LOOSE_SEED), pd.getInt(LOOSE_MODE), false, presenter,
-                        pd.getInt(LOOSE_MODE) == BARGAIN_NORMAL ? WardMeasureSystem.cuts(data, player.getUUID()) : 0));
+                new OpenBargainPacket(pos, ids, rewards, variants, 0f, pd.getLong(LOOSE_SEED), mode, forcedChoice, presenter,
+                        mode == BARGAIN_NORMAL ? WardMeasureSystem.cuts(data, player.getUUID()) : 0));
     }
 
     private static void resolveLooseBargainChoice(ServerPlayer player, int bargainId, int branch) {
@@ -3054,6 +3144,14 @@ public final class ChestValuator {
             }
             playCardAcceptanceFeedback(player, card);
         } else {
+            // Curse and Death hands are binding regardless of where they were dealt.
+            // The physical-container path already enforced this, but the player-owned
+            // Sealed Card path used to treat -1/forged choices as a refusal and clear
+            // the hand. Keep the offer alive and reopen it instead.
+            if (mode == BARGAIN_CURSE || mode == BARGAIN_DEATH) {
+                sendLooseBargainScreen(player);
+                return;
+            }
             int relation = dealer.addRelation(data, id, dealer.refusalRelationDelta(data, id));
             dealer.addGrudge(data, id, 1);
             data.setUniqueInt(id, "dealer_refusals_" + dealer.id, data.uniqueInt(id, "dealer_refusals_" + dealer.id) + 1);
@@ -3217,6 +3315,7 @@ public final class ChestValuator {
             persistent.remove(TAG_BARGAIN_SEED);
             persistent.remove(TAG_BARGAIN_MODE);
             persistent.remove(TAG_BARGAIN_REFRESHED);
+            persistent.remove(TAG_BARGAIN_CAP);
             container.setChanged();
             MinecraftServer server = player.getServer();
             if (server != null) unlockAndClear(level, pos, container, server, level.dimension().location().toString());
@@ -3266,6 +3365,29 @@ public final class ChestValuator {
         return false;
     }
 
+    /**
+     * Compatibility escape hatch for a chest whose persisted card ids no longer
+     * resolve after an update. Banked loot survives {@link #unlockAndClear}; only
+     * the unreadable decision layer is retired so the physical chest cannot remain
+     * permanently cancelled by {@link #onRightClick}.
+     */
+    private static void recoverBrokenContainerHand(ServerPlayer player, BlockPos pos,
+                                                   RandomizableContainerBlockEntity container) {
+        if (player == null || container == null || !(player.level() instanceof ServerLevel level)) return;
+        CompoundTag persistent = container.getPersistentData();
+        if (!isDecisionOwner(player, persistent)) return;
+        persistent.remove(TAG_BARGAIN_OFFERS);
+        persistent.remove(TAG_BARGAIN_SEED);
+        persistent.remove(TAG_BARGAIN_MODE);
+        persistent.remove(TAG_BARGAIN_REFRESHED);
+        persistent.remove(TAG_BARGAIN_CAP);
+        container.setChanged();
+        MinecraftServer server = player.getServer();
+        if (server != null) unlockAndClear(level, pos, container, server, level.dimension().location().toString());
+        WardHud.message(player, Component.literal("The old card hand has become unreadable. The banked chest remains yours.")
+                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC), false);
+    }
+
     private static void openBargainScreen(ServerPlayer player, BlockPos pos,
                                           RandomizableContainerBlockEntity container) {
         CompoundTag persistent = container.getPersistentData();
@@ -3275,7 +3397,10 @@ public final class ChestValuator {
             return;
         }
         int[] storedIds = persistent.getIntArray(TAG_BARGAIN_OFFERS);
-        if (storedIds.length == 0) return;
+        if (storedIds.length == 0) {
+            recoverBrokenContainerHand(player, pos, container);
+            return;
+        }
         List<Integer> ids = new ArrayList<>();
         List<Float> rewards = new ArrayList<>();
         for (int id : storedIds) {
@@ -3283,11 +3408,16 @@ public final class ChestValuator {
             if (b == null || ids.contains(id)) continue;
             WardHistory.discoverCard(player, b);
             ids.add(id);
-            float progCap = progressionLootCap(LockData.get(player.getServer()).totalBeaten(player.getUUID()));
+            float progCap = persistent.contains(TAG_BARGAIN_CAP)
+                    ? persistent.getFloat(TAG_BARGAIN_CAP)
+                    : progressionLootCap(LockData.get(player.getServer()).totalBeaten(player.getUUID()));
             rewards.add(Math.max(0f, Math.min(progCap, RewardBreakdown.clamp(persistent.getFloat(TAG_MULT) + b.rewardAdd()))
                     - persistent.getFloat(TAG_MULT)));
         }
-        if (ids.isEmpty()) return;
+        if (ids.isEmpty()) {
+            recoverBrokenContainerHand(player, pos, container);
+            return;
+        }
         int[] offerIds = new int[ids.size()];
         float[] rewardAdds = new float[ids.size()];
         int[] variants = new int[ids.size()];
@@ -3297,6 +3427,13 @@ public final class ChestValuator {
             rewardAdds[i] = rewards.get(i);
             ForbiddenBargain offeredCard = ForbiddenBargain.byId(offerIds[i]);
             variants[i] = CardEvolution.nextVariantLevel(cardData, player.getUUID(), offeredCard);
+        }
+        if (offerIds.length != storedIds.length) {
+            // Drop removed/duplicate ids from the authoritative container state,
+            // not only from the packet. Otherwise a forged stale client could
+            // still reference a card the current UI never displayed.
+            persistent.putIntArray(TAG_BARGAIN_OFFERS, offerIds);
+            container.setChanged();
         }
         int mode = persistent.getInt(TAG_BARGAIN_MODE);
         Wardbound.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
@@ -3389,6 +3526,7 @@ public final class ChestValuator {
         persistent.remove(TAG_BARGAIN_SEED);
         persistent.remove(TAG_BARGAIN_MODE);
         persistent.remove(TAG_BARGAIN_REFRESHED);
+        persistent.remove(TAG_BARGAIN_CAP);
         container.setChanged();
         MinecraftServer server = player.getServer();
         if (server != null) {
@@ -3448,13 +3586,16 @@ public final class ChestValuator {
         // Absolute additions only. Even an already-rich chest gets the same
         // small nudge instead of compounding another percentage on top.
         float rewardAdd = bargain.rewardAdd();
-        float banked = Math.min(progressionLootCap(LockData.get(server).totalBeaten(player.getUUID())),
-                RewardBreakdown.clamp(current + rewardAdd));
+        float wardCap = persistent.contains(TAG_BARGAIN_CAP)
+                ? persistent.getFloat(TAG_BARGAIN_CAP)
+                : progressionLootCap(LockData.get(server).totalBeaten(player.getUUID()));
+        float banked = Math.min(wardCap, RewardBreakdown.clamp(current + rewardAdd));
         persistent.putFloat(TAG_MULT, banked);
         persistent.remove(TAG_BARGAIN_OFFERS);
         persistent.remove(TAG_BARGAIN_SEED);
         persistent.remove(TAG_BARGAIN_MODE);
         persistent.remove(TAG_BARGAIN_REFRESHED);
+        persistent.remove(TAG_BARGAIN_CAP);
         container.setChanged();
 
         LockData data = LockData.get(server);
@@ -3878,7 +4019,6 @@ public final class ChestValuator {
         // Possession belongs to the lock that was just beaten, not every later
         // greed re-seal of the same physical chest.
         persistent.remove(TAG_POSSESSED);
-        persistent.remove(TAG_MERCY);
         persistent.putBoolean(TAG_LOCKED, true);
         persistent.remove(TAG_MULT);
         persistent.remove(TAG_WHO);
@@ -4077,26 +4217,46 @@ public final class ChestValuator {
                 "Some seals have started carrying conditions of their own.", ChatFormatting.GRAY);
         milestone(player, before, after, WardConfig.fieldCardAfterBeaten,
                 "Something has begun leaving sealed cards among ordinary deaths.", ChatFormatting.DARK_PURPLE);
+        milestone(player, before, after, WardConfig.watcherAfter,
+                "One maker's handwriting has begun finding you more often than coincidence should allow.", ChatFormatting.DARK_AQUA);
         milestone(player, before, after, WardConfig.chainAfterBeaten,
                 "Some broken seals now point toward another made by the same hand.", ChatFormatting.DARK_AQUA);
         milestone(player, before, after, WardConfig.masterCardsAfterBeaten,
                 "Some hands now know enough about you to write a law personally.", ChatFormatting.YELLOW);
+        milestone(player, before, after, WardConfig.contractCardsAfterBeaten,
+                "The table has begun writing obligations that remain after the chest is closed.", ChatFormatting.GRAY);
         milestone(player, before, after, WardConfig.possessedAfterBeaten,
                 "Some seals will move before you touch them now.", ChatFormatting.DARK_PURPLE);
         milestone(player, before, after, WardConfig.curseCardsAfterBeaten,
                 "The card table has learned how to close around a choice.", ChatFormatting.DARK_RED);
+        milestone(player, before, after, WardConfig.emberAfterBeaten,
+                "Some Nether spoils can now carry a slower, older ember.", ChatFormatting.GOLD);
+        milestone(player, before, after, WardMeasureSystem.UNLOCK_AFTER,
+                "The three hands can now measure your history, not only the ward in front of you.", ChatFormatting.DARK_AQUA);
+        milestone(player, before, after, WardConfig.bonusFreshRollAfterBeaten,
+                "Longer practice has begun opening an occasional extra place at the table.", ChatFormatting.AQUA);
+        milestone(player, before, after, WardConfig.ritualCardsAfterBeaten,
+                "Some obligations now demand a ritual instead of a single act.", ChatFormatting.DARK_PURPLE);
         milestone(player, before, after, WardConfig.unsignedAfterBeaten,
                 "Not every seal you meet from here will carry a maker's name.", ChatFormatting.DARK_PURPLE);
         milestone(player, before, after, WardConfig.mutationTier1AfterBeaten,
-                "Old wards can now keep their first physical mutations.", ChatFormatting.GRAY);
+                "Old wards can now keep their first physical mutations; practiced disciplines may also surface expert and corrupted forms.", ChatFormatting.GRAY);
         milestone(player, before, after, WardConfig.epicCardsAfterBeaten,
                 "The table has begun admitting laws that reach beyond the next ward.", ChatFormatting.GOLD);
+        milestone(player, before, after, WardConfig.deceptionUnlockAfter,
+                "Some mastered minigames can now lie about the rules they appear to present.", ChatFormatting.DARK_PURPLE);
+        milestone(player, before, after, WardConfig.covenantCardsAfterBeaten,
+                "The table can now bind several acts beneath one covenant.", ChatFormatting.DARK_RED);
+        milestone(player, before, after, WardConfig.hybridUnlockAfter,
+                "Mastered ward mechanisms can now be spliced into hybrid rounds.", ChatFormatting.DARK_AQUA);
         milestone(player, before, after, WardConfig.mutationTier2AfterBeaten,
                 "A sufficiently scarred ward can now become something deeper.", ChatFormatting.DARK_PURPLE);
         milestone(player, before, after, WardConfig.uniqueCardsAfterBeaten,
                 "Some cards no longer appear to have a maker at all.", ChatFormatting.AQUA);
         milestone(player, before, after, WardConfig.eldritchAfterBeaten,
                 "The mechanisms have had enough examples to begin rewriting themselves.", ChatFormatting.DARK_PURPLE);
+        milestone(player, before, after, WardConfig.eyeAfterBeaten,
+                "Something observant can now answer from the End when the right relic is found.", ChatFormatting.DARK_AQUA);
         milestone(player, before, after, WardConfig.mutationTier3AfterBeaten,
                 "The oldest wards can now remember enough to become truly wrong.", ChatFormatting.DARK_RED);
         milestone(player, before, after, WardConfig.deathCardsAfterBeaten,
@@ -4377,6 +4537,26 @@ public final class ChestValuator {
         return openCardPreview(ctx, java.util.List.of(card), variant, "CARD ID // " + card.id);
     }
 
+    private static boolean debugShelfUnlocked(ForbiddenBargain card, int wards) {
+        if (card == null || wards < card.minResolved) return false;
+        // Anomalies are deliberately a parallel hidden progression. They are typed UNIQUE for
+        // presentation, but their 140/240/360/520/760/1050 shelves must not inherit the normal
+        // 600-ward Unique gate in the debug progression report.
+        if (AnomalyCardSystem.isAnomaly(card)) return wards >= card.minResolved;
+        if (wards < WardConfig.normalCardsAfterBeaten) return false;
+        return switch (card.kind) {
+            case MASTER -> wards >= WardConfig.masterCardsAfterBeaten;
+            case CONTRACT -> wards >= WardConfig.contractCardsAfterBeaten;
+            case RITUAL -> wards >= WardConfig.ritualCardsAfterBeaten;
+            case COVENANT -> wards >= WardConfig.covenantCardsAfterBeaten;
+            case CURSE -> wards >= WardConfig.curseCardsAfterBeaten;
+            case EPIC -> wards >= WardConfig.epicCardsAfterBeaten;
+            case UNIQUE -> wards >= WardConfig.uniqueCardsAfterBeaten;
+            case DEATH -> wards >= WardConfig.deathCardsAfterBeaten;
+            default -> true;
+        };
+    }
+
     private static int debugProgressionSummary(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx)
             throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
@@ -4386,7 +4566,7 @@ public final class ChestValuator {
         int maxEmergence = 0, unlocked = 0;
         for (ForbiddenBargain card : ForbiddenBargain.values()) {
             maxEmergence = Math.max(maxEmergence, card.minResolved);
-            if (wards >= card.minResolved) unlocked++;
+            if (debugShelfUnlocked(card, wards)) unlocked++;
         }
         ctx.getSource().sendSuccess(() -> Component.literal("WARDBOUND PROGRESSION // DEBUG VIEW").withStyle(ChatFormatting.GOLD), false);
         int finalMaxEmergence = maxEmergence, finalUnlocked = unlocked;
@@ -4437,11 +4617,11 @@ public final class ChestValuator {
         int wards, opened, deathPity, objectives, chapter, relation, audiences, accepted, chain;
         switch (preset) {
             case "fresh" -> { wards = 0; opened = 0; deathPity = 0; objectives = 0; chapter = 0; relation = 0; audiences = 0; accepted = 0; chain = 0; }
-            case "early" -> { wards = 120; opened = 7; deathPity = 0; objectives = 4; chapter = 2; relation = 5; audiences = 6; accepted = 4; chain = 1; }
-            case "mid" -> { wards = 450; opened = 22; deathPity = 0; objectives = 12; chapter = 4; relation = 12; audiences = 14; accepted = 11; chain = 2; }
-            case "late" -> { wards = 900; opened = 48; deathPity = 24; objectives = 28; chapter = 6; relation = 18; audiences = 28; accepted = 22; chain = 4; }
-            case "endgame" -> { wards = 1500; opened = 80; deathPity = CardBalance.DEATH_PITY_GUARANTEE; objectives = 48; chapter = 7; relation = 20; audiences = 44; accepted = 36; chain = 5; }
-            case "max", "cosmic" -> { wards = 2200; opened = 110; deathPity = CardBalance.DEATH_PITY_GUARANTEE; objectives = 64; chapter = 7; relation = 20; audiences = 60; accepted = 48; chain = 5; }
+            case "early" -> { wards = 120; opened = 15; deathPity = 0; objectives = 4; chapter = 2; relation = 5; audiences = 4; accepted = 2; chain = 0; }
+            case "mid" -> { wards = 450; opened = 45; deathPity = 0; objectives = 12; chapter = 4; relation = 12; audiences = 12; accepted = 8; chain = 2; }
+            case "late" -> { wards = 900; opened = 60; deathPity = 24; objectives = 28; chapter = 6; relation = 18; audiences = 20; accepted = 16; chain = 4; }
+            case "endgame" -> { wards = 1500; opened = 90; deathPity = CardBalance.DEATH_PITY_GUARANTEE; objectives = 48; chapter = 7; relation = 20; audiences = 30; accepted = 22; chain = 5; }
+            case "max", "cosmic" -> { wards = 2200; opened = 120; deathPity = CardBalance.DEATH_PITY_GUARANTEE; objectives = 64; chapter = 7; relation = 20; audiences = 40; accepted = 30; chain = 5; }
             default -> {
                 ctx.getSource().sendFailure(Component.literal("Preset must be fresh, early, mid, late, endgame, cosmic or max."));
                 return 0;
@@ -4644,6 +4824,7 @@ public final class ChestValuator {
         int spiteAtFailure = failurePersistent.getInt(TAG_SPITE);
         boolean possessedAtFailure = failurePersistent.getBoolean(TAG_POSSESSED);
         boolean cthulhuAtFailure = failurePersistent.getBoolean(TAG_CTHULHU);
+        boolean ordinaryAtFailure = isOrdinaryAttempt(liveFailureState, failurePersistent);
         boolean splinterAtFailure = failurePersistent.getBoolean(TAG_SPLINTER_BRACE);
         boolean shardAtFailure = failurePersistent.getBoolean(TAG_SHARD_OVERCHARGE);
         boolean livingAtFailure = failurePersistent.getBoolean(TAG_LIVING);
@@ -4680,7 +4861,10 @@ public final class ChestValuator {
                         : directedGame(player, settings, lost, lastGame(container));
                 gameAtFailure = lostGame;
                 corruptionAtFailure = MinigameCorruption.variant(lostGame, lostState.getInt("corruptionVariant"));
-                boolean watchedFailure = Sealmakers.house(lost).equals(ld.watcher(player.getUUID()));
+                boolean watchingMarkProvenanceAllowed = !lostState.getBoolean("watchingMarkForced")
+                        || lostState.getBoolean("watchingMarkBound");
+                boolean watchedFailure = watchingMarkProvenanceAllowed
+                        && Sealmakers.house(lost).equals(ld.watcher(player.getUUID()));
                 contemptAtFailure = watchedFailure && "contempt".equals(ld.verdict(player.getUUID()));
                 rivalryAtFailure = !unsignedAtFailure && rivalryActive(ld, player.getUUID(), lost);
                 ld.recordGame(player.getUUID(), dimId, lostGame);
@@ -4700,11 +4884,13 @@ public final class ChestValuator {
                 0f, timeRemainingRatio, mistakes, corruptionAtFailure);
         MinigameSkillProfile.record(player, liveData, gameAtFailure, false, 0f, timeRemainingRatio,
                 mistakes, rapidMistakes, maxLives, hybridOutcome);
-        FifthWaveCardEffects.onWardResolved(player, liveData, gameAtFailure, false, RewardBreakdown.PerformanceGrade.NONE);
+        if (ordinaryAtFailure)
+            FifthWaveCardEffects.onWardResolved(player, liveData, gameAtFailure, false, RewardBreakdown.PerformanceGrade.NONE);
         if (hybridOutcome != 0)
             HybridRound.recordEncounter(player, liveData, HybridRound.byOrdinal(liveFailureState.getInt("hybridMode")));
         SavantMemory.onWardFailure(player, gameAtFailure);
-        WardMeasureSystem.recordFailure(player, liveData, liveFailureState);
+        if (ordinaryAtFailure)
+            WardMeasureSystem.recordFailure(player, liveData, liveFailureState);
         OccultChainEvents.onChestResolved(player, liveData, threatAtFailure, shardAtFailure, false);
         if (threatAtFailure >= ChestThreat.Tier.PROFANE.ordinal())
             PlayerImprint.add(player, liveData, PlayerImprint.Trace.MARKED, 1, "a profane seal recorded a failure");
@@ -4937,6 +5123,7 @@ public final class ChestValuator {
         persistent.remove(TAG_BARGAIN_SEED);
         persistent.remove(TAG_BARGAIN_MODE);
         persistent.remove(TAG_BARGAIN_REFRESHED);
+        persistent.remove(TAG_BARGAIN_CAP);
         persistent.remove(TAG_TEMPT);
         persistent.remove(TAG_ACTIVE_WHO);
         persistent.remove(TAG_ACTIVE_UNTIL);
@@ -4956,7 +5143,6 @@ public final class ChestValuator {
         persistent.remove(TAG_SHARD_OVERCHARGE);
         persistent.remove(TAG_AFFLICTION);
         persistent.remove(TAG_LIVING);
-        persistent.remove(TAG_MERCY);
         persistent.remove(TAG_SPITE);
         persistent.remove(TAG_SEALED_UNTIL);
         // TAG_MULT and TAG_WHO deliberately survive: the loot table has not rolled yet.
@@ -4968,6 +5154,44 @@ public final class ChestValuator {
     }
 
     // ------------------------------------------------------------------ events
+
+    /**
+     * A Sealed Card is consumed when its player-owned hand is successfully dealt.
+     * If login, death/respawn or a dimension transfer tears the client screen down,
+     * the hand must therefore be recoverable without spending a second physical card.
+     * The authoritative offer array already lives in death-persistent player NBT;
+     * these hooks merely re-present that existing decision.
+     */
+    private static void reopenPendingLooseHand(ServerPlayer player) {
+        if (player == null || player.getServer() == null) return;
+        CompoundTag pd = loosePlayerData(player);
+        if (!pd.contains(LOOSE_OFFERS, Tag.TAG_INT_ARRAY)) return;
+        int[] offers = pd.getIntArray(LOOSE_OFFERS);
+        if (offers.length == 0) {
+            clearLooseCard(player);
+            return;
+        }
+        // Queue behind the lifecycle event so the client connection/dimension has
+        // finished installing before the screen packet is delivered.
+        player.getServer().execute(() -> {
+            if (player.connection != null) sendLooseBargainScreen(player);
+        });
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) reopenPendingLooseHand(player);
+    }
+
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) reopenPendingLooseHand(player);
+    }
+
+    @SubscribeEvent
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) reopenPendingLooseHand(player);
+    }
 
     @SubscribeEvent
     public static void onChunkLoad(ChunkEvent.Load event) {
@@ -5328,6 +5552,7 @@ public final class ChestValuator {
         persistent.remove(TAG_BARGAIN_SEED);
         persistent.remove(TAG_BARGAIN_MODE);
         persistent.remove(TAG_BARGAIN_REFRESHED);
+        persistent.remove(TAG_BARGAIN_CAP);
         persistent.remove(TAG_TEMPT);
         persistent.remove(TAG_ACTIVE_WHO);
         persistent.remove(TAG_ACTIVE_UNTIL);
@@ -5345,7 +5570,6 @@ public final class ChestValuator {
         persistent.remove(TAG_DOUBLE_LOOT);
         persistent.remove(TAG_AFFLICTION);
         persistent.remove(TAG_LIVING);
-        persistent.remove(TAG_MERCY);
         persistent.remove(TAG_SPITE);
         persistent.remove(TAG_CHAIN_LINK);
         persistent.remove(TAG_SEALED_UNTIL);
@@ -5600,7 +5824,7 @@ public final class ChestValuator {
                         .then(Commands.literal("summary").executes(ctx -> debugProgressionSummary(ctx)))
                         .then(Commands.literal("preset")
                                 .then(Commands.argument("preset", StringArgumentType.word())
-                                        .suggests((c,b)->{b.suggest("fresh");b.suggest("early");b.suggest("mid");b.suggest("late");b.suggest("endgame");b.suggest("max");return b.buildFuture();})
+                                        .suggests((c,b)->{b.suggest("fresh");b.suggest("early");b.suggest("mid");b.suggest("late");b.suggest("endgame");b.suggest("cosmic");b.suggest("max");return b.buildFuture();})
                                         .executes(ctx -> debugProgressionPreset(ctx, StringArgumentType.getString(ctx, "preset")))))
                         .then(Commands.literal("wards")
                                 .then(Commands.argument("value", IntegerArgumentType.integer(0, 5000))

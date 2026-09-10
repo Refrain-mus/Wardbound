@@ -107,6 +107,8 @@ public class OpenMinigamePacket {
     public final int measureStage;
     /** Verdict clause id: 0 none, 1 mirror, 2 quicken, 3 bind. */
     public final int measureClause;
+    /** Server-authoritative global ward progression; gates client-authored expert variants. */
+    public final int resolvedWards;
 
     public OpenMinigamePacket(BlockPos pos, int value, int gameId, int lives, int maxLives,
                               long seed, int progress, float difficulty, float lootMultiplier,
@@ -125,7 +127,7 @@ public class OpenMinigamePacket {
                 eldritch, eldritchStage, eldritchTotal, possessed, rivalry, mutationLevel, affliction, living, mercy,
                 resumed, savedClockLeft, savedElapsedSeconds, savedMistakes, savedHurriedClock, spentApplied,
                 cardMinigameMask, masteryTier, corruptionVariant, examWeakGame, examStrongGame,
-                0, 0, false, 0, 0, false, 0f, 0, 0f, 0, 0);
+                0, 0, false, 0, 0, false, 0f, 0, 0f, 0, 0, Integer.MAX_VALUE);
     }
 
     public OpenMinigamePacket(BlockPos pos, int value, int gameId, int lives, int maxLives,
@@ -142,7 +144,7 @@ public class OpenMinigamePacket {
                               int cardMinigameMask, int masteryTier, int corruptionVariant, int examWeakGame, int examStrongGame,
                               int deceptionMode, int hybridMode, boolean hybridCompleted, int savedRapidMistakes, int savedHybridOutcome,
                               boolean savedHybridActive, float savedHybridTimer, int savedHybridStep, float savedHybridGauge,
-                              int measureStage, int measureClause) {
+                              int measureStage, int measureClause, int resolvedWards) {
         this.pos = pos;
         this.value = value;
         this.gameId = gameId;
@@ -194,6 +196,7 @@ public class OpenMinigamePacket {
         this.savedHybridGauge = Math.max(0f, Math.min(1.2f, savedHybridGauge));
         this.measureStage = Math.max(0, Math.min(3, measureStage));
         this.measureClause = Math.max(0, Math.min(3, measureClause));
+        this.resolvedWards = Math.max(0, resolvedWards);
     }
 
     public static void encode(OpenMinigamePacket msg, FriendlyByteBuf buf) {
@@ -248,6 +251,7 @@ public class OpenMinigamePacket {
         buf.writeFloat(msg.savedHybridGauge);
         buf.writeVarInt(msg.measureStage);
         buf.writeVarInt(msg.measureClause);
+        buf.writeVarInt(msg.resolvedWards);
     }
 
     public static OpenMinigamePacket decode(FriendlyByteBuf buf) {
@@ -301,6 +305,7 @@ public class OpenMinigamePacket {
                 buf.readFloat(),
                 buf.readVarInt(),
                 buf.readFloat(),
+                buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readVarInt());
     }

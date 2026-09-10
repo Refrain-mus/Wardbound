@@ -3,6 +3,7 @@ package dev.marrowseal.wardbound.boss;
 import dev.marrowseal.wardbound.LockData;
 import dev.marrowseal.wardbound.WardHistory;
 import dev.marrowseal.wardbound.WardHud;
+import dev.marrowseal.wardbound.WardConfig;
 import dev.marrowseal.wardbound.Wardbound;
 import dev.marrowseal.wardbound.item.WardItems;
 import net.minecraft.network.chat.Component;
@@ -32,7 +33,9 @@ public final class MaestroProgression {
 
     public static boolean eligible(ServerPlayer player) {
         if (player == null || player.getServer() == null) return false;
-        return threeMastersDefeated(LockData.get(player.getServer()), player.getUUID());
+        LockData data = LockData.get(player.getServer());
+        return threeMastersDefeated(data, player.getUUID())
+                && data.totalBeaten(player.getUUID()) >= WardConfig.deathCardsAfterBeaten;
     }
 
     public static String status(ServerPlayer player) {
@@ -43,6 +46,7 @@ public final class MaestroProgression {
                 + d.uniqueInt(id, "gambler_defeated") + "/1 Gambler · "
                 + d.uniqueInt(id, "curator_defeated") + "/1 Curator · "
                 + d.uniqueInt(id, "notary_defeated") + "/1 Notary · "
+                + "wards " + d.totalBeaten(id) + "/" + WardConfig.deathCardsAfterBeaten + " · "
                 + "Maestro " + d.uniqueInt(id, "maestro_defeated") + "/1";
     }
 
@@ -50,6 +54,7 @@ public final class MaestroProgression {
         if (player == null || player.getServer() == null || !eligible(player)) return;
         LockData d = LockData.get(player.getServer());
         if (d.uniqueInt(player.getUUID(), "maestro_defeated") > 0) return;
+        if (d.uniqueInt(player.getUUID(), "maestro_score_revealed") > 0) return;
         if (contains(player, WardItems.SCORE_BEYOND_THE_MARGIN.get())) return;
 
         ItemStack score = new ItemStack(WardItems.SCORE_BEYOND_THE_MARGIN.get());

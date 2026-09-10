@@ -34,16 +34,23 @@ public final class MasterRewardDelivery {
             List<Reward> rewards = rewards(kind);
             if (!canFitAll(player, rewards)) continue;
 
+            // Keep delivery atomic. canFitAll should make insertion deterministic, but another mod
+            // can still mutate inventory during an add hook. Without rollback, a partial delivery
+            // would leave the pending flag set and duplicate the already-added stacks next tick.
+            List<ItemStack> before = new ArrayList<>(player.getInventory().items.size());
+            for (ItemStack slot : player.getInventory().items) before.add(slot.copy());
             boolean ok = true;
             for (Reward reward : rewards) {
                 ItemStack stack = reward.stack();
                 if (stack.isEmpty() || (reward.uniqueRelic() && contains(player, stack))) continue;
                 if (!player.getInventory().add(stack.copy())) { ok = false; break; }
             }
-            // canFitAll simulates the same main-inventory insertion, so this should only fail if
-            // another mod mutates the inventory in the middle of this tick. Keep the pending flag
-            // in that rare case instead of silently consuming the reward contract.
-            if (!ok) continue;
+            if (!ok) {
+                for (int i = 0; i < before.size(); i++) player.getInventory().items.set(i, before.get(i));
+                player.getInventory().setChanged();
+                player.containerMenu.broadcastChanges();
+                continue;
+            }
 
             int xp = xp(kind); if (xp > 0) player.giveExperiencePoints(xp);
             player.getInventory().setChanged();

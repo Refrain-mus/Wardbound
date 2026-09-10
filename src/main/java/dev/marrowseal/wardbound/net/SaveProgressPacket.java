@@ -2,19 +2,20 @@ package dev.marrowseal.wardbound.net;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
-import dev.marrowseal.wardbound.ChestValuator;
 
 import java.util.function.Supplier;
 
-/** Client left the screen mid game; keep the complete attempt state. */
+/**
+ * Legacy protocol payload retained only to keep the network discriminator layout
+ * stable. Live ward screens are fail-on-close and never resume from client state.
+ */
 public class SaveProgressPacket {
 
     public final BlockPos pos;
     public final int lives;
     public final int progress;
-    /** The lock this progress belongs to. A save for a stale lock is discarded. */
+    /** Legacy seed field retained for wire compatibility; ignored by the current server. */
     public final long seed;
     public final float clockLeft;
     public final float elapsedSeconds;
@@ -22,11 +23,11 @@ public class SaveProgressPacket {
     public final float hurriedClock;
     /** v38: rapid consecutive mistakes accumulated for the real skill profile. */
     public final int rapidMistakes;
-    /** v38: prevents the one-shot hybrid micro-round from replaying after ESC/reopen. */
+    /** Legacy wire field retained so the old packet discriminator remains decodable. */
     public final boolean hybridCompleted;
     /** 0 none, 1 cleared, 2 failed. */
     public final int hybridOutcome;
-    /** True when ESC/reopen occurred inside the borrowed micro-round. */
+    /** Legacy wire field; live ward screens no longer resume. */
     public final boolean hybridActive;
     public final float hybridTimer;
     public final int hybridStep;

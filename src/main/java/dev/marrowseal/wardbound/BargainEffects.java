@@ -185,13 +185,51 @@ public final class BargainEffects {
         syncHeartDebt(player, data.heartDebt(id) + data.deathHeartDebt(id));
     }
 
+    /**
+     * Runtime timers used to live only in ServerPlayer persistent NBT. That compound survives relog
+     * but is not copied automatically to the respawn clone, so dying could reset private-law
+     * cooldowns or the once-per-day hidden-page guard. Migrate old keys lazily, then keep the
+     * authoritative value in LockData with the rest of the card state.
+     */
+    private static long runtimeLong(ServerPlayer player, LockData data, UUID id, String legacyKey) {
+        String key = "runtime_" + legacyKey;
+        long value = data.uniqueLong(id, key);
+        if (value == Long.MIN_VALUE && player.getPersistentData().contains(legacyKey)) {
+            value = player.getPersistentData().getLong(legacyKey);
+            data.setUniqueLong(id, key, value);
+            player.getPersistentData().remove(legacyKey);
+        }
+        return value;
+    }
+
+    private static void setRuntimeLong(ServerPlayer player, LockData data, UUID id, String legacyKey, long value) {
+        player.getPersistentData().remove(legacyKey);
+        data.setUniqueLong(id, "runtime_" + legacyKey, value);
+    }
+
+    private static int runtimeInt(ServerPlayer player, LockData data, UUID id, String legacyKey) {
+        String key = "runtime_" + legacyKey;
+        int value = data.uniqueInt(id, key);
+        if (value == 0 && player.getPersistentData().contains(legacyKey)) {
+            value = player.getPersistentData().getInt(legacyKey);
+            data.setUniqueInt(id, key, value);
+            player.getPersistentData().remove(legacyKey);
+        }
+        return value;
+    }
+
+    private static void setRuntimeInt(ServerPlayer player, LockData data, UUID id, String legacyKey, int value) {
+        player.getPersistentData().remove(legacyKey);
+        data.setUniqueInt(id, "runtime_" + legacyKey, value);
+    }
+
     /** Crooked master's private law: sprinting occasionally folds a safe step forward. Dealer favor changes reach and recovery. */
     private static void tickCrookedStep(ServerPlayer player, LockData data, UUID id) {
         if (!(player.level() instanceof ServerLevel level)) return;
         if (!player.isSprinting() || !player.onGround() || player.isPassenger()) return;
         if (player.getDeltaMovement().horizontalDistanceSqr() < 0.015D) return;
         long now = level.getGameTime();
-        long next = player.getPersistentData().getLong(CROOKED_NEXT);
+        long next = runtimeLong(player, data, id, CROOKED_NEXT);
         if (now < next) return;
 
         int relation = CardMaster.PALE_GAMBLER.relation(data, id);
@@ -207,7 +245,7 @@ public final class BargainEffects {
         boolean floor = level.getBlockState(below).blocksMotion();
         boolean clear = level.noCollision(player, player.getBoundingBox().move(dx, 0.0D, dz));
         if (!floor || !clear) {
-            player.getPersistentData().putLong(CROOKED_NEXT, now + 60L);
+            setRuntimeLong(player, data, id, CROOKED_NEXT, now + 60L);
             return;
         }
 
@@ -218,14 +256,14 @@ public final class BargainEffects {
                 relation >= 8 ? 18 : 12, 0.14, 0.24, 0.14, 0.015);
         level.playSound(null, player.blockPosition(), SoundEvents.ENDERMAN_TELEPORT,
                 SoundSource.PLAYERS, 0.42f, relation >= 14 ? 1.42f : 1.28f);
-        player.getPersistentData().putLong(CROOKED_NEXT, now + cooldown);
+        setRuntimeLong(player, data, id, CROOKED_NEXT, now + cooldown);
     }
 
     /** Veiled master's private law: still crouching opens a short personal veil. Favor makes the veil quicker and longer-lived. */
     private static void tickVeiledPassage(ServerPlayer player, LockData data, UUID id) {
         if (!(player.level() instanceof ServerLevel level)) return;
         long now = level.getGameTime();
-        if (now < player.getPersistentData().getLong(VEILED_NEXT)) return;
+        if (now < runtimeLong(player, data, id, VEILED_NEXT)) return;
 
         int relation = CardMaster.ASHEN_CURATOR.relation(data, id);
         int stillNeeded = relation >= 14 ? 26 : relation >= 8 ? 32 : relation <= -3 ? 52 : 40;
@@ -234,12 +272,12 @@ public final class BargainEffects {
 
         boolean still = player.isShiftKeyDown() && player.onGround()
                 && player.getDeltaMovement().horizontalDistanceSqr() < 0.0012D;
-        int ticks = still ? player.getPersistentData().getInt(VEILED_STILL) + 1 : 0;
-        player.getPersistentData().putInt(VEILED_STILL, ticks);
+        int ticks = still ? runtimeInt(player, data, id, VEILED_STILL) + 1 : 0;
+        setRuntimeInt(player, data, id, VEILED_STILL, ticks);
         if (ticks < stillNeeded) return;
 
-        player.getPersistentData().putInt(VEILED_STILL, 0);
-        player.getPersistentData().putLong(VEILED_NEXT, now + cooldown);
+        setRuntimeInt(player, data, id, VEILED_STILL, 0);
+        setRuntimeLong(player, data, id, VEILED_NEXT, now + cooldown);
         player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, duration, 0, false, false, true));
         if (relation >= 14) player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 4, 0, true, false, true));
         level.sendParticles(ParticleTypes.REVERSE_PORTAL, player.getX(), player.getY(0.5), player.getZ(),
@@ -256,9 +294,9 @@ public final class BargainEffects {
         long momentum = data.uniqueLong(id, "momentum_until");
         boolean borrowedMarch = momentum != Long.MIN_VALUE && momentum > now;
         if (borrowedMarch) CardConjunctions.discover(player, data, CardConjunctions.Conjunction.BORROWED_MARCH);
-        long next = player.getPersistentData().getLong(RED_MARCH_NEXT);
+        long next = runtimeLong(player, data, id, RED_MARCH_NEXT);
         if (now < next) return;
-        player.getPersistentData().putLong(RED_MARCH_NEXT, now + 20L * (borrowedMarch ? 12L : 8L));
+        setRuntimeLong(player, data, id, RED_MARCH_NEXT, now + 20L * (borrowedMarch ? 12L : 8L));
         player.hurt(level.damageSources().magic(), 1.0F);
         level.sendParticles(ParticleTypes.DAMAGE_INDICATOR, player.getX(), player.getY(0.55), player.getZ(),
                 4, 0.18, 0.22, 0.18, 0.01);
@@ -268,10 +306,11 @@ public final class BargainEffects {
         if (!WardHistory.hasLedger(player) || !(player.level() instanceof ServerLevel level)) return;
         long time = Math.floorMod(level.getDayTime(), 24000L);
         if (time < 18000L || time > 18120L) return;
-        if (player.getPersistentData().contains(HIDDEN_PAGE_DAY)
-                && player.getPersistentData().getLong(HIDDEN_PAGE_DAY) == day) return;
+        LockData data = LockData.get(player.getServer());
+        UUID id = player.getUUID();
+        if (runtimeLong(player, data, id, HIDDEN_PAGE_DAY) == day) return;
         if (player.getRandom().nextFloat() >= 0.08f) return;
-        player.getPersistentData().putLong(HIDDEN_PAGE_DAY, day);
+        setRuntimeLong(player, data, id, HIDDEN_PAGE_DAY, day);
         String[] pages = {
                 "A page you did not write now contains your name once, then crosses it out.",
                 "The margin records a door you have never opened: SEVEN STEPS BELOW.",
@@ -331,7 +370,7 @@ public final class BargainEffects {
         if (data.masterPact(id) != MasterSignature.EXACTING.ordinal()) return;
         if (player.getAttackStrengthScale(0.5f) < 0.95f) return;
         long now = level.getGameTime();
-        if (now < player.getPersistentData().getLong(EXACTING_NEXT)) return;
+        if (now < runtimeLong(player, data, id, EXACTING_NEXT)) return;
 
         int exactingRelation = CardMaster.MOURNING_NOTARY.relation(data, id);
         double fraction = exactingRelation >= 14 ? 0.70D : exactingRelation >= 8 ? 0.60D : exactingRelation <= -3 ? 0.40D : 0.50D;
@@ -344,7 +383,7 @@ public final class BargainEffects {
                 SoundSource.PLAYERS, 0.22f, 1.72f);
         long exactingCooldown = exactingRelation >= 14 ? 20L * 6L : exactingRelation >= 8 ? 20L * 7L
                 : exactingRelation <= -3 ? 20L * 10L : 20L * 8L;
-        player.getPersistentData().putLong(EXACTING_NEXT, now + exactingCooldown);
+        setRuntimeLong(player, data, id, EXACTING_NEXT, now + exactingCooldown);
     }
 
     /** Grave Interest: every fifth hostile kill at night pays the player back. */

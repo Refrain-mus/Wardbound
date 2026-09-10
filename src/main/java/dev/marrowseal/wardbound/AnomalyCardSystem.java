@@ -1,5 +1,7 @@
 package dev.marrowseal.wardbound;
 
+import dev.marrowseal.wardbound.boss.ImportantRelicItem;
+import dev.marrowseal.wardbound.nhalsul.NhalSulItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -68,8 +70,8 @@ public final class AnomalyCardSystem {
     public static float chance(LockData data, UUID id, boolean loose) {
         if (data == null || id == null) return 0f;
         int resolved = data.totalBeaten(id);
-        if (resolved < 35) return 0f;
-        float base = resolved < 120 ? 0.045f : resolved < 300 ? 0.060f : resolved < 600 ? 0.078f : 0.095f;
+        if (resolved < 140) return 0f;
+        float base = resolved < 360 ? 0.035f : resolved < 760 ? 0.050f : resolved < 1200 ? 0.068f : 0.090f;
         if (loose) base *= 0.65f;
         int lure = data.uniqueInt(id, "anomaly_lure");
         if (lure > 0) base += 0.16f;
@@ -186,7 +188,7 @@ public final class AnomalyCardSystem {
 
     public static String giveRandomRegisteredItem(ServerPlayer player, Random random, int draws, boolean allowSeveral) {
         List<Item> items = new ArrayList<>();
-        for (Item item : ForgeRegistries.ITEMS.getValues()) if (item != Items.AIR) items.add(item);
+        for (Item item : ForgeRegistries.ITEMS.getValues()) if (safeRegistryReward(item)) items.add(item);
         if (items.isEmpty()) return "The registry returned an empty line.";
         String last = "unknown item";
         for (int d=0; d<Math.max(1,draws); d++) {
@@ -212,13 +214,32 @@ public final class AnomalyCardSystem {
 
     private static String duplicateRandomInventoryItem(ServerPlayer player, Random random) {
         List<ItemStack> candidates = new ArrayList<>();
-        for (ItemStack stack : player.getInventory().items) if (!stack.isEmpty()) candidates.add(stack);
+        for (ItemStack stack : player.getInventory().items) if (!stack.isEmpty() && !protectedProgressionItem(stack.getItem())) candidates.add(stack);
         if (candidates.isEmpty()) return "The mirror found an empty inventory and had nothing to imitate.";
         ItemStack source = candidates.get(random.nextInt(candidates.size()));
         ItemStack copy = source.copy();
         copy.setCount(1);
         if (!player.getInventory().add(copy)) player.drop(copy, false);
         return "The mirror copied one " + copy.getHoverName().getString() + ".";
+    }
+
+    private static boolean safeRegistryReward(Item item) {
+        if(item==null||item==Items.AIR||item instanceof SpawnEggItem||protectedProgressionItem(item))return false;
+        var id=ForgeRegistries.ITEMS.getKey(item);
+        if(id==null)return false;
+        String path=id.getPath();
+        // Operator/technical blocks are valid registry entries but are not legitimate survival rewards.
+        return !(path.equals("barrier")||path.equals("bedrock")||path.equals("debug_stick")||path.equals("knowledge_book")
+                ||path.equals("command_block")||path.equals("chain_command_block")||path.equals("repeating_command_block")
+                ||path.equals("structure_block")||path.equals("structure_void")||path.equals("jigsaw")||path.equals("light"));
+    }
+
+    private static boolean protectedProgressionItem(Item item) {
+        if(item==null)return false;
+        var id=ForgeRegistries.ITEMS.getKey(item);
+        // Never let a random/mirror anomaly manufacture Wardbound's own progression route.
+        if(id!=null&&Wardbound.MODID.equals(id.getNamespace()))return true;
+        return item instanceof ImportantRelicItem || item instanceof NhalSulItem;
     }
 
     private static String applyRandomCurse(ServerPlayer player, LockData data, Random random) {

@@ -356,7 +356,7 @@ public class WardConfigScreen extends Screen {
                         () -> WardConfig.bonusFreshRollAfterBeaten, s -> WardConfig.bonusFreshRollAfterBeaten = pInt(s, WardConfig.bonusFreshRollAfterBeaten)),
                 Row.ofBool("Progression loot caps", "large-modpack reward curve limits early multipliers",
                         () -> WardConfig.progressionLootCapsEnabled, v -> WardConfig.progressionLootCapsEnabled = v),
-                Row.ofInt("Normal cards after", "ward wins before ordinary post-chest card hands can appear",
+                Row.ofInt("Normal cards after", "resolved wards before ordinary post-ward card hands can appear",
                         () -> WardConfig.normalCardsAfterBeaten, s -> WardConfig.normalCardsAfterBeaten = pInt(s, WardConfig.normalCardsAfterBeaten)),
                 Row.ofInt("Field cards after", "ward wins before hostile mobs can drop sealed cards",
                         () -> WardConfig.fieldCardAfterBeaten, s -> WardConfig.fieldCardAfterBeaten = pInt(s, WardConfig.fieldCardAfterBeaten)),

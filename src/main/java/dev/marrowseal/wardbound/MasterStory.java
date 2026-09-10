@@ -183,13 +183,12 @@ public final class MasterStory {
 
     public record Interference(CardMaster source, ForbiddenBargain.Kind kind, int heat) {}
 
-    public static Interference consumeInterference(LockData data, UUID id, CardMaster dealer) {
+    /** Read the queued rivalry clause without mutating persistent progression. */
+    public static Interference peekInterference(LockData data, UUID id, CardMaster dealer) {
+        if (data == null || id == null || dealer == null) return null;
         int source = data.uniqueInt(id, "dealer_interference_" + dealer.id);
         if (source <= 0 || source > CardMaster.values().length) return null;
-        data.setUniqueInt(id, "dealer_interference_" + dealer.id, 0);
-        data.setUniqueInt(id, "dealer_interference_consumed", data.uniqueInt(id, "dealer_interference_consumed") + 1);
         int heat = Math.max(0, Math.min(12, data.uniqueInt(id, "dealer_rivalry_heat")));
-        data.setUniqueInt(id, "dealer_rivalry_heat", Math.max(0, heat - 1));
         CardMaster rival = CardMaster.values()[source - 1];
         ForbiddenBargain.Kind kind = switch (rival) {
             case ASHEN_CURATOR -> ForbiddenBargain.Kind.SCAR;
@@ -197,6 +196,16 @@ public final class MasterStory {
             case PALE_GAMBLER -> ForbiddenBargain.Kind.WAGER;
         };
         return new Interference(rival, kind, heat);
+    }
+
+    /** Consume one queued rivalry clause after a real hand has been committed. */
+    public static Interference consumeInterference(LockData data, UUID id, CardMaster dealer) {
+        Interference out = peekInterference(data, id, dealer);
+        if (out == null) return null;
+        data.setUniqueInt(id, "dealer_interference_" + dealer.id, 0);
+        data.setUniqueInt(id, "dealer_interference_consumed", data.uniqueInt(id, "dealer_interference_consumed") + 1);
+        data.setUniqueInt(id, "dealer_rivalry_heat", Math.max(0, out.heat() - 1));
+        return out;
     }
 
     public static String rivalrySummary(LockData data, UUID id) {

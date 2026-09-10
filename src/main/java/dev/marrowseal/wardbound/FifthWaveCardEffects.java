@@ -489,7 +489,7 @@ public final class FifthWaveCardEffects {
             case BOUND_TESTIMONY -> "ward charges " + data.uniqueInt(id, "fifth_bound_testimony_charges") + "/2";
             case DOUBLE_MARGIN -> "ward charges " + data.uniqueInt(id, "fifth_double_margin_charges") + "/2";
             case THREE_CLEAN_LINES -> "clean line " + data.uniqueInt(id, "fifth_clean_streak") + "/3 · mercy " + data.uniqueInt(id, "fifth_clean_mercy") + "/2";
-            case SECOND_ATTEMPT -> data.uniqueInt(id, "fifth_second_attempt_pending") > 0 ? "next ward carries the second attempt" : "watching the next failure";
+            case SECOND_ATTEMPT -> data.uniqueInt(id, "fifth_second_attempt_pending") > 0 ? "next ordinary ward carries the second attempt" : "watching the next ordinary failure";
             case MOON_ARCHIVE -> "stored pages " + data.uniqueInt(id, "fifth_moon_pages") + "/5";
             case SIXTH_WITNESS -> "testimony " + data.uniqueInt(id, "fifth_sixth_witness_pages") + "/3";
             case GRAVE_RECEIPT -> "death receipts " + data.uniqueInt(id, "fifth_grave_receipts") + "/3";

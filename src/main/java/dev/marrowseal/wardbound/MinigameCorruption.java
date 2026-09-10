@@ -171,7 +171,7 @@ public final class MinigameCorruption {
         if (data == null || player == null || game == null || alreadySpecial || game == MinigameType.CTHULHUS_GAME)
             return NONE_VARIANT;
         int mastery = MinigameMastery.tier(data, player, game);
-        if (mastery < 2 || resolvedWards < 70) return NONE_VARIANT;
+        if (mastery < 2 || resolvedWards < WardConfig.mutationTier1AfterBeaten) return NONE_VARIANT;
         float chance = switch (mastery) {
             case 2 -> 0.055f;
             case 3 -> 0.085f;

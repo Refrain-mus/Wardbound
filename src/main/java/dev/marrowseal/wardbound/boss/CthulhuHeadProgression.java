@@ -3,6 +3,7 @@ package dev.marrowseal.wardbound.boss;
 import dev.marrowseal.wardbound.LockData;
 import dev.marrowseal.wardbound.WardHistory;
 import dev.marrowseal.wardbound.WardHud;
+import dev.marrowseal.wardbound.WardConfig;
 import dev.marrowseal.wardbound.Wardbound;
 import dev.marrowseal.wardbound.item.WardItems;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,6 +27,11 @@ public final class CthulhuHeadProgression {
             WardHud.send(p, "THE CANTICLE // You possess notes whose performer has not yet been concluded.", WardHud.Mood.WARD, 3000);
             return false;
         }
+        if (d.totalBeaten(p.getUUID()) < WardConfig.cthulhuAfterBeaten) {
+            WardHud.send(p, "THE CANTICLE // The scar is audible, but your record has not reached the depth that can hold it. "
+                    + d.totalBeaten(p.getUUID()) + "/" + WardConfig.cthulhuAfterBeaten + " wards.", WardHud.Mood.GLITCH, 3600);
+            return false;
+        }
         if (!p.level().dimension().equals(Level.END)) {
             WardHud.send(p, "THE CANTICLE // The notation refuses this sky. Carry it into the End.", WardHud.Mood.GLITCH, 3600);
             return false;
@@ -35,13 +41,19 @@ public final class CthulhuHeadProgression {
             return false;
         }
         if (!contains(p, WardItems.CANTICLE_FOR_THE_SLEEPER.get())) return false;
-        return CthulhuHeadArena.start(p, false);
+        if (!CthulhuHeadArena.start(p, false)) return false;
+        // Commit the unique key to the encounter. Keeping it in the inventory allowed the death
+        // drop to remain on the ground while RETURN_CANTICLE also issued a replacement.
+        removeAll(p, WardItems.CANTICLE_FOR_THE_SLEEPER.get());
+        d.setUniqueInt(p.getUUID(), RETURN_CANTICLE, 1);
+        return true;
     }
 
     public static void noteFailedAttempt(ServerPlayer p) {
         if (p == null || p.getServer() == null) return;
-        if (contains(p, WardItems.CANTICLE_FOR_THE_SLEEPER.get()))
-            LockData.get(p.getServer()).setUniqueInt(p.getUUID(), RETURN_CANTICLE, 1);
+        // The Canticle is committed at encounter start, so the pending return already represents
+        // ownership. Reassert it here for legacy/in-progress saves without depending on inventory.
+        LockData.get(p.getServer()).setUniqueInt(p.getUUID(), RETURN_CANTICLE, 1);
     }
 
     public static void queueVictory(ServerPlayer p) {

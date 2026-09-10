@@ -28,6 +28,7 @@ import java.util.List;
 public final class CthulhuIdolFieldFx {
 
     private static final List<Field> ACTIVE = new ArrayList<>();
+    private static Object levelIdentity;
     private static final Vector3f TEAL = new Vector3f(0.52f, 0.96f, 0.90f);
     private static final Vector3f BLUE = new Vector3f(0.28f, 0.73f, 0.92f);
     private static final Vector3f GOLD = new Vector3f(0.96f, 0.88f, 0.62f);
@@ -46,10 +47,11 @@ public final class CthulhuIdolFieldFx {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         ClientLevel level = Minecraft.getInstance().level;
-        if (level == null) {
+        if (level != levelIdentity) {
             ACTIVE.clear();
-            return;
+            levelIdentity = level;
         }
+        if (level == null) return;
         long time = level.getGameTime();
         Iterator<Field> it = ACTIVE.iterator();
         while (it.hasNext()) {

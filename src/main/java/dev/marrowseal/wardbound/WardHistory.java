@@ -515,6 +515,9 @@ public final class WardHistory {
                 "Echo never permanently doubles a family. A fresh Echo must be signed for every future amplified card.");
         if (beaten >= WardConfig.fieldCardAfterBeaten) ruleSection(out, "FIELD CARDS",
                 "Field cards can be carried out of the immediate post-ward moment. Sealed Cards are opened later, away from combat, and still obey the same card-family and progression rules.");
+        if (beaten >= WardConfig.watcherAfter) ruleSection(out, "THE WATCHER",
+                "After enough resolved wards, one maker's handwriting may begin recurring more often for you. This is a slow bias, never certainty, and it does not unlock cards or rarities ahead of their own shelves.",
+                "The bias grows across long-term play and remains capped. Relationship, rivalry and card legality are still evaluated normally after the maker is chosen.");
         if (beaten >= WardConfig.chainAfterBeaten) ruleSection(out, "SEAL CHAINS",
                 "A chain is a linked sequence of wards. Following the trail to its last seal can pay unique rewards such as the Sealwright's Key. Breaking a chain abandons its accumulated promise.");
         if (beaten >= WardConfig.masterCardsAfterBeaten) ruleSection(out, "MASTER HANDS & RELATION",
@@ -541,8 +544,14 @@ public final class WardHistory {
                 "Narrow-hand laws may still suppress the bonus. Fourth/Fifth-card laws and the progression bonus are separate systems, so positive and negative hand rules can counter one another.");
         if (beaten >= WardConfig.hybridUnlockAfter) ruleSection(out, "HYBRID ROUNDS",
                 "A hybrid round temporarily borrows a second discipline while the host mechanism is frozen. Clearing it grants its small bonus, then returns control to the original ward.");
-        if (beaten >= WardConfig.mutationTier1AfterBeaten) ruleSection(out, "CARD REVISIONS",
-                "Repeatable clauses can revise after repeated signatures. Revision level belongs to that specific card; it is not the same thing as a one-shot Echo multiplier.");
+        if (beaten >= WardConfig.mutationTier1AfterBeaten) {
+            ruleSection(out, "CARD REVISIONS",
+                    "Repeatable clauses can revise after repeated signatures. Revision level belongs to that specific card; it is not the same thing as a one-shot Echo multiplier.");
+            ruleSection(out, "EXPERT & CORRUPTED MINIGAMES",
+                    "From this progression shelf, a sufficiently practiced ordinary discipline can expose expert presentation rules. High-value chests alone cannot unlock expert play early.",
+                    "Corrupted forms additionally require discipline mastery. They are authored variants of the same minigame, not random stat inflation; witnessed forms are recorded in the Ledger.",
+                    "Possessed and other explicit narrative-hard wards may bypass ordinary onboarding protection, but their own ward-type progression gates still apply.");
+        }
         if (beaten >= WardConfig.epicCardsAfterBeaten) ruleSection(out, "EPIC LAWS",
                 "Epic cards are rarer and can carry stronger persistent rules. Their Echo is still one-use and is consumed only by the next signed Epic card.");
         if (beaten >= WardConfig.covenantCardsAfterBeaten) ruleSection(out, "COVENANTS",
@@ -596,7 +605,7 @@ public final class WardHistory {
 
     private static int nextRuleUnlock(int beaten) {
         int[] thresholds = { WardConfig.normalCardsAfterBeaten, ForbiddenBargain.THE_RED_PEN.minResolved, ForbiddenBargain.DEBT_ECHO.minResolved,
-                WardConfig.fieldCardAfterBeaten, WardConfig.chainAfterBeaten,
+                WardConfig.fieldCardAfterBeaten, WardConfig.watcherAfter, WardConfig.chainAfterBeaten,
                 WardConfig.masterCardsAfterBeaten, WardConfig.contractCardsAfterBeaten, WardConfig.curseCardsAfterBeaten,
                 WardMeasureSystem.UNLOCK_AFTER, WardConfig.deceptionUnlockAfter, WardConfig.ritualCardsAfterBeaten, WardConfig.bonusFreshRollAfterBeaten,
                 WardConfig.hybridUnlockAfter, WardConfig.mutationTier1AfterBeaten, WardConfig.epicCardsAfterBeaten,
@@ -605,6 +614,41 @@ public final class WardHistory {
         int next = Integer.MAX_VALUE;
         for (int threshold : thresholds) if (threshold > beaten && threshold < next) next = threshold;
         return next == Integer.MAX_VALUE ? beaten : next;
+    }
+
+    private static String nextProgressionUnlockText(int beaten) {
+        record Unlock(int at, String label) {}
+        Unlock[] unlocks = {
+                new Unlock(WardConfig.normalCardsAfterBeaten, "Card table"),
+                new Unlock(WardConfig.afflictionAfterBeaten, "Afflictions"),
+                new Unlock(WardConfig.fieldCardAfterBeaten, "Field cards"),
+                new Unlock(WardConfig.watcherAfter, "Watcher attention"),
+                new Unlock(WardConfig.chainAfterBeaten, "Seal chains"),
+                new Unlock(WardConfig.masterCardsAfterBeaten, "Master cards"),
+                new Unlock(WardConfig.contractCardsAfterBeaten, "Contract hands"),
+                new Unlock(WardConfig.possessedAfterBeaten, "Possessed wards"),
+                new Unlock(WardConfig.curseCardsAfterBeaten, "Curse hands"),
+                new Unlock(WardConfig.emberAfterBeaten, "Nether ember eligibility"),
+                new Unlock(WardMeasureSystem.UNLOCK_AFTER, "House Measures & Cuts"),
+                new Unlock(WardConfig.bonusFreshRollAfterBeaten, "Bonus offer cadence"),
+                new Unlock(WardConfig.ritualCardsAfterBeaten, "Ritual hands"),
+                new Unlock(WardConfig.mutationTier1AfterBeaten, "Revision I / expert & corrupted minigames"),
+                new Unlock(WardConfig.unsignedAfterBeaten, "Unsigned seals"),
+                new Unlock(WardConfig.epicCardsAfterBeaten, "Epic cards"),
+                new Unlock(WardConfig.deceptionUnlockAfter, "Minigame deception"),
+                new Unlock(WardConfig.covenantCardsAfterBeaten, "Covenant hands"),
+                new Unlock(WardConfig.hybridUnlockAfter, "Hybrid minigame rounds"),
+                new Unlock(WardConfig.mutationTier2AfterBeaten, "Mutation / Revision II"),
+                new Unlock(WardConfig.uniqueCardsAfterBeaten, "Unique laws"),
+                new Unlock(WardConfig.eldritchAfterBeaten, "Eldritch chains"),
+                new Unlock(WardConfig.eyeAfterBeaten, "Savant eligibility"),
+                new Unlock(WardConfig.mutationTier3AfterBeaten, "Mutation / Palimpsest tier"),
+                new Unlock(WardConfig.deathCardsAfterBeaten, "Death hands / Maestro depth"),
+                new Unlock(WardConfig.cthulhuAfterBeaten, "Cthulhu ward and Head depth")
+        };
+        Unlock best = null;
+        for (Unlock u : unlocks) if (u.at() > beaten && (best == null || u.at() < best.at())) best = u;
+        return best == null ? "All current progression shelves unlocked" : best.label() + " at " + best.at();
     }
 
     /** Live status schematic payload. Each row is CATEGORY|LABEL|VALUE|DETAIL. */
@@ -637,30 +681,7 @@ public final class WardHistory {
         addEffectSourceStats(out, player, data, id);
         out.add(stat("WARD", "Standing", data.totalBeaten(id) + " seals broken", "Director: " + band + (samples.length > 0 ? " · avg " + avg : "")));
         int beaten = data.totalBeaten(id);
-        String nextUnlock;
-        if (beaten < WardConfig.normalCardsAfterBeaten) nextUnlock = "Card table at " + WardConfig.normalCardsAfterBeaten;
-        else if (beaten < WardConfig.afflictionAfterBeaten) nextUnlock = "Afflictions at " + WardConfig.afflictionAfterBeaten;
-        else if (beaten < WardConfig.fieldCardAfterBeaten) nextUnlock = "Field cards at " + WardConfig.fieldCardAfterBeaten;
-        else if (beaten < WardConfig.chainAfterBeaten) nextUnlock = "Seal chains at " + WardConfig.chainAfterBeaten;
-        else if (beaten < WardConfig.masterCardsAfterBeaten) nextUnlock = "Master cards at " + WardConfig.masterCardsAfterBeaten;
-        else if (beaten < WardConfig.contractCardsAfterBeaten) nextUnlock = "Contract hands at " + WardConfig.contractCardsAfterBeaten;
-        else if (beaten < WardConfig.possessedAfterBeaten) nextUnlock = "Possessed wards at " + WardConfig.possessedAfterBeaten;
-        else if (beaten < WardConfig.curseCardsAfterBeaten) nextUnlock = "Curse hands at " + WardConfig.curseCardsAfterBeaten;
-        else if (beaten < WardMeasureSystem.UNLOCK_AFTER) nextUnlock = "House Measures & Cuts at " + WardMeasureSystem.UNLOCK_AFTER;
-        else if (beaten < WardConfig.emberAfterBeaten) nextUnlock = "Nether ember eligibility at " + WardConfig.emberAfterBeaten;
-        else if (beaten < WardConfig.unsignedAfterBeaten) nextUnlock = "Unsigned seals at " + WardConfig.unsignedAfterBeaten;
-        else if (beaten < WardConfig.ritualCardsAfterBeaten) nextUnlock = "Ritual hands at " + WardConfig.ritualCardsAfterBeaten;
-        else if (beaten < WardConfig.mutationTier1AfterBeaten) nextUnlock = "Mutation I at " + WardConfig.mutationTier1AfterBeaten;
-        else if (beaten < WardConfig.epicCardsAfterBeaten) nextUnlock = "Epic cards at " + WardConfig.epicCardsAfterBeaten;
-        else if (beaten < WardConfig.covenantCardsAfterBeaten) nextUnlock = "Covenant hands at " + WardConfig.covenantCardsAfterBeaten;
-        else if (beaten < WardConfig.uniqueCardsAfterBeaten) nextUnlock = "Unique laws at " + WardConfig.uniqueCardsAfterBeaten;
-        else if (beaten < WardConfig.mutationTier2AfterBeaten) nextUnlock = "Mutation II at " + WardConfig.mutationTier2AfterBeaten;
-        else if (beaten < WardConfig.eldritchAfterBeaten) nextUnlock = "Eldritch chains at " + WardConfig.eldritchAfterBeaten;
-        else if (beaten < WardConfig.eyeAfterBeaten) nextUnlock = "Savant eligibility at " + WardConfig.eyeAfterBeaten;
-        else if (beaten < WardConfig.mutationTier3AfterBeaten) nextUnlock = "Mutation III at " + WardConfig.mutationTier3AfterBeaten;
-        else if (beaten < WardConfig.deathCardsAfterBeaten) nextUnlock = "Death hands at " + WardConfig.deathCardsAfterBeaten;
-        else if (beaten < WardConfig.cthulhuAfterBeaten) nextUnlock = "Cthulhu wards at " + WardConfig.cthulhuAfterBeaten;
-        else nextUnlock = "All special ward classes unlocked";
+        String nextUnlock = nextProgressionUnlockText(beaten);
         out.add(stat("WARD", "Progression", beaten + " resolved", nextUnlock + " · fresh-table bonuses at " + WardConfig.bonusFreshRollAfterBeaten));
         if (WardMeasureSystem.unlocked(data, id)) {
             int nextMeasure = WardMeasureSystem.nextStage(data, id);
@@ -692,7 +713,7 @@ public final class WardHistory {
         out.add(stat("CARDS", "Card Table",
                 beaten < WardConfig.normalCardsAfterBeaten ? "Locked" : String.format(java.util.Locale.ROOT, "%.2f%%", WardConfig.forbiddenBargainChance * dealScale * 100f),
                 beaten < WardConfig.normalCardsAfterBeaten
-                        ? "Ordinary post-chest card hands unlock after " + WardConfig.normalCardsAfterBeaten + " resolved wards."
+                        ? "Ordinary post-ward card hands unlock after " + WardConfig.normalCardsAfterBeaten + " resolved wards."
                         : ("Normal bargain chance ramps toward the configured %.0f%% by " + CardBalance.BARGAIN_RAMP_3 + " resolved wards.")
                                 .formatted(WardConfig.forbiddenBargainChance * 100f)));
         int completedObjectives = data.uniqueInt(id, "objectives_completed_total");
@@ -840,19 +861,19 @@ public final class WardHistory {
         return switch (card) {
             case BORROWED_BREATH -> data.hasBorrowedBreath(id) ? "ACTIVE · waiting for the next ordinary ward" : "SPENT";
             case IRON_DEBT -> data.hasIronDebt(id) ? "ACTIVE · waiting for the next lost ward" : "SPENT";
-            case WATCHING_MARK -> data.hasWatchingMark(id) ? "ACTIVE · waiting for the next signed ward" : "SPENT";
+            case WATCHING_MARK -> data.hasWatchingMark(id) ? "ACTIVE · waiting for the next ordinary signed ward" : "SPENT";
             case CRIMSON_BALANCE -> data.hasCrimsonBalance(id) ? "ACTIVE · Strength I + Weakness I" : "REMOVED";
-            case SEVERED_MEASURE -> data.loot25Charges(id) > 0 ? "ACTIVE · " + data.loot25Charges(id) + " +25% ward payment(s) remain" : "SPENT";
-            case LAST_CANDLE -> data.hasLastCandle(id) ? "ACTIVE · next ward begins at one life" : "SPENT";
+            case SEVERED_MEASURE -> data.loot25Charges(id) > 0 ? "ACTIVE · " + data.loot25Charges(id) + " +25% ordinary-ward payment(s) remain" : "SPENT";
+            case LAST_CANDLE -> data.hasLastCandle(id) ? "ACTIVE · next ordinary ward begins at one life" : "SPENT";
             case GLASS_NERVE -> data.hasGlassNerve(id) ? "ACTIVE · Speed I + Mining Fatigue I" : "REMOVED";
             case PALE_COVENANT -> data.hasPaleCovenant(id) ? "ACTIVE · Resistance I + Hunger I" : "REMOVED";
             case OPEN_VEIN -> data.hasOpenVein(id) ? "ACTIVE · Strength I; one heart remains forfeit" : "REMOVED";
-            case THIN_BLOOD -> data.hasThinBlood(id) ? "ACTIVE · Weakness I; " + data.loot15Charges(id) + " ward payment(s) remain" : "ENDED";
-            case LOADED_DICE -> countStatus(data.loadedDiceCharges(id), "ward charge(s)");
-            case MERCYS_DUE -> countStatus(data.mercysDueCharges(id), "ward charge(s)");
+            case THIN_BLOOD -> data.hasThinBlood(id) ? "ACTIVE · Weakness I; " + data.loot15Charges(id) + " ordinary-ward payment(s) remain" : "ENDED";
+            case LOADED_DICE -> countStatus(data.loadedDiceCharges(id), "ordinary-ward charge(s)");
+            case MERCYS_DUE -> countStatus(data.mercysDueCharges(id), "ordinary-ward charge(s)");
             case STILL_HEART -> data.hasStillHeart(id) ? "ACTIVE · Regeneration I + Slowness I" : "REMOVED";
             case BLOOD_TITHE -> data.hasBloodTithe(id) ? "ACTIVE · one heart debt; Strength I below half health" : "REMOVED";
-            case DIMINISHED_SHARE -> countStatus(data.curseLoot15Charges(id), "penalized ward(s)");
+            case DIMINISHED_SHARE -> countStatus(data.curseLoot15Charges(id), "penalized ordinary ward(s)");
             case FRAIL_HAND -> data.hasBrittlePilgrimage(id) ? "ACTIVE · fall damage is amplified" : "REMOVED";
             case ASHEN_TONGUE -> data.hasAshenTongue(id)
                     ? "Stage " + roman(data.ashenTongueStage(id, now)) + " · " + timerStatus(data.uniqueLong(id, "ashen_tongue_until"), now, "Weakness I")
@@ -1431,7 +1452,7 @@ public final class WardHistory {
         if (data.hasGlassNerve(id)) { out.add(stat("SCAR", "Glass Nerve", "ACTIVE", "Speed I + Mining Fatigue I.")); active++; }
         if (data.hasPaleCovenant(id)) { out.add(stat("SCAR", "Pale Covenant", "ACTIVE", "Resistance I + Hunger I.")); active++; }
         if (data.hasOpenVein(id)) { out.add(stat("SCAR", "The Open Vein", "ACTIVE", "Strength I · one bargain heart forfeit.")); active++; }
-        if (data.hasThinBlood(id)) { out.add(stat("SCAR", "Thin Blood", data.loot15Charges(id) + " ward payment(s)", "Weakness I remains until resolved.")); active++; }
+        if (data.hasThinBlood(id)) { out.add(stat("SCAR", "Thin Blood", data.loot15Charges(id) + " ordinary-ward payment(s)", "Weakness I remains until resolved.")); active++; }
         if (data.hasStillHeart(id)) { out.add(stat("SCAR", "The Still Heart", "ACTIVE", "Regeneration I + Slowness I.")); active++; }
         if (data.hasUnique(id, "bellglass_sight")) { out.add(stat("SCAR", "Bellglass Sight", "ACTIVE", CardBranches.activeDescription(data, id, ForbiddenBargain.BELLGLASS_SIGHT))); active++; }
         if (data.hasUnique(id, "thorn_ledger")) { out.add(stat("SCAR", "The Thorn Ledger", "ACTIVE", "Melee thorns · +20% incoming projectile damage.")); active++; }
@@ -1470,9 +1491,9 @@ public final class WardHistory {
         active += addActiveCharge(out, data.uniqueInt(id, "pilgrims_luck_blocks"), "Pilgrim's Luck", "WAGER", "mined block(s)");
         active += addActiveCharge(out, data.uniqueInt(id, "vein_drinker"), "Vein Drinker", "WAGER", "hostile kill(s)");
         active += addActiveCharge(out, data.uniqueInt(id, "ferryman_guard"), "The Ferryman's Ledger", "WAGER", "guarded hit(s)");
-        if (data.loadedDiceCharges(id) > 0) { { int v = CardEvolution.activeVariant(data, id, ForbiddenBargain.LOADED_DICE); int bonus = v >= 3 ? 28 : v > 0 ? 25 : 20; out.add(stat("WAGER", CardEvolution.variantTitle(ForbiddenBargain.LOADED_DICE, v), data.loadedDiceCharges(id) + " ward(s)", CardBranches.activeDescription(data, id, ForbiddenBargain.LOADED_DICE))); } active++; }
-        if (data.mercysDueCharges(id) > 0) { { int v = CardEvolution.activeVariant(data, id, ForbiddenBargain.MERCYS_DUE); int cost = v >= 3 ? 8 : v >= 2 ? 12 : v == 1 ? 10 : 15; out.add(stat("WAGER", CardEvolution.variantTitle(ForbiddenBargain.MERCYS_DUE, v), data.mercysDueCharges(id) + " ward(s)", CardBranches.activeDescription(data, id, ForbiddenBargain.MERCYS_DUE))); } active++; }
-        if (data.hasLastCandle(id)) { out.add(stat("WAGER", "The Last Candle", "NEXT WARD", "Exactly one starting life · +30% loot.")); active++; }
+        if (data.loadedDiceCharges(id) > 0) { { int v = CardEvolution.activeVariant(data, id, ForbiddenBargain.LOADED_DICE); int bonus = v >= 3 ? 28 : v > 0 ? 25 : 20; out.add(stat("WAGER", CardEvolution.variantTitle(ForbiddenBargain.LOADED_DICE, v), data.loadedDiceCharges(id) + " ordinary ward(s)", CardBranches.activeDescription(data, id, ForbiddenBargain.LOADED_DICE))); } active++; }
+        if (data.mercysDueCharges(id) > 0) { { int v = CardEvolution.activeVariant(data, id, ForbiddenBargain.MERCYS_DUE); int cost = v >= 3 ? 8 : v >= 2 ? 12 : v == 1 ? 10 : 15; out.add(stat("WAGER", CardEvolution.variantTitle(ForbiddenBargain.MERCYS_DUE, v), data.mercysDueCharges(id) + " ordinary ward(s)", CardBranches.activeDescription(data, id, ForbiddenBargain.MERCYS_DUE))); } active++; }
+        if (data.hasLastCandle(id)) { out.add(stat("WAGER", "The Last Candle", "NEXT ORDINARY WARD", "Exactly one starting life · +30% loot.")); active++; }
 
         if (data.hasBlackHarvest(id)) { out.add(stat("LAW", "Grave Interest", data.blackHarvestKills(id) + " / 5 night kills", "The fifth dusk kill pays health, hunger and XP.")); active++; }
         if (data.hasSecondEntry(id)) { out.add(stat("LAW", "A Second Entry", "DAILY LAW", "One lethal correction per Minecraft day.")); active++; }

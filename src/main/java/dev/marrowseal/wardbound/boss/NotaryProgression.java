@@ -24,7 +24,7 @@ public final class NotaryProgression {
     }
     public static boolean eligible(LockData d,UUID id){return BossConfig.notary().enabled()&&evidence(d,id);}
     public static String status(ServerPlayer p){var d=LockData.get(p.getServer());var id=p.getUUID();var s=BossConfig.notary();return "Notary chapter "+MasterStory.chapter(d,id,CardMaster.MOURNING_NOTARY)+"/"+s.storyChapter()+" | Witness Sequence "+OccultChainEvents.stage(d,id,OccultChainEvents.ChainEvent.WITNESS_SEQUENCE)+"/"+s.chainStage()+" | completed objectives "+d.uniqueInt(id,"objectives_completed_total")+"/"+s.revisedCards()+" | defeated: "+d.uniqueInt(id,"notary_defeated");}
-    public static void giveBell(ServerPlayer p){ItemStack bell=new ItemStack(WardItems.FINAL_WITNESS_BELL.get());if(!p.getInventory().contains(bell)&&!p.getInventory().add(bell))p.drop(bell,false);}
+    public static void giveBell(ServerPlayer p){ItemStack bell=new ItemStack(WardItems.FINAL_WITNESS_BELL.get());if(!p.getInventory().contains(bell)&&!p.getInventory().add(bell))p.drop(bell,false);if(p.getServer()!=null)LockData.get(p.getServer()).setUniqueInt(p.getUUID(),"notary_bell_issued",1);}
 
     public static void openConsentPanel(ServerPlayer p){
         if(p==null||p.getServer()==null)return;var d=LockData.get(p.getServer());boolean ready=p.isCreative()||eligible(d,p.getUUID());

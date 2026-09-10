@@ -20,8 +20,8 @@ import java.util.UUID;
 public final class WardMeasureSystem {
     private WardMeasureSystem() {}
 
-    /** Deliberately sits between the default Curse (85) and Ritual (100) bands. */
-    public static final int UNLOCK_AFTER = 90;
+    /** Long-progression cadence: after Curses are established, just before Rituals fully enter the table. */
+    public static final int UNLOCK_AFTER = 220;
     public static final int MAX_CUTS = 2;
 
     private static final String KEY_STAGE = "house_measure_stage";

@@ -87,7 +87,7 @@ public class Wardbound {
      * <p>56: Dealer's Hand reward draw/choice packets added.
      * <p>57: Cthulhu Head arena combat adds new Lodestone attack cue kinds.
      */
-    private static final String PROTOCOL = "57";
+    private static final String PROTOCOL = "58";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MODID, "main"),

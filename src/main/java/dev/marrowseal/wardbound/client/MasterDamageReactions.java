@@ -23,6 +23,7 @@ public final class MasterDamageReactions {
         int style,kind,seed; float strength; long started;
     }
     private static final Map<Integer,Reaction> ACTIVE=new HashMap<>();
+    private static Object levelIdentity;
     private MasterDamageReactions(){}
 
     public static void accept(MasterDamageReactionPacket p){
@@ -54,6 +55,7 @@ public final class MasterDamageReactions {
 
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;
-        Minecraft mc=Minecraft.getInstance();if(mc.level==null)ACTIVE.clear();
+        Minecraft mc=Minecraft.getInstance();
+        if(mc.level!=levelIdentity){ACTIVE.clear();levelIdentity=mc.level;}
     }
 }

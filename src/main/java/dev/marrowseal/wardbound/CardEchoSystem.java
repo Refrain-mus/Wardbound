@@ -135,7 +135,8 @@ public final class CardEchoSystem {
         // signature resolves one effective grade stronger, but a future
         // un-echoed copy does not inherit a free permanent revision.
         int active = CardEvolution.activeVariant(data, id, card);
-        int boosted = Math.min(CardEvolution.MAX_REVISION, Math.max(1, active + 1));
+        int boosted = Math.min(CardEvolution.progressionCap(data, id),
+                Math.min(CardEvolution.MAX_REVISION, Math.max(1, active + 1)));
         data.setUniqueInt(id, "card_echo_variant_" + card.id, boosted);
         data.setUniqueInt(id, "echoed_signatures", data.uniqueInt(id, "echoed_signatures") + 1);
         WardHistory.recordSpecial(player, "GLITCH", "Echo x2 resolved into " + card.title + ".");

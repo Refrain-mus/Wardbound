@@ -37,11 +37,22 @@ public final class CardEvolution {
         };
     }
 
-    /** Variant that would be signed if the card were accepted now. */
+    /** Maximum revision currently legal on the long-form ward progression. */
+    public static int progressionCap(LockData data, UUID id) {
+        if (data == null || id == null) return 0;
+        int beaten = data.totalBeaten(id);
+        if (beaten >= WardConfig.mutationTier3AfterBeaten) return 3;
+        if (beaten >= WardConfig.mutationTier2AfterBeaten) return 2;
+        if (beaten >= WardConfig.mutationTier1AfterBeaten) return 1;
+        return 0;
+    }
+
+    /** Variant that would be signed if the card were accepted now. Signature repetition and ward progression must both permit it. */
     public static int nextVariantLevel(LockData data, UUID id, ForbiddenBargain card) {
         if (data == null || id == null || card == null || !evolvable(card)) return 0;
         int signed = data.uniqueInt(id, "card_signed_" + card.id);
-        return signed >= 7 ? 3 : signed >= 3 ? 2 : signed >= 1 ? 1 : 0;
+        int earnedBySignatures = signed >= 7 ? 3 : signed >= 3 ? 2 : signed >= 1 ? 1 : 0;
+        return Math.min(earnedBySignatures, progressionCap(data, id));
     }
 
     /** Records one signature and returns the variant that became active. */
@@ -83,20 +94,28 @@ public final class CardEvolution {
         if (data == null || id == null || card == null) return 0;
         int earned = data.uniqueInt(id, "card_variant_" + card.id);
         int echoed = data.uniqueInt(id, "card_echo_variant_" + card.id);
-        return Math.max(0, Math.min(MAX_REVISION, Math.max(earned, echoed)));
+        int raw = Math.max(0, Math.min(MAX_REVISION, Math.max(earned, echoed)));
+        return Math.min(raw, progressionCap(data, id));
     }
 
     public static String progress(LockData data, UUID id, ForbiddenBargain card) {
         if (!evolvable(card)) return "stable";
         int signed = data.uniqueInt(id, "card_signed_" + card.id);
         int level = activeVariant(data, id, card);
+        int cap = progressionCap(data, id);
         String path = branchable(card)
                 ? CardBranches.title(card, data.uniqueInt(id, "card_branch_" + card.id)) + " · "
                 : "";
         if (level >= MAX_REVISION) return path + "PALIMPSEST · " + signed + " signatures recorded";
-        int nextAt = level == 0 ? 2 : level == 1 ? 4 : 8;
+        int nextLevel = level + 1;
+        int nextAt = nextLevel == 1 ? 2 : nextLevel == 2 ? 4 : 8;
         String current = level == 0 ? "Stable" : level == 1 ? "Revision I" : "Revision II";
-        String next = level == 0 ? "Revision I" : level == 1 ? "Revision II" : "Palimpsest";
+        String next = nextLevel == 1 ? "Revision I" : nextLevel == 2 ? "Revision II" : "Palimpsest";
+        if (cap < nextLevel) {
+            int wards = nextLevel == 1 ? WardConfig.mutationTier1AfterBeaten
+                    : nextLevel == 2 ? WardConfig.mutationTier2AfterBeaten : WardConfig.mutationTier3AfterBeaten;
+            return path + current + " · " + signed + "/" + nextAt + " signatures · " + next + " sealed until " + wards + " wards";
+        }
         return path + current + " · " + signed + "/" + nextAt + " signatures toward " + next;
     }
 

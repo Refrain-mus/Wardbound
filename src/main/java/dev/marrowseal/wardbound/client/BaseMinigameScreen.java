@@ -153,6 +153,9 @@ public abstract class BaseMinigameScreen extends Screen {
     /** Physical key -> key delivered to the minigame, so refraction cannot leave a held control stuck. */
     private final java.util.Map<Integer, Integer> deliveredKeys = new java.util.HashMap<>();
 
+    /** Server-authoritative global ward progression. */
+    protected final int resolvedWards;
+
     protected int lives;
     /** Balance telemetry: significant wrong inputs/lives lost during this attempt. */
     protected int mistakes;
@@ -163,8 +166,6 @@ public abstract class BaseMinigameScreen extends Screen {
     protected String banner;
     protected int bannerColor = 0xFFEEDDBB;
     protected long bannerUntil;
-    /** Second ESC inside this window explicitly abandons the live ward. */
-
     protected final List<String> modifierLabels = new ArrayList<>();
 
     protected final Painter p = new Painter();
@@ -186,6 +187,7 @@ public abstract class BaseMinigameScreen extends Screen {
         super(title);
         this.pos = msg.pos;
         this.value = msg.value;
+        this.resolvedWards = msg.resolvedWards;
         this.gameType = MinigameType.byOrdinal(msg.gameId);
         this.gameTimeScale = msg.timeScale;
         this.gameSpeedScale = msg.speedScale;
@@ -242,7 +244,7 @@ public abstract class BaseMinigameScreen extends Screen {
         this.mistakes = msg.resumed ? Math.max(0, msg.savedMistakes) : 0;
         this.cardForgivenessSpent = msg.resumed && this.mistakes > 0
                 && MinigameCardEffects.has(effectiveMinigameMask(), MinigameCardEffects.FORGIVE_FIRST);
-        // A Possessed ward remembers that it has been angered across ESC/reopen.
+        // A Possessed ward starts angrier as meaningful mistakes accumulate.
         // The live surge still cools down, but the mistake-derived floor cannot be reset by closing the GUI.
         this.possessedRage = Math.min(3.0f, this.mistakes * 0.22f);
         this.motifElapsed = 0f;
@@ -1337,6 +1339,9 @@ public abstract class BaseMinigameScreen extends Screen {
      */
     protected boolean expertVariant(int salt, int requiredMastery, int minimumValue, float baseChance) {
         if (!WardConfig.advancedMinigameVariantsEnabled || introductoryWard()) return false;
+        // The long progression reserves expert authored rules for the same shelf that first
+        // permits physical mutation/corruption. High-value early chests no longer bypass it.
+        if (resolvedWards < WardConfig.mutationTier1AfterBeaten && !advancedNarrativeWard()) return false;
         if (masteryTier < requiredMastery && value < minimumValue && !eldritch && !possessed && !unsigned) return false;
         float chance = baseChance;
         if (!advancedNarrativeWard() && masteryTier < requiredMastery) chance *= 0.35f;

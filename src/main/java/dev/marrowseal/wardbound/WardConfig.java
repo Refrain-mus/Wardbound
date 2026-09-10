@@ -29,7 +29,7 @@ public final class WardConfig {
      * Alpha config schema. A mismatched file is backed up and regenerated from
      * current defaults instead of being migrated through historical schemas.
      */
-    public static final int CONFIG_VERSION = 28;
+    public static final int CONFIG_VERSION = 30;
 
     /** Value below this uses lockChanceLow, at or above uses lockChanceHigh. */
     public static int lockThreshold = 30;
@@ -115,12 +115,12 @@ public final class WardConfig {
     public static float advancedMinigameVariantChanceScale = 1.0f;
     /** Independent misinformation layer. It only lies through presentation, never puzzle state. */
     public static boolean deceptionLayerEnabled = true;
-    public static int deceptionUnlockAfter = 160;
+    public static int deceptionUnlockAfter = 360;
     public static float deceptionBaseChance = 0.025f;
     public static float deceptionMaxChance = 0.095f;
     /** Rare cross-discipline micro-rounds that temporarily freeze the host mechanism. */
     public static boolean hybridRoundsEnabled = true;
-    public static int hybridUnlockAfter = 260;
+    public static int hybridUnlockAfter = 520;
     public static float hybridBaseChance = 0.010f;
     public static float hybridMaxChance = 0.042f;
     /** Small payoff for surviving the extra borrowed mechanism. */
@@ -384,7 +384,7 @@ public final class WardConfig {
 
     public static boolean chainEnabled = true;
     /** Resolved wards required before a seal chain may begin. */
-    public static int chainAfterBeaten = 70;
+    public static int chainAfterBeaten = 300;
     /** Chance a beaten ward turns out to be the first of a set. */
     public static float chainChance = 0.07f;
     public static int chainMinLinks = 3;
@@ -439,9 +439,9 @@ public final class WardConfig {
     /** Ceiling on how often that happens. Never anywhere near certain. */
     public static float watcherMaxChance = 0.30f;
     /** Seals broken before a hand starts turning up at all. */
-    public static int watcherAfter = 35;
+    public static int watcherAfter = 140;
     /** How fast its frequency climbs per seal after that. */
-    public static float watcherRamp = 0.005f;
+    public static float watcherRamp = 0.0010f;
 
     /** Seals of the watching house you must break before it forms a verdict. */
     public static int verdictAfter = 30;
@@ -1114,6 +1114,8 @@ public final class WardConfig {
         tierDifficultyStep = Math.max(0f, Math.min(1f, tierDifficultyStep));
         tierLootStep = Math.max(0f, Math.min(2f, tierLootStep));
         watcherMaxChance = Math.max(0f, Math.min(1f, watcherMaxChance));
+        watcherAfter = Math.max(0, Math.min(10000, watcherAfter));
+        watcherRamp = Math.max(0f, Math.min(0.05f, watcherRamp));
         guardianChance = Math.max(0f, Math.min(1f, guardianChance));
         guardianMaxCount = Math.max(1, Math.min(12, guardianMaxCount));
         guardianSealSeconds = Math.max(0, Math.min(600, guardianSealSeconds));

@@ -8,8 +8,7 @@ import net.minecraft.world.level.Level;
 import java.util.List;
 
 /** Future final-ritual key. No full Cthulhu summon is implemented in this pass. */
-public final class AbyssalVestigeItem extends Item {
-    @Override public boolean isFoil(ItemStack stack) { return true; }
+public final class AbyssalVestigeItem extends ImportantRelicItem {
     @Override public void inventoryTick(ItemStack stack, Level level, net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
         ImportantRelicHeldFx.tick(level, entity, stack, isSelected, 0.10f, 0.92f, 0.98f, 0.05f, 0.54f, 0.65f);
         super.inventoryTick(stack, level, entity, slotId, isSelected);

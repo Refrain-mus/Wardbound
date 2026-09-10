@@ -1,5 +1,6 @@
 package dev.marrowseal.wardbound.client;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 
 import java.util.HashMap;
@@ -10,9 +11,12 @@ public final class MasterLookTracking {
     public record Look(float yaw,float pitch){}
     private static final class State{float yaw,pitch;long last=System.nanoTime();boolean init;}
     private static final Map<Integer,State> STATES=new HashMap<>();
+    private static Object levelIdentity;
     private MasterLookTracking(){}
 
     public static Look sample(int id,float targetYaw,float targetPitch,float yawLimit,float pitchLimit,float speed,boolean locked){
+        Object level=Minecraft.getInstance().level;
+        if(level!=levelIdentity){STATES.clear();levelIdentity=level;}
         State s=STATES.computeIfAbsent(id,k->new State());long now=System.nanoTime();float dt=Mth.clamp((now-s.last)/1_000_000_000f,0f,.08f);s.last=now;
         targetYaw=Mth.clamp(Mth.wrapDegrees(targetYaw),-yawLimit,yawLimit);targetPitch=Mth.clamp(targetPitch,-pitchLimit,pitchLimit);
         if(!s.init){s.yaw=targetYaw;s.pitch=targetPitch;s.init=true;}

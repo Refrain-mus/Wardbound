@@ -404,6 +404,30 @@ public final class MaestroEntity extends MaestroArtEntity implements CinematicVi
         super.addAdditionalSaveData(tag);if(owner!=null)tag.putUUID("MaestroOwner",owner);if(stage!=null)tag.putLong("MaestroStage",stage.asLong());tag.putBoolean("MaestroPractice",practice);tag.putBoolean("MaestroInitialized",initialized);tag.putBoolean("MaestroRewarded",rewarded);tag.putDouble("MaestroVitalityMax",vitality.maximum());tag.putDouble("MaestroVitality",vitality.current());tag.putInt("MaestroPhase",phase());tag.putInt("MaestroState",combatState());tag.putInt("MaestroStateTick",stateTick);tag.putInt("MaestroCooldown",cooldown);tag.putInt("MaestroDeathTick",deathTicks);
     }
     @Override public void readAdditionalSaveData(CompoundTag tag){
-        super.readAdditionalSaveData(tag);owner=tag.hasUUID("MaestroOwner")?tag.getUUID("MaestroOwner"):null;stage=tag.contains("MaestroStage")?BlockPos.of(tag.getLong("MaestroStage")):null;practice=tag.getBoolean("MaestroPractice");initialized=tag.getBoolean("MaestroInitialized");rewarded=tag.getBoolean("MaestroRewarded");double max=tag.contains("MaestroVitalityMax")?tag.getDouble("MaestroVitalityMax"):BASE_HEALTH;double cur=tag.contains("MaestroVitality")?tag.getDouble("MaestroVitality"):max;vitality=new MasterVitality(max);vitality.restore(cur);vitality.bindMaximum(this);entityData.set(PHASE_DATA,Math.max(1,Math.min(3,tag.getInt("MaestroPhase"))));entityData.set(STATE_DATA,tag.getInt("MaestroState"));stateTick=tag.getInt("MaestroStateTick");cooldown=tag.getInt("MaestroCooldown");deathTicks=tag.getInt("MaestroDeathTick");applyPhaseAttributes(phase());bar.setProgress(vitality.fraction());
+        super.readAdditionalSaveData(tag);
+        owner=tag.hasUUID("MaestroOwner")?tag.getUUID("MaestroOwner"):null;
+        stage=tag.contains("MaestroStage")?BlockPos.of(tag.getLong("MaestroStage")):null;
+        practice=tag.getBoolean("MaestroPractice");initialized=tag.getBoolean("MaestroInitialized");rewarded=tag.getBoolean("MaestroRewarded");
+        double max=tag.contains("MaestroVitalityMax")?tag.getDouble("MaestroVitalityMax"):BASE_HEALTH;
+        double cur=tag.contains("MaestroVitality")?tag.getDouble("MaestroVitality"):max;
+        vitality=new MasterVitality(max);vitality.restore(cur);vitality.bindMaximum(this);
+        entityData.set(PHASE_DATA,Math.max(1,Math.min(3,tag.getInt("MaestroPhase"))));
+        int savedState=tag.getInt("MaestroState");
+        deathTicks=Math.max(0,tag.getInt("MaestroDeathTick"));
+
+        // Attack-local geometry (dash vector, note marks and one-hit victim sets) is transient.
+        // Resuming a mid-attack tick after a server/chunk reload can otherwise execute the later hit
+        // frames without their original telegraph/aim state. Only the authored death timeline is
+        // safe to resume; all live attacks recover into a short idle window instead.
+        noteMarks.clear();dashVictims.clear();dashVector=Vec3.ZERO;getNavigation().stop();setDeltaMovement(Vec3.ZERO);
+        if(savedState==DYING||rewarded||deathTicks>0){
+            entityData.set(STATE_DATA,DYING);stateTick=0;setInvulnerable(true);setHealth(1);
+            playClip(deathTicks<82?"death_start":deathTicks<170?"death_fall":"death_end");
+        }else{
+            entityData.set(STATE_DATA,IDLE);stateTick=0;cooldown=Math.max(24,Math.min(50,tag.getInt("MaestroCooldown")));setInvulnerable(false);
+            playClip(phase()==1?"idle_composed":phase()==2?"idle_observing":"idle_rage");
+            if(vitality.current()>0)vitality.syncNativeHealth(this);
+        }
+        applyPhaseAttributes(phase());bar.setProgress(vitality.fraction());
     }
 }

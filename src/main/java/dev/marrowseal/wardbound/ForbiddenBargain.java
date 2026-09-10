@@ -8,7 +8,7 @@ import java.util.UUID;
  */
 public enum ForbiddenBargain {
     BORROWED_BREATH(0, "Borrowed Breath", Kind.DEBT,
-            "Your next ward begins with one fewer life.", 0f, 15),
+            "Your next ordinary ward begins with one fewer life.", 0f, 15),
     IRON_DEBT(1, "Debt of Iron", Kind.DEBT,
             "The next ward you lose gains one extra grudge level.", 0f, 27),
     WATCHING_MARK(2, "The Watching Mark", Kind.DEBT,
@@ -74,7 +74,7 @@ public enum ForbiddenBargain {
             "Weakness I clings to you for ten minutes. Hostile kills may shake loose experience; the chance rises as the mark nears expiry.", 0.00f, 308),
 
     REFRESH_HAND(30, "Refresh the Hand", Kind.REFRESH,
-            "Burn this deal and draw again. The ward dislikes being asked twice.", 0.00f),
+            "Burn this deal and draw again. The ward dislikes being asked twice.", 0.00f, 90),
 
     MOONLIT_HUNT(31, "The Moonlit Hunt", Kind.UNIQUE,
             "At night you move faster, but nearby hostile things are roused by the same law. The moon does not choose a side.", 0.00f, 600),
@@ -1307,17 +1307,17 @@ public enum ForbiddenBargain {
             "Receive one netherite scrap. The reward is small. Delivery conditions are not discussed.", 0.00f, 1180),
 
     ANOMALY_GILDED(165, "Gilded Anomaly", Kind.UNIQUE,
-            "Its contents cannot be read before signature.", 0.00f, 30),
+            "Its contents cannot be read before signature.", 0.00f, 140),
     ANOMALY_FERAL(166, "Feral Anomaly", Kind.UNIQUE,
-            "Its contents cannot be read before signature.", 0.00f, 50),
+            "Its contents cannot be read before signature.", 0.00f, 240),
     ANOMALY_HOLLOW(167, "Hollow Anomaly", Kind.UNIQUE,
-            "Its contents cannot be read before signature.", 0.00f, 70),
+            "Its contents cannot be read before signature.", 0.00f, 360),
     ANOMALY_STATIC(168, "Static Anomaly", Kind.UNIQUE,
-            "Its contents cannot be read before signature.", 0.00f, 90),
+            "Its contents cannot be read before signature.", 0.00f, 520),
     ANOMALY_MIRROR(169, "Mirror Anomaly", Kind.UNIQUE,
-            "Its contents cannot be read before signature.", 0.00f, 117),
+            "Its contents cannot be read before signature.", 0.00f, 760),
     ANOMALY_BLACK(170, "Black Anomaly", Kind.UNIQUE,
-            "Its contents cannot be read before signature.", 0.00f, 153);
+            "Its contents cannot be read before signature.", 0.00f, 1050);
 
     public enum Kind { DEBT, WAGER, SCAR, REMEDY, CONTRACT, RITUAL, COVENANT, MASTER, EPIC, UNIQUE, CURSE, DEATH, REFRESH }
 
@@ -1386,9 +1386,25 @@ public enum ForbiddenBargain {
         };
     }
 
+    /** Broad progression shelf shared by every normal card delivery path. */
+    public static boolean kindShelfUnlocked(Kind kind, int resolved) {
+        return switch (kind) {
+            case MASTER -> resolved >= WardConfig.masterCardsAfterBeaten;
+            case CONTRACT -> resolved >= WardConfig.contractCardsAfterBeaten;
+            case RITUAL -> resolved >= WardConfig.ritualCardsAfterBeaten;
+            case COVENANT -> resolved >= WardConfig.covenantCardsAfterBeaten;
+            case CURSE -> resolved >= WardConfig.curseCardsAfterBeaten;
+            case EPIC -> resolved >= WardConfig.epicCardsAfterBeaten;
+            case UNIQUE -> resolved >= WardConfig.uniqueCardsAfterBeaten;
+            case DEATH -> resolved >= WardConfig.deathCardsAfterBeaten;
+            case DEBT, WAGER, SCAR, REMEDY, REFRESH -> resolved >= WardConfig.normalCardsAfterBeaten;
+        };
+    }
+
     /** Whether offering this card can change anything for this player now. */
     public boolean available(LockData data, UUID player, boolean watcherEligible) {
-        if (data.totalBeaten(player) < minResolved) return false;
+        int resolved = data.totalBeaten(player);
+        if (!kindShelfUnlocked(kind, resolved) || resolved < minResolved) return false;
         return switch (this) {
             case BORROWED_BREATH -> !data.hasBorrowedBreath(player);
             case IRON_DEBT -> !data.hasIronDebt(player);
